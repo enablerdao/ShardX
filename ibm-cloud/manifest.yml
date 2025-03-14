@@ -1,0 +1,30 @@
+---
+applications:
+- name: shardx-node
+  memory: 1G
+  instances: 1
+  buildpack: https://github.com/cloudfoundry/binary-buildpack.git
+  command: ./shardx
+  env:
+    PORT: 54868
+    NODE_ID: ibm_node
+    LOG_LEVEL: info
+    INITIAL_SHARDS: 256
+    DATA_DIR: /home/vcap/app/data
+  services:
+  - shardx-redis
+  routes:
+  - route: shardx-node.mybluemix.net
+
+- name: shardx-web
+  memory: 256M
+  instances: 1
+  buildpack: staticfile_buildpack
+  path: ./web/dist
+  routes:
+  - route: shardx.mybluemix.net
+
+services:
+- name: shardx-redis
+  type: redis
+  plan: standard

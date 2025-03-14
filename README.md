@@ -59,6 +59,21 @@ curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/simple_insta
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/quick_install.sh | bash
 ```
 
+### 特定のユースケース向けインストール
+
+```bash
+# 開発者向けインストール (Rust, Node.js, VSCodeなど)
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install_scripts/dev_install.sh | bash
+
+# エンタープライズインストール (高可用性構成)
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install_scripts/enterprise_install.sh | bash
+
+# ミニマルインストール (最小限のリソースで実行)
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install_scripts/minimal_install.sh | bash
+```
+
+詳細なインストールオプションについては、[インストールスクリプト一覧](install_scripts/README.md)を参照してください。
+
 <div align="center">
   <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX コンセンサスメカニズム" width="80%"/>
 </div>

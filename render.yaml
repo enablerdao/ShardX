@@ -33,7 +33,7 @@ services:
         fromService:
           name: shardx-node
           type: web
-          property: url
+          property: host
 
   - type: redis
     name: shardx-redis

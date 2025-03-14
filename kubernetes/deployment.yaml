@@ -1,0 +1,167 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shardx-node
+  labels:
+    app: shardx
+    component: node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shardx
+      component: node
+  template:
+    metadata:
+      labels:
+        app: shardx
+        component: node
+    spec:
+      containers:
+      - name: shardx-node
+        image: enablerdao/shardx:latest
+        ports:
+        - containerPort: 54868
+        env:
+        - name: PORT
+          value: "54868"
+        - name: NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: LOG_LEVEL
+          value: "info"
+        - name: INITIAL_SHARDS
+          value: "256"
+        - name: DATA_DIR
+          value: "/app/data"
+        volumeMounts:
+        - name: shardx-data
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /info
+            port: 54868
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /info
+            port: 54868
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: shardx-data
+        persistentVolumeClaim:
+          claimName: shardx-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shardx-web
+  labels:
+    app: shardx
+    component: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shardx
+      component: web
+  template:
+    metadata:
+      labels:
+        app: shardx
+        component: web
+    spec:
+      containers:
+      - name: shardx-web
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: web-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: web-content
+        configMap:
+          name: shardx-web-content
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shardx-redis
+  labels:
+    app: shardx
+    component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shardx
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: shardx
+        component: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: shardx-redis-pvc
