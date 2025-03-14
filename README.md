@@ -11,17 +11,31 @@
   [![Twitter Follow](https://img.shields.io/twitter/follow/ShardXOrg?style=social)](https://twitter.com/ShardXOrg)
 </div>
 
-## 🚩 ミッション
-「分散型テクノロジーで世界中の人々のつながりを深め、誰もが安心して価値を交換できる未来を実現する。」
+## 🔥 1コマンドでの起動（すべてのOS対応）
 
-## 🌌 ビジョン
-「まるで呼吸をするように自然で快適に、誰もがストレスなく繋がり、自由に価値をやりとりできる世界を創造する。」
+以下の1コマンドで、ShardXのノードとWebインターフェースを起動できます：
 
-## 🚀 様々なデプロイ方法
+```bash
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/auto_install.sh | bash
+```
 
-### ワンクリックデプロイ
+または、より簡単なインストール方法：
+
+```bash
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
+./quick_install.sh
+```
+
+## 🚀 ワンクリックデプロイ
 
 <div align="center">
+  <a href="https://render.com/deploy?repo=https://github.com/enablerdao/ShardX">
+    <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" />
+  </a>
+  <a href="https://gitpod.io/#https://github.com/enablerdao/ShardX">
+    <img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod" />
+  </a>
   <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
     <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
   </a>
@@ -31,31 +45,32 @@
   <a href="https://app.netlify.com/start/deploy?repository=https://github.com/enablerdao/ShardX">
     <img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" />
   </a>
-  <a href="https://deploy.cloud.run?git_repo=https://github.com/enablerdao/ShardX">
-    <img src="https://deploy.cloud.run/button.svg" alt="Run on Google Cloud" />
-  </a>
-  <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fenablerdao%2FShardX%2Fmain%2Fazure-pipelines.yml">
-    <img src="https://aka.ms/deploytoazurebutton" alt="Deploy to Azure" />
-  </a>
 </div>
+
+## 🚩 ミッション
+「分散型テクノロジーで世界中の人々のつながりを深め、誰もが安心して価値を交換できる未来を実現する。」
+
+## 🌌 ビジョン
+「まるで呼吸をするように自然で快適に、誰もがストレスなく繋がり、自由に価値をやりとりできる世界を創造する。」
+
+## 🌐 様々なデプロイ方法
 
 ### クラウドプロバイダー別のデプロイ
 
 - **AWS**: [CloudFormation テンプレート](cloudformation.yml)
+- **Azure**: [パイプライン設定](azure-pipelines.yml)
+- **Google Cloud**: [Cloud Run ボタン](https://deploy.cloud.run?git_repo=https://github.com/enablerdao/ShardX)
 - **Digital Ocean**: [App Platform 設定](digital_ocean.yml)
 - **Fly.io**: [設定ファイル](fly.toml)
 - **Railway**: [設定ファイル](railway.json)
 
-### ローカルインストール
+### その他のインストール方法
 
 ```bash
-# 完全自動インストール (依存関係も自動的にインストール)
-curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/auto_install.sh | bash
-
 # 対話なしの簡単インストール (Docker必須)
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/simple_install.sh | bash
 
-# または詳細オプション付きインストール
+# 詳細オプション付きインストール
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/quick_install.sh | bash
 ```
 
