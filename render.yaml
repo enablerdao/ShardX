@@ -1,5 +1,4 @@
 services:
-  # ShardXノードサービス
   - type: web
     name: shardx-node
     env: docker
@@ -14,13 +13,12 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: INITIAL_SHARDS
-        value: 256
+        value: "256"
     disk:
       name: shardx-data
       mountPath: /app/data
       sizeGB: 10
 
-  # ShardX Webインターフェース
   - type: web
     name: shardx-web
     env: static
@@ -37,15 +35,13 @@ services:
           type: web
           property: url
 
-# データベース（オプション）
+  - type: redis
+    name: shardx-redis
+    plan: starter
+    ipAllowList: []
+
 databases:
   - name: shardx-db
     plan: starter
     databaseName: shardx
     user: shardx
-
-# Redis（オプション - クロスシャード通信用）
-redis:
-  - name: shardx-redis
-    plan: starter
-    ipAllowList: []
