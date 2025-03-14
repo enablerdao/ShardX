@@ -50,7 +50,7 @@
 
 ```bash
 # 完全自動インストール (依存関係も自動的にインストール)
-curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/one_click_install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/auto_install.sh | bash
 
 # 対話なしの簡単インストール (Docker必須)
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/simple_install.sh | bash
