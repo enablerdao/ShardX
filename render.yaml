@@ -16,10 +16,8 @@ services:
         value: info
       - key: INITIAL_SHARDS
         value: "10" # シャード数を減らして軽量化
-    disk:
-      name: shardx-data
-      mountPath: /app/data
-      sizeGB: 1 # 無料プランでは小さいサイズに制限
+      - key: DATA_DIR
+        value: /tmp/shardx-data # 一時ディレクトリを使用
 
   # Webインターフェース（静的サイト）
   - type: web

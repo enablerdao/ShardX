@@ -17,8 +17,8 @@ RUN mkdir -p /app/bin && \
     curl -L -o /app/bin/shardx https://github.com/enablerdao/ShardX/releases/download/v0.1.0/shardx-linux-amd64 && \
     chmod +x /app/bin/shardx
 
-# データディレクトリを作成
-RUN mkdir -p /app/data && chmod 777 /app/data
+# データディレクトリを作成（一時ディレクトリも使用可能）
+RUN mkdir -p /app/data /tmp/shardx-data && chmod 777 /app/data /tmp/shardx-data
 
 # Webインターフェースをダウンロード
 RUN mkdir -p /app/web && \
