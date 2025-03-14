@@ -24,8 +24,17 @@ ShardXは以下の対応を行っています：
 1. 以下のボタンをクリックしてRenderにデプロイします：
 
    [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/enablerdao/ShardX)
+   
+   > **注意**: Renderの仕様変更により、デプロイボタンがうまく機能しない場合は、以下の手順で手動デプロイしてください。
 
-2. デプロイが完了したら、以下のURLでアクセスできます：
+### 手動デプロイ手順
+
+1. [Render](https://render.com)にアカウント登録
+2. ダッシュボードから「New +」→「Blueprint」を選択
+3. GitHubリポジトリ `https://github.com/enablerdao/ShardX` を接続
+4. 「Apply」をクリック
+
+デプロイが完了したら、以下のURLでアクセスできます：
    - Webインターフェース: `https://shardx-web.onrender.com`
    - API: `https://shardx-node.onrender.com`
 
