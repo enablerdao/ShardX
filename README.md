@@ -87,6 +87,16 @@ curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install_scri
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install_scripts/minimal_install.sh | bash
 ```
 
+### 管理ツール
+
+```bash
+# 一括アップデート (すべてのコンポーネントを最新バージョンに更新)
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/scripts/update_all.sh | bash
+
+# バックアップの作成
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/scripts/backup.sh | bash
+```
+
 詳細なインストールオプションについては、[インストールスクリプト一覧](install_scripts/README.md)を参照してください。
 
 <div align="center">

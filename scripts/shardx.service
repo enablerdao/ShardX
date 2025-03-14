@@ -1,0 +1,32 @@
+[Unit]
+Description=ShardX Blockchain Node
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=shardx
+Group=shardx
+WorkingDirectory=/opt/shardx
+ExecStart=/opt/shardx/target/release/shardx
+Restart=on-failure
+RestartSec=5
+Environment="RUST_LOG=info"
+Environment="PORT=54868"
+Environment="DATA_DIR=/var/lib/shardx/data"
+
+# セキュリティ設定
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
