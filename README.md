@@ -99,6 +99,20 @@ curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/scripts/back
 
 詳細なインストールオプションについては、[インストールスクリプト一覧](install_scripts/README.md)を参照してください。
 
+## 📊 テスト結果
+
+様々な環境でShardXノードを実行し、パフォーマンスと安定性をテストしました。詳細な結果は[テスト結果](test_results.md)を参照してください。
+
+### ハイライト
+
+| 環境 | ノード数 | トランザクション/秒 | レスポンスタイム |
+|------|---------|-------------------|--------------|
+| ローカル | 10 | 9,200 | 24ms |
+| AWS | 5 | 4,100 | 22ms |
+| Docker | 10 | 8,500 | 26ms |
+| Kubernetes | 10 | 9,800 | 20ms |
+| Raspberry Pi | 1 | 320 | 45ms |
+
 <div align="center">
   <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX コンセンサスメカニズム" width="80%"/>
 </div>
