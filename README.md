@@ -1,4 +1,4 @@
-# ShardX
+# ShardX（シャードエックス）
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/logo.svg" alt="ShardX Logo" width="300"/>
@@ -8,19 +8,23 @@
   [![GitHub Forks](https://img.shields.io/github/forks/enablerdao/ShardX?style=social)](https://github.com/enablerdao/ShardX/network/members)
   [![GitHub Issues](https://img.shields.io/github/issues/enablerdao/ShardX)](https://github.com/enablerdao/ShardX/issues)
   [![GitHub License](https://img.shields.io/github/license/enablerdao/ShardX)](https://github.com/enablerdao/ShardX/blob/main/LICENSE)
-  [![Twitter Follow](https://img.shields.io/twitter/follow/ShardXIO?style=social)](https://twitter.com/ShardXIO)
+  [![Twitter Follow](https://img.shields.io/twitter/follow/ShardXOrg?style=social)](https://twitter.com/ShardXOrg)
 </div>
 
-## 🌊 ビジョン
-「トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。」
+## 🚩 ミッション
+「分散型テクノロジーで世界中の人々のつながりを深め、誰もが安心して価値を交換できる未来を実現する。」
+
+## 🌌 ビジョン
+「まるで呼吸をするように自然で快適に、誰もがストレスなく繋がり、自由に価値をやりとりできる世界を創造する。」
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX コンセンサスメカニズム" width="80%"/>
 </div>
 
 ## 📋 概要
-ShardXは高速処理、スケーラビリティ、セキュリティを兼ね備えた次世代ブロックチェーンプラットフォームです。
-初期フェーズでは50,000 TPS（1秒あたりのトランザクション数）を目標とし、フェーズ2では100,000 TPSを目指します。
+ShardXは高速処理、スケーラビリティ、セキュリティを兼ね備えた次世代ブロックチェーンプラットフォームです。まるで呼吸をするように自然で、誰もが簡単に利用できる設計を特徴としています。
+
+初期フェーズでは50,000 TPS（1秒あたりのトランザクション数）を目標とし、フェーズ2では100,000 TPSを目指します。この高いパフォーマンスにより、世界中の人々が安心して価値を交換できる基盤を提供します。
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/system_architecture.svg" alt="ShardX システムアーキテクチャ" width="80%"/>
