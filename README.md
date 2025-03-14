@@ -51,11 +51,14 @@ cd ShardX
   <a href="https://render.com/deploy?repo=https://github.com/enablerdao/ShardX">
     <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" />
   </a>
-  <a href="https://gitpod.io/#https://github.com/enablerdao/ShardX">
-    <img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod" />
+  <a href="https://railway.app/template/ShardX">
+    <img src="https://railway.app/button.svg" alt="Deploy on Railway" height="44px" />
   </a>
   <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
-    <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
+    <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" height="44px" />
+  </a>
+  <a href="https://gitpod.io/#https://github.com/enablerdao/ShardX">
+    <img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod" />
   </a>
   <a href="https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX">
     <img src="https://vercel.com/button" alt="Deploy to Vercel" />
@@ -64,6 +67,8 @@ cd ShardX
     <img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" />
   </a>
 </div>
+
+Renderの無料プランでデプロイする方法については、[Renderデプロイガイド](render-button.md)を参照してください。
 
 ## 🚩 ミッション
 「分散型テクノロジーで世界中の人々のつながりを深め、誰もが安心して価値を交換できる未来を実現する。」
