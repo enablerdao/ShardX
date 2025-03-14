@@ -1,5 +1,5 @@
 # マルチステージビルド - ビルダーステージ
-FROM rust:1.70 as builder
+FROM rust:1.76 as builder
 
 WORKDIR /app
 
