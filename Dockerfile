@@ -1,10 +1,16 @@
 # マルチステージビルド - ビルダーステージ
-FROM rust:1.76 as builder
+FROM rust:latest as builder
 
 WORKDIR /app
 
-# キャッシュ最適化のためにまずCargo.tomlとCargo.lockをコピー
-COPY Cargo.toml Cargo.lock* ./
+# Cargoを最新バージョンに更新
+RUN rustup update
+
+# キャッシュ最適化のためにまずCargo.tomlをコピー
+COPY Cargo.toml ./
+
+# Cargo.lockを無視し、新しく生成する
+RUN touch Cargo.lock
 
 # 依存関係のみをビルドするためのダミーソースを作成
 RUN mkdir -p src && \
