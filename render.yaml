@@ -1,47 +1,42 @@
 services:
+  # ShardXノード（軽量設定）
   - type: web
     name: shardx-node
     env: docker
-    dockerfilePath: ./Dockerfile
-    plan: starter
+    dockerfilePath: ./Dockerfile.simple
+    dockerContext: .
+    plan: free # 無料プラン
     healthCheckPath: /info
     envVars:
       - key: PORT
         value: 54868
       - key: NODE_ID
-        generateValue: true
-      - key: LOG_LEVEL
+        value: render_node
+      - key: RUST_LOG
         value: info
       - key: INITIAL_SHARDS
-        value: "256"
+        value: "10" # シャード数を減らして軽量化
     disk:
       name: shardx-data
       mountPath: /app/data
-      sizeGB: 10
+      sizeGB: 1 # 無料プランでは小さいサイズに制限
 
+  # Webインターフェース（静的サイト）
   - type: web
     name: shardx-web
     env: static
-    buildCommand: cd web && npm install && npm run build
+    buildCommand: echo "Static site ready" # ビルド不要の軽量設定
     staticPublishPath: ./web/dist
+    plan: free # 無料プラン
     routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://shardx-node.onrender.com/*
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: API_URL
-        fromService:
-          name: shardx-node
-          type: web
-          property: host
+        value: https://shardx-node.onrender.com
 
-  - type: redis
-    name: shardx-redis
-    plan: starter
-    ipAllowList: []
-
-databases:
-  - name: shardx-db
-    plan: starter
-    databaseName: shardx
-    user: shardx
+# 無料プランではRedisとデータベースは使用しない
