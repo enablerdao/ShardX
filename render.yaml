@@ -20,21 +20,19 @@ services:
         value: /tmp/shardx-data # 一時ディレクトリを使用
 
   # Webインターフェース（静的サイト）
-  - type: web
+  - type: static_site # 静的サイト用のタイプ
     name: shardx-web
-    env: static
     buildCommand: echo "Static site ready" # ビルド不要の軽量設定
-    staticPublishPath: ./web/dist
-    plan: free # 無料プラン
+    publishDir: ./web/dist # 公開ディレクトリ
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: "*"
     routes:
-      - type: rewrite
-        source: /api/*
+      - source: /api/*
         destination: https://shardx-node.onrender.com/*
-      - type: rewrite
-        source: /*
+      - source: /*
         destination: /index.html
     envVars:
       - key: API_URL
         value: https://shardx-node.onrender.com
-
-# 無料プランではRedisとデータベースは使用しない
