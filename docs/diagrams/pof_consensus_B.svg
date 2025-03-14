@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">Proof of Flow (PoF) コンセンサスメカニズム - B</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">トランザクションの流れと検証プロセス</text>
+  
+  <!-- 川の流れのイメージ -->
+  <g transform="translate(50, 150)">
+    <path d="M0,50 C100,20 200,80 300,50 C400,20 500,80 600,50 C700,20" 
+          fill="none" stroke="url(#grad1)" stroke-width="40" stroke-opacity="0.3" />
+    
+    <!-- トランザクション -->
+    <circle cx="50" cy="50" r="15" class="node" />
+    <circle cx="150" cy="40" r="15" class="node" />
+    <circle cx="250" cy="60" r="15" class="node" />
+    <circle cx="350" cy="50" r="15" class="node" />
+    <circle cx="450" cy="40" r="15" class="node" />
+    <circle cx="550" cy="60" r="15" class="node" />
+    <circle cx="650" cy="50" r="15" class="node highlight" />
+    
+    <text x="50" y="85" text-anchor="middle" class="small-label">TX 1</text>
+    <text x="150" y="75" text-anchor="middle" class="small-label">TX 2</text>
+    <text x="250" y="95" text-anchor="middle" class="small-label">TX 3</text>
+    <text x="350" y="85" text-anchor="middle" class="small-label">TX 4</text>
+    <text x="450" y="75" text-anchor="middle" class="small-label">TX 5</text>
+    <text x="550" y="95" text-anchor="middle" class="small-label">TX 6</text>
+    <text x="650" y="85" text-anchor="middle" class="small-label">TX 7</text>
+    
+    <text x="350" y="0" text-anchor="middle" class="label">トランザクションの流れ</text>
+  </g>
+  
+  <!-- 検証プロセス -->
+  <g transform="translate(100, 250)">
+    <rect x="0" y="0" width="150" height="80" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    <rect x="200" y="0" width="150" height="80" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    <rect x="400" y="0" width="150" height="80" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    
+    <text x="75" y="30" text-anchor="middle" class="label">DAG構築</text>
+    <text x="75" y="50" text-anchor="middle" class="small-label">トランザクションを</text>
+    <text x="75" y="70" text-anchor="middle" class="small-label">グラフに追加</text>
+    
+    <text x="275" y="30" text-anchor="middle" class="label">PoHタイムスタンプ</text>
+    <text x="275" y="50" text-anchor="middle" class="small-label">順序を保証する</text>
+    <text x="275" y="70" text-anchor="middle" class="small-label">タイムスタンプ付与</text>
+    
+    <text x="475" y="30" text-anchor="middle" class="label">PoS検証</text>
+    <text x="475" y="50" text-anchor="middle" class="small-label">バリデータによる</text>
+    <text x="475" y="70" text-anchor="middle" class="small-label">トランザクション承認</text>
+    
+    <line x1="150" y1="40" x2="200" y2="40" class="arrow" />
+    <line x1="350" y1="40" x2="400" y2="40" class="arrow" />
+    
+    <text x="300" y="110" text-anchor="middle" class="label">検証プロセス</text>
+  </g>
+</svg>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">ユーザーフロー - C</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">ノード運用フロー</text>
+  
+  <!-- ユーザーフロー図 -->
+  <g transform="translate(100, 120)">
+    <!-- ステップ1: ノードセットアップ -->
+    <rect x="0" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="60" y="25" text-anchor="middle" class="label">ノード</text>
+    <text x="60" y="45" text-anchor="middle" class="small-label">セットアップ</text>
+    
+    <!-- ステップ2: ステーキング -->
+    <rect x="170" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="230" y="25" text-anchor="middle" class="label">ステーキング</text>
+    <text x="230" y="45" text-anchor="middle" class="small-label">トークンをロック</text>
+    
+    <!-- ステップ3: バリデーション -->
+    <rect x="340" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="400" y="25" text-anchor="middle" class="label">バリデーション</text>
+    <text x="400" y="45" text-anchor="middle" class="small-label">トランザクション検証</text>
+    
+    <!-- ステップ4: 報酬獲得 -->
+    <rect x="510" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="570" y="25" text-anchor="middle" class="label">報酬獲得</text>
+    <text x="570" y="45" text-anchor="middle" class="small-label">手数料+新規発行</text>
+    
+    <!-- 矢印 -->
+    <line x1="120" y1="30" x2="170" y2="30" class="arrow" />
+    <line x1="290" y1="30" x2="340" y2="30" class="arrow" />
+    <line x1="460" y1="30" x2="510" y2="30" class="arrow" />
+    
+    <!-- 詳細説明 -->
+    <g transform="translate(0, 100)">
+      <rect x="0" y="0" width="600" height="150" rx="10" fill="#f1f8ff" stroke="#ccc" />
+      
+      <text x="20" y="30" class="label">1. ノードセットアップ</text>
+      <text x="40" y="50" class="small-label">- ハードウェア要件: 8コアCPU、16GB RAM、1TB SSD</text>
+      <text x="40" y="70" class="small-label">- ノードソフトウェアのインストールと設定</text>
+      
+      <text x="300" y="30" class="label">2. ステーキング</text>
+      <text x="320" y="50" class="small-label">- 最低10,000 HFXトークンをステーキング</text>
+      <text x="320" y="70" class="small-label">- ステーキング期間の選択（1ヶ月〜12ヶ月）</text>
+      
+      <text x="20" y="100" class="label">3. バリデーション</text>
+      <text x="40" y="120" class="small-label">- トランザクションの検証と承認</text>
+      <text x="40" y="140" class="small-label">- コンセンサスプロセスへの参加</text>
+      
+      <text x="300" y="100" class="label">4. 報酬獲得</text>
+      <text x="320" y="120" class="small-label">- トランザクション手数料の一部を獲得</text>
+      <text x="320" y="140" class="small-label">- ステーキング量と期間に応じた新規発行トークンの獲得</text>
+    </g>
+  </g>
+</svg>

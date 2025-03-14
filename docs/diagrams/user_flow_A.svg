@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">ユーザーフロー - A</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">トランザクション送信フロー</text>
+  
+  <!-- ユーザーフロー図 -->
+  <g transform="translate(100, 120)">
+    <!-- ステップ1: ウォレット作成 -->
+    <rect x="0" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="60" y="25" text-anchor="middle" class="label">ウォレット</text>
+    <text x="60" y="45" text-anchor="middle" class="small-label">作成/インポート</text>
+    
+    <!-- ステップ2: トランザクション作成 -->
+    <rect x="170" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="230" y="25" text-anchor="middle" class="label">トランザクション</text>
+    <text x="230" y="45" text-anchor="middle" class="small-label">作成</text>
+    
+    <!-- ステップ3: 署名 -->
+    <rect x="340" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="400" y="25" text-anchor="middle" class="label">署名</text>
+    <text x="400" y="45" text-anchor="middle" class="small-label">秘密鍵で署名</text>
+    
+    <!-- ステップ4: 送信 -->
+    <rect x="510" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="570" y="25" text-anchor="middle" class="label">送信</text>
+    <text x="570" y="45" text-anchor="middle" class="small-label">ネットワークへ</text>
+    
+    <!-- 矢印 -->
+    <line x1="120" y1="30" x2="170" y2="30" class="arrow" />
+    <line x1="290" y1="30" x2="340" y2="30" class="arrow" />
+    <line x1="460" y1="30" x2="510" y2="30" class="arrow" />
+    
+    <!-- 詳細説明 -->
+    <g transform="translate(0, 100)">
+      <rect x="0" y="0" width="600" height="150" rx="10" fill="#f1f8ff" stroke="#ccc" />
+      
+      <text x="20" y="30" class="label">1. ウォレット作成/インポート</text>
+      <text x="40" y="50" class="small-label">- 新規ウォレット作成またはシードフレーズからインポート</text>
+      <text x="40" y="70" class="small-label">- 公開鍵/秘密鍵ペアの生成</text>
+      
+      <text x="300" y="30" class="label">2. トランザクション作成</text>
+      <text x="320" y="50" class="small-label">- 送金先アドレス、金額、手数料の指定</text>
+      <text x="320" y="70" class="small-label">- スマートコントラクト呼び出しの場合はコントラクトアドレスとパラメータを指定</text>
+      
+      <text x="20" y="100" class="label">3. 署名</text>
+      <text x="40" y="120" class="small-label">- 秘密鍵を使用してトランザクションに署名</text>
+      <text x="40" y="140" class="small-label">- 署名はトランザクションの正当性を証明</text>
+      
+      <text x="300" y="100" class="label">4. 送信</text>
+      <text x="320" y="120" class="small-label">- 署名済みトランザクションをネットワークに送信</text>
+      <text x="320" y="140" class="small-label">- AIエンジンが優先順位付けし、処理</text>
+    </g>
+  </g>
+</svg>

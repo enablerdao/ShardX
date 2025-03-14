@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">AI駆動型トランザクション管理 - D</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">異常検出と不正防止</text>
+  
+  <!-- トランザクションフロー -->
+  <g transform="translate(100, 120)">
+    <rect x="0" y="0" width="600" height="150" fill="white" stroke="#ccc" />
+    <text x="300" y="20" text-anchor="middle" class="label">トランザクションフロー</text>
+    
+    <!-- 正常トランザクション -->
+    <circle cx="50" cy="60" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="100" cy="70" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="150" cy="50" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="200" cy="80" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="250" cy="60" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="300" cy="70" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="350" cy="50" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="400" cy="80" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="450" cy="60" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="500" cy="70" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    <circle cx="550" cy="50" r="10" fill="#6a11cb" fill-opacity="0.2" />
+    
+    <!-- 異常トランザクション -->
+    <circle cx="275" cy="120" r="15" fill="#dc3545" fill-opacity="0.7" class="highlight" />
+    <circle cx="325" cy="110" r="15" fill="#dc3545" fill-opacity="0.7" class="highlight" />
+    
+    <!-- 検出 -->
+    <rect x="250" y="80" width="100" height="70" rx="10" fill="none" stroke="#dc3545" stroke-width="2" stroke-dasharray="5,5" />
+    <text x="300" y="70" text-anchor="middle" class="small-label" fill="#dc3545">異常検出</text>
+  </g>
+  
+  <!-- 異常検出詳細 -->
+  <g transform="translate(100, 290)">
+    <rect x="0" y="0" width="600" height="90" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    
+    <text x="20" y="20" class="label">AIによる異常検出と不正防止:</text>
+    <text x="40" y="45" class="small-label">• パターン認識: 過去のトランザクションデータから不正パターンを学習</text>
+    <text x="40" y="65" class="small-label">• リアルタイム検出: 異常なトランザクションを即座に検出し、隔離</text>
+    <text x="40" y="85" class="small-label">• 自己学習: 新しい不正パターンを継続的に学習し、検出精度を向上</text>
+  </g>
+  
+  <!-- 異常検出フロー -->
+  <g transform="translate(720, 120)">
+    <text x="0" y="20" text-anchor="end" class="small-label">1. 異常検出</text>
+    <text x="0" y="50" text-anchor="end" class="small-label">2. 隔離</text>
+    <text x="0" y="80" text-anchor="end" class="small-label">3. 詳細分析</text>
+    <text x="0" y="110" text-anchor="end" class="small-label">4. 対応決定</text>
+    <text x="0" y="140" text-anchor="end" class="small-label">5. 学習更新</text>
+    
+    <line x1="-20" y1="20" x2="-50" y2="20" class="arrow" stroke="#dc3545" />
+    <line x1="-20" y1="50" x2="-50" y2="50" class="arrow" stroke="#dc3545" />
+    <line x1="-20" y1="80" x2="-50" y2="80" class="arrow" stroke="#dc3545" />
+    <line x1="-20" y1="110" x2="-50" y2="110" class="arrow" stroke="#dc3545" />
+    <line x1="-20" y1="140" x2="-50" y2="140" class="arrow" stroke="#dc3545" />
+  </g>
+</svg>

@@ -1,0 +1,65 @@
+# HyperFlux.io デフォルト設定ファイル
+
+[node]
+# ノードの基本設定
+id = "auto"                   # 自動生成または指定
+host = "0.0.0.0"              # リッスンするホスト
+port = 54868                  # APIポート
+data_dir = "./data"           # データディレクトリ
+log_level = "info"            # ログレベル: debug, info, warn, error
+
+[consensus]
+# Proof of Flow (PoF) コンセンサス設定
+algorithm = "pof"             # コンセンサスアルゴリズム
+validator_count = 4           # バリデータ数
+block_time_ms = 50            # ブロック生成間隔（ミリ秒）
+tx_timeout_ms = 5000          # トランザクションタイムアウト（ミリ秒）
+
+[sharding]
+# シャーディング設定
+enabled = true                # シャーディングの有効化
+initial_shards = 256          # 初期シャード数
+min_shards = 64               # 最小シャード数
+max_shards = 1024             # 最大シャード数
+auto_scaling = true           # 自動スケーリングの有効化
+scaling_threshold = 0.8       # スケーリングしきい値（負荷率）
+
+[ai]
+# AI駆動型トランザクション管理
+enabled = true                # AI機能の有効化
+model_path = "./models/priority.onnx"  # 優先度計算モデルのパス
+batch_size = 100              # バッチサイズ
+prediction_window_ms = 1000   # 予測ウィンドウ（ミリ秒）
+
+[security]
+# セキュリティ設定
+encryption = "aes-256-gcm"    # 暗号化アルゴリズム
+multi_sig_threshold = 2       # マルチシグの閾値
+zk_snarks_enabled = false     # zk-SNARKsの有効化（オプション）
+
+[api]
+# API設定
+cors_enabled = true           # CORSの有効化
+rate_limit = 1000             # レート制限（リクエスト/分）
+timeout_ms = 30000            # APIタイムアウト（ミリ秒）
+
+[network]
+# ネットワーク設定
+max_peers = 50                # 最大ピア数
+bootstrap_nodes = [           # ブートストラップノード
+  "node1.hyperflux.io:54868",
+  "node2.hyperflux.io:54868"
+]
+heartbeat_interval_ms = 5000  # ハートビート間隔（ミリ秒）
+
+[storage]
+# ストレージ設定
+engine = "rocksdb"            # ストレージエンジン
+cache_size_mb = 512           # キャッシュサイズ（MB）
+compaction_style = "level"    # 圧縮スタイル
+
+[metrics]
+# メトリクス設定
+enabled = true                # メトリクスの有効化
+prometheus_enabled = true     # Prometheusエクスポートの有効化
+prometheus_port = 9090        # Prometheusポート

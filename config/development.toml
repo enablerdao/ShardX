@@ -1,0 +1,70 @@
+# HyperFlux.io 開発環境設定ファイル
+
+[node]
+# ノードの基本設定
+id = "dev_node_1"             # 開発用ノードID
+host = "0.0.0.0"              # リッスンするホスト
+port = 54868                  # APIポート
+data_dir = "./data/dev"       # 開発用データディレクトリ
+log_level = "debug"           # ログレベル: debug, info, warn, error
+
+[consensus]
+# Proof of Flow (PoF) コンセンサス設定
+algorithm = "pof"             # コンセンサスアルゴリズム
+validator_count = 2           # 開発用バリデータ数（少なめ）
+block_time_ms = 100           # ブロック生成間隔（ミリ秒）
+tx_timeout_ms = 10000         # トランザクションタイムアウト（ミリ秒）
+
+[sharding]
+# シャーディング設定
+enabled = true                # シャーディングの有効化
+initial_shards = 4            # 初期シャード数（開発環境では少なめ）
+min_shards = 2                # 最小シャード数
+max_shards = 16               # 最大シャード数
+auto_scaling = true           # 自動スケーリングの有効化
+scaling_threshold = 0.8       # スケーリングしきい値（負荷率）
+
+[ai]
+# AI駆動型トランザクション管理
+enabled = true                # AI機能の有効化
+model_path = "./models/priority_dev.onnx"  # 優先度計算モデルのパス
+batch_size = 10               # バッチサイズ（開発環境では少なめ）
+prediction_window_ms = 2000   # 予測ウィンドウ（ミリ秒）
+
+[security]
+# セキュリティ設定
+encryption = "aes-256-gcm"    # 暗号化アルゴリズム
+multi_sig_threshold = 1       # マルチシグの閾値（開発環境では簡易化）
+zk_snarks_enabled = false     # zk-SNARKsの有効化（開発環境ではオフ）
+
+[api]
+# API設定
+cors_enabled = true           # CORSの有効化
+rate_limit = 0                # レート制限なし（開発環境）
+timeout_ms = 60000            # APIタイムアウト（ミリ秒）
+
+[network]
+# ネットワーク設定
+max_peers = 5                 # 最大ピア数（開発環境では少なめ）
+bootstrap_nodes = [           # 開発用ブートストラップノード
+  "localhost:54869"
+]
+heartbeat_interval_ms = 10000 # ハートビート間隔（ミリ秒）
+
+[storage]
+# ストレージ設定
+engine = "memory"             # 開発用メモリストレージ
+cache_size_mb = 128           # キャッシュサイズ（MB）
+compaction_style = "level"    # 圧縮スタイル
+
+[metrics]
+# メトリクス設定
+enabled = true                # メトリクスの有効化
+prometheus_enabled = false    # Prometheusエクスポート（開発環境ではオフ）
+prometheus_port = 9090        # Prometheusポート
+
+[debug]
+# デバッグ設定（開発環境のみ）
+mock_data = true              # モックデータの使用
+slow_transactions = false     # 遅延トランザクションのシミュレーション
+failure_rate = 0.0            # 失敗率（0.0 = 失敗なし）

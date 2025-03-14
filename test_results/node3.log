@@ -1,0 +1,28 @@
+[2025-03-14T16:50:27Z INFO  hyperflux] HyperFlux.io ノードを起動中...
+[2025-03-14T16:50:27Z INFO  hyperflux] ノードID: node3
+[2025-03-14T16:50:27Z INFO  hyperflux] ポート: 54870
+[2025-03-14T16:50:27Z INFO  hyperflux] データディレクトリ: ./data/node3
+[2025-03-14T16:50:27Z INFO  hyperflux] ログレベル: info
+[2025-03-14T16:50:27Z INFO  hyperflux] DAGを初期化中...
+[2025-03-14T16:50:27Z INFO  hyperflux] シャーディングマネージャを初期化中 (シャード数: 256)...
+[2025-03-14T16:50:27Z INFO  hyperflux] コンセンサスエンジンを初期化中...
+[2025-03-14T16:50:27Z INFO  hyperflux::node] Starting node node3
+[2025-03-14T16:50:27Z INFO  hyperflux::node] Node node3 started
+[2025-03-14T16:50:27Z INFO  hyperflux] Initializing demo data...
+[2025-03-14T16:50:27Z INFO  hyperflux::wallet] Account created: 3d8b8994-1f3b-4d22-8b95-8548527425e0
+[2025-03-14T16:50:27Z INFO  hyperflux::wallet] Account created: 2ce783d1-08cb-491f-b0fc-09813d2d5153
+[2025-03-14T16:50:27Z INFO  hyperflux] Created demo accounts: Alice (3d8b8994-1f3b-4d22-8b95-8548527425e0), Bob (2ce783d1-08cb-491f-b0fc-09813d2d5153)
+[2025-03-14T16:50:27Z INFO  hyperflux::dex] Trading pair added: BTC/USD
+[2025-03-14T16:50:27Z INFO  hyperflux::dex] Trading pair added: ETH/USD
+[2025-03-14T16:50:27Z INFO  hyperflux::dex] Trading pair added: BTC/ETH
+[2025-03-14T16:50:27Z INFO  hyperflux] Added trading pairs: BTC/USD, ETH/USD, BTC/ETH
+[2025-03-14T16:50:27Z INFO  hyperflux] APIサーバーを起動中 (ポート: 54870)...
+[2025-03-14T16:50:27Z INFO  hyperflux::api] Starting API server on port 54870
+[2025-03-14T16:50:27Z INFO  warp::server] Server::run; addr=0.0.0.0:54870
+[2025-03-14T16:50:27Z INFO  warp::server] listening on http://0.0.0.0:54870
+[2025-03-14T16:50:55Z INFO  api] 127.0.0.1:43056 "GET /info HTTP/1.1" 200 "-" "curl/7.88.1" 190.417µs
+[2025-03-14T16:51:06Z INFO  hyperflux::api] Transaction 045494ed-74e6-45b2-8f64-8abee1c3215b created successfully
+[2025-03-14T16:51:06Z INFO  api] 127.0.0.1:35778 "POST /transactions HTTP/1.1" 200 "-" "curl/7.88.1" 153.542µs
+[2025-03-14T16:51:06Z INFO  hyperflux::ai] Transaction 045494ed-74e6-45b2-8f64-8abee1c3215b added to queue with priority 1072
+[2025-03-14T16:51:06Z INFO  hyperflux::ai] Transaction 045494ed-74e6-45b2-8f64-8abee1c3215b dequeued with priority 1072
+[2025-03-14T16:51:06Z INFO  hyperflux::node] Transaction 045494ed-74e6-45b2-8f64-8abee1c3215b routed to shard 125

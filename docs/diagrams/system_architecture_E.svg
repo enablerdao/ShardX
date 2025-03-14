@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">システムアーキテクチャ - E</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">技術スタック</text>
+  
+  <!-- 技術スタック図 -->
+  <g transform="translate(100, 120)">
+    <rect x="0" y="0" width="600" height="200" rx="10" fill="white" stroke="#ccc" stroke-width="2" />
+    
+    <!-- 言語・フレームワーク -->
+    <rect x="20" y="20" width="160" height="160" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="100" y="40" text-anchor="middle" class="label">言語・フレームワーク</text>
+    
+    <rect x="40" y="60" width="120" height="30" rx="5" fill="white" stroke="#6a11cb" />
+    <text x="100" y="80" text-anchor="middle" class="small-label">Rust</text>
+    
+    <rect x="40" y="100" width="120" height="30" rx="5" fill="white" stroke="#2575fc" />
+    <text x="100" y="120" text-anchor="middle" class="small-label">Node.js</text>
+    
+    <rect x="40" y="140" width="120" height="30" rx="5" fill="white" stroke="#ccc" />
+    <text x="100" y="160" text-anchor="middle" class="small-label">WebAssembly</text>
+    
+    <!-- データベース -->
+    <rect x="200" y="20" width="160" height="160" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="280" y="40" text-anchor="middle" class="label">データベース</text>
+    
+    <rect x="220" y="60" width="120" height="30" rx="5" fill="white" stroke="#6a11cb" />
+    <text x="280" y="80" text-anchor="middle" class="small-label">RocksDB</text>
+    
+    <rect x="220" y="100" width="120" height="30" rx="5" fill="white" stroke="#2575fc" />
+    <text x="280" y="120" text-anchor="middle" class="small-label">Redis</text>
+    
+    <rect x="220" y="140" width="120" height="30" rx="5" fill="white" stroke="#ccc" />
+    <text x="280" y="160" text-anchor="middle" class="small-label">PostgreSQL</text>
+    
+    <!-- インフラ -->
+    <rect x="380" y="20" width="160" height="160" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="460" y="40" text-anchor="middle" class="label">インフラ</text>
+    
+    <rect x="400" y="60" width="120" height="30" rx="5" fill="white" stroke="#6a11cb" />
+    <text x="460" y="80" text-anchor="middle" class="small-label">Docker</text>
+    
+    <rect x="400" y="100" width="120" height="30" rx="5" fill="white" stroke="#2575fc" />
+    <text x="460" y="120" text-anchor="middle" class="small-label">Kubernetes</text>
+    
+    <rect x="400" y="140" width="120" height="30" rx="5" fill="white" stroke="#ccc" />
+    <text x="460" y="160" text-anchor="middle" class="small-label">AWS/GCP/Azure</text>
+  </g>
+  
+  <!-- 説明 -->
+  <g transform="translate(100, 340)">
+    <rect x="0" y="0" width="600" height="40" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    <text x="20" y="15" class="small-label">
+      Rustをコアコンポーネントに使用し、高速で安全なシステムを構築。
+    </text>
+    <text x="20" y="35" class="small-label">
+      RocksDBによる高速ストレージとRedisによるクロスシャード通信を実現。
+    </text>
+  </g>
+</svg>

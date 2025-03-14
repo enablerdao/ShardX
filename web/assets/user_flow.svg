@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="user-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00bcd4" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#009688" stop-opacity="0.8"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333"/>
+    </marker>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="800" height="500" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- タイトル -->
+  <text x="400" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">HyperFlux.io ユーザーフロー</text>
+  
+  <!-- ステップ1: インストール -->
+  <g transform="translate(150, 150)">
+    <rect x="-80" y="-50" width="160" height="100" rx="10" ry="10" fill="url(#user-gradient)" filter="url(#shadow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">ステップ1</text>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">インストール</text>
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">Docker / NPM</text>
+  </g>
+  
+  <!-- ステップ2: ノード起動 -->
+  <g transform="translate(400, 150)">
+    <rect x="-80" y="-50" width="160" height="100" rx="10" ry="10" fill="url(#user-gradient)" filter="url(#shadow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">ステップ2</text>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">ノード起動</text>
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">docker-compose up</text>
+  </g>
+  
+  <!-- ステップ3: Webインターフェース -->
+  <g transform="translate(650, 150)">
+    <rect x="-80" y="-50" width="160" height="100" rx="10" ry="10" fill="url(#user-gradient)" filter="url(#shadow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">ステップ3</text>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">Webインターフェース</text>
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">ブラウザでアクセス</text>
+  </g>
+  
+  <!-- ステップ4: トランザクション作成 -->
+  <g transform="translate(650, 300)">
+    <rect x="-80" y="-50" width="160" height="100" rx="10" ry="10" fill="url(#user-gradient)" filter="url(#shadow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">ステップ4</text>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">トランザクション作成</text>
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">Web/CLI/API</text>
+  </g>
+  
+  <!-- ステップ5: モニタリング -->
+  <g transform="translate(400, 300)">
+    <rect x="-80" y="-50" width="160" height="100" rx="10" ry="10" fill="url(#user-gradient)" filter="url(#shadow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">ステップ5</text>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">モニタリング</text>
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">ダッシュボード</text>
+  </g>
+  
+  <!-- ステップ6: 開発 -->
+  <g transform="translate(150, 300)">
+    <rect x="-80" y="-50" width="160" height="100" rx="10" ry="10" fill="url(#user-gradient)" filter="url(#shadow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">ステップ6</text>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">開発</text>
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">SDK / API</text>
+  </g>
+  
+  <!-- 矢印 -->
+  <g stroke="#333" stroke-width="2" fill="none">
+    <path d="M 230,150 L 320,150" marker-end="url(#arrow)"/>
+    <path d="M 480,150 L 570,150" marker-end="url(#arrow)"/>
+    <path d="M 650,200 L 650,250" marker-end="url(#arrow)"/>
+    <path d="M 570,300 L 480,300" marker-end="url(#arrow)"/>
+    <path d="M 320,300 L 230,300" marker-end="url(#arrow)"/>
+    <path d="M 150,250 L 150,200" marker-end="url(#arrow)"/>
+  </g>
+  
+  <!-- 中央のロゴ/アイコン -->
+  <g transform="translate(400, 400)">
+    <circle cx="0" cy="0" r="40" fill="#E1F5FE" stroke="#4FC3F7" stroke-width="2"/>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#0288D1">HyperFlux</text>
+    <text x="0" y="25" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#0288D1">.io</text>
+  </g>
+  
+  <!-- フッター -->
+  <text x="400" y="480" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">© 2025 HyperFlux.io - 簡単セットアップで高性能ブロックチェーンを体験</text>
+</svg>

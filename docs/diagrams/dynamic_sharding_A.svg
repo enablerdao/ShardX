@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">動的シャーディング - A</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">トラフィックに応じたシャード数の自動調整</text>
+  
+  <!-- 低負荷時 -->
+  <g transform="translate(100, 150)">
+    <text x="100" y="-30" text-anchor="middle" class="label">低負荷時 (256シャード)</text>
+    
+    <rect x="0" y="0" width="200" height="100" rx="10" fill="white" stroke="#ccc" stroke-width="2" />
+    
+    <!-- シャード -->
+    <g transform="translate(20, 20)">
+      <rect x="0" y="0" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="30" y="0" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="60" y="0" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="90" y="0" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="120" y="0" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="150" y="0" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      
+      <rect x="0" y="30" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="30" y="30" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="60" y="30" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="90" y="30" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="120" y="30" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="150" y="30" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      
+      <rect x="0" y="60" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="30" y="60" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="60" y="60" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="90" y="60" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="120" y="60" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+      <rect x="150" y="60" width="20" height="20" fill="#6a11cb" fill-opacity="0.2" stroke="#ccc" />
+    </g>
+    
+    <text x="100" y="130" text-anchor="middle" class="small-label">CPU使用率: 30%</text>
+    <text x="100" y="150" text-anchor="middle" class="small-label">メモリ使用率: 25%</text>
+  </g>
+  
+  <!-- 高負荷時 -->
+  <g transform="translate(500, 150)">
+    <text x="100" y="-30" text-anchor="middle" class="label">高負荷時 (512シャード)</text>
+    
+    <rect x="0" y="0" width="200" height="100" rx="10" fill="white" stroke="#ccc" stroke-width="2" />
+    
+    <!-- シャード -->
+    <g transform="translate(10, 10)">
+      <rect x="0" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="20" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="40" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="60" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="80" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="100" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="120" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="140" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="160" y="0" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      
+      <rect x="0" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="20" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="40" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="60" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="80" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="100" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="120" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="140" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="160" y="20" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      
+      <rect x="0" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="20" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="40" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="60" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="80" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="100" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="120" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="140" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="160" y="40" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      
+      <rect x="0" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="20" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="40" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="60" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="80" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="100" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="120" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="140" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+      <rect x="160" y="60" width="15" height="15" fill="#6a11cb" fill-opacity="0.7" stroke="#ccc" />
+    </g>
+    
+    <text x="100" y="130" text-anchor="middle" class="small-label">CPU使用率: 75%</text>
+    <text x="100" y="150" text-anchor="middle" class="small-label">メモリ使用率: 70%</text>
+  </g>
+  
+  <!-- 矢印 -->
+  <g transform="translate(350, 150)">
+    <path d="M0,50 L100,50" class="arrow" />
+    <text x="50" y="40" text-anchor="middle" class="small-label">負荷増加</text>
+  </g>
+  
+  <!-- 説明 -->
+  <g transform="translate(100, 300)">
+    <rect x="0" y="0" width="600" height="80" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    
+    <text x="20" y="25" class="label">動的シャーディングの特徴:</text>
+    <text x="40" y="50" class="small-label">• トラフィック負荷に応じてシャード数を自動的に調整 (256 → 512 → 1024...)</text>
+    <text x="40" y="70" class="small-label">• リソース使用率の最適化とスケーラビリティの確保</text>
+  </g>
+</svg>

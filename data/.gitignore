@@ -1,0 +1,9 @@
+# HyperFlux.io データディレクトリ
+
+# データファイルを無視
+*
+!.gitignore
+!README.md
+
+# サブディレクトリは保持
+!*/

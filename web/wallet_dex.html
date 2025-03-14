@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperFlux.io - ウォレット & DEX</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4a6bff 0%, #2541b8 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .footer {
+            background-color: #f8f9fa;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stats-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stats-unit {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .transaction-item {
+            border-left: 3px solid #4a6bff;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+        }
+        
+        .transaction-id {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .transaction-time {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #4a6bff;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-4">HyperFlux.io</h1>
+                    <p class="lead">トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。</p>
+                    <div class="mt-3">
+                        <a href="https://github.com/enablerdao/HyperFlux" target="_blank" class="btn btn-outline-light me-2">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                        <a href="https://github.com/enablerdao/HyperFlux/blob/main/README.md" target="_blank" class="btn btn-outline-light me-2">
+                            <i class="bi bi-book"></i> ドキュメント
+                        </a>
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" id="dataSourceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-database"></i> データソース
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dataSourceDropdown">
+                                <li><a class="dropdown-item active" href="#" data-source="mock">モックデータ</a></li>
+                                <li><a class="dropdown-item" href="#" data-source="test">テストデータ</a></li>
+                                <li><a class="dropdown-item" href="#" data-source="live">実ノード接続</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="alert alert-info">
+                            <i class="bi bi-terminal"></i> 1コマンドでノードを起動:
+                            <code>git clone https://github.com/enablerdao/HyperFlux.git && cd HyperFlux && docker-compose up --build</code>
+                            <button class="btn btn-sm btn-outline-primary ms-2" onclick="copyToClipboard('git clone https://github.com/enablerdao/HyperFlux.git && cd HyperFlux && docker-compose up --build')">
+                                <i class="bi bi-clipboard"></i> コピー
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="https://render.com/deploy?repo=https://github.com/enablerdao/HyperFlux" target="_blank">
+                            <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
+                        </a>
+                        <a href="https://gitpod.io/#https://github.com/enablerdao/HyperFlux" target="_blank" class="ms-2">
+                            <img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod">
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <div class="me-3">
+                            <div class="stats-label">ノード状態</div>
+                            <div id="node-status" class="badge bg-success">Running</div>
+                        </div>
+                        <div>
+                            <div class="stats-label">ノードID</div>
+                            <div id="node-id" class="small text-truncate" style="max-width: 150px;">loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="index.html">
+                    <i class="bi bi-hdd-network"></i> ブロックチェーン
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="wallet-tab" data-bs-toggle="tab" data-bs-target="#wallet" type="button" role="tab" aria-controls="wallet" aria-selected="true">
+                    <i class="bi bi-wallet2"></i> ウォレット
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="dex-tab" data-bs-toggle="tab" data-bs-target="#dex" type="button" role="tab" aria-controls="dex" aria-selected="false">
+                    <i class="bi bi-currency-exchange"></i> 取引所
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="mainTabContent">
+            <!-- ウォレットタブ -->
+            <div class="tab-pane fade show active" id="wallet" role="tabpanel" aria-labelledby="wallet-tab">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                アカウント作成
+                            </div>
+                            <div class="card-body">
+                                <form id="create-account-form">
+                                    <div class="mb-3">
+                                        <label for="account-name" class="form-label">アカウント名</label>
+                                        <input type="text" class="form-control" id="account-name" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">アカウント作成</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                送金
+                            </div>
+                            <div class="card-body">
+                                <form id="transfer-form">
+                                    <div class="mb-3">
+                                        <label for="from-account" class="form-label">送信元アカウント</label>
+                                        <select class="form-select" id="from-account" required>
+                                            <option value="">選択してください</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="to-account" class="form-label">送信先アカウント</label>
+                                        <select class="form-select" id="to-account" required>
+                                            <option value="">選択してください</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="transfer-amount" class="form-label">金額</label>
+                                        <input type="number" class="form-control" id="transfer-amount" min="0.01" step="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="token-id" class="form-label">トークン（オプション）</label>
+                                        <select class="form-select" id="token-id">
+                                            <option value="">ネイティブトークン</option>
+                                            <option value="BTC">BTC</option>
+                                            <option value="ETH">ETH</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">送金</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                アカウント一覧
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>名前</th>
+                                                <th>残高</th>
+                                                <th>トークン残高</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="accounts-table">
+                                            <!-- アカウントがここに表示されます -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                取引履歴
+                            </div>
+                            <div class="card-body">
+                                <div id="transaction-history">
+                                    <!-- 取引履歴がここに表示されます -->
+                                    <p class="text-muted">取引履歴はまだありません。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 取引所タブ -->
+            <div class="tab-pane fade" id="dex" role="tabpanel" aria-labelledby="dex-tab">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                注文作成
+                            </div>
+                            <div class="card-body">
+                                <form id="create-order-form">
+                                    <div class="mb-3">
+                                        <label for="order-account" class="form-label">アカウント</label>
+                                        <select class="form-select" id="order-account" required>
+                                            <option value="">選択してください</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="trading-pair" class="form-label">取引ペア</label>
+                                        <select class="form-select" id="trading-pair" required>
+                                            <option value="">選択してください</option>
+                                            <option value="BTC/USD">BTC/USD</option>
+                                            <option value="ETH/USD">ETH/USD</option>
+                                            <option value="BTC/ETH">BTC/ETH</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="order-type" class="form-label">注文タイプ</label>
+                                        <select class="form-select" id="order-type" required>
+                                            <option value="buy">買い注文</option>
+                                            <option value="sell">売り注文</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="order-price" class="form-label">価格</label>
+                                        <input type="number" class="form-control" id="order-price" min="0.01" step="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="order-amount" class="form-label">数量</label>
+                                        <input type="number" class="form-control" id="order-amount" min="0.01" step="0.01" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">注文作成</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                オーダーブック
+                                <div class="float-end">
+                                    <select class="form-select form-select-sm d-inline-block w-auto" id="orderbook-pair">
+                                        <option value="BTC/USD">BTC/USD</option>
+                                        <option value="ETH/USD">ETH/USD</option>
+                                        <option value="BTC/ETH">BTC/ETH</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-danger">売り注文</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>価格</th>
+                                                        <th>数量</th>
+                                                        <th>合計</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="asks-table">
+                                                    <!-- 売り注文がここに表示されます -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-success">買い注文</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>価格</th>
+                                                        <th>数量</th>
+                                                        <th>合計</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="bids-table">
+                                                    <!-- 買い注文がここに表示されます -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                取引履歴
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>日時</th>
+                                                <th>取引ペア</th>
+                                                <th>価格</th>
+                                                <th>数量</th>
+                                                <th>合計</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="trades-table">
+                                            <!-- 取引履歴がここに表示されます -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        技術アーキテクチャ
+                    </div>
+                    <div class="card-body">
+                        <h5>Proof of Flow (PoF) コンセンサス</h5>
+                        <p>HyperFlux.ioは、以下の3つの技術を組み合わせた革新的なコンセンサスメカニズムを採用しています：</p>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-diagram-3"></i> 有向非巡回グラフ (DAG)</h6>
+                                        <p class="small">ブロックチェーンの代わりにDAG構造を採用し、トランザクションの並列処理を実現。</p>
+                                        <a href="https://github.com/enablerdao/HyperFlux/blob/main/src/transaction.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-clock-history"></i> Proof of History (PoH)</h6>
+                                        <p class="small">各トランザクションに暗号学的に検証可能なタイムスタンプを付与し、順序を保証。</p>
+                                        <a href="https://github.com/enablerdao/HyperFlux/blob/main/src/consensus.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-shield-check"></i> Proof of Stake (PoS)</h6>
+                                        <p class="small">バリデータがステークを保有し、トランザクションを検証する仕組み。</p>
+                                        <a href="https://github.com/enablerdao/HyperFlux/blob/main/src/consensus.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4">その他の主要技術</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-grid-3x3"></i> 動的シャーディング</h6>
+                                        <p class="small">トラフィック量に応じて自動的にシャード数を調整し、スケーラビリティを確保。</p>
+                                        <a href="https://github.com/enablerdao/HyperFlux/blob/main/src/sharding.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-robot"></i> AI駆動型トランザクション管理</h6>
+                                        <p class="small">AIを活用してトランザクションの優先順位付けと予測を行い、処理効率を向上。</p>
+                                        <a href="https://github.com/enablerdao/HyperFlux/blob/main/src/ai.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="https://github.com/enablerdao/HyperFlux/blob/main/README.md" target="_blank" class="btn btn-primary">
+                                <i class="bi bi-book"></i> 詳細な技術ドキュメントを見る
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2024 HyperFlux.io - 高性能ブロックチェーン</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <a href="https://github.com/enablerdao/HyperFlux" target="_blank" class="text-decoration-none text-muted">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 現在のデータソース
+        let currentDataSource = 'mock';
+        
+        // APIエンドポイントの設定
+        const API_ENDPOINTS = {
+            mock: {
+                info: '/mock-info',
+                accounts: '/mock-accounts',
+                transactions: '/mock-transactions',
+                orders: '/mock-orders',
+                orderBook: '/mock-order-book',
+                trades: '/mock-trades'
+            },
+            test: {
+                info: '/test-info',
+                accounts: '/test-accounts',
+                transactions: '/test-transactions',
+                orders: '/test-orders',
+                orderBook: '/test-order-book',
+                trades: '/test-trades'
+            },
+            live: {
+                info: 'http://localhost:54868/info',
+                accounts: 'http://localhost:54868/accounts',
+                transactions: 'http://localhost:54868/transactions',
+                orders: 'http://localhost:54868/orders',
+                orderBook: 'http://localhost:54868/order-book',
+                trades: 'http://localhost:54868/trade-history'
+            }
+        };
+        
+        // クリップボードにコピーする関数
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('コマンドをクリップボードにコピーしました！');
+            }).catch(err => {
+                console.error('クリップボードへのコピーに失敗しました:', err);
+            });
+        }
+        
+        // ノード情報を取得する関数
+        async function fetchNodeInfo() {
+            try {
+                let data;
+                
+                // データソースに応じてAPIエンドポイントからデータを取得
+                try {
+                    const response = await fetch(API_ENDPOINTS[currentDataSource].info);
+                    data = await response.json();
+                    
+                    // エラーステータスの場合
+                    if (data.error) {
+                        console.warn('API returned error:', data.error);
+                    }
+                } catch (fetchError) {
+                    console.error('Error fetching from API:', fetchError);
+                    
+                    // APIリクエストが失敗した場合はフォールバック
+                    data = {
+                        id: currentDataSource + '-error',
+                        status: 'Error',
+                        tps: 0,
+                        shard_count: 0,
+                        confirmed_transactions: 0,
+                        error: fetchError.message
+                    };
+                }
+                
+                // UI更新
+                document.getElementById('node-id').textContent = data.id;
+                document.getElementById('node-status').textContent = data.status;
+                
+                // ステータスに応じてバッジの色を変更
+                const statusBadge = document.getElementById('node-status');
+                if (data.status === 'Running') {
+                    statusBadge.className = 'badge bg-success';
+                } else if (data.status === 'Testing') {
+                    statusBadge.className = 'badge bg-warning';
+                } else {
+                    statusBadge.className = 'badge bg-info';
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Error fetching node info:', error);
+                document.getElementById('node-status').textContent = 'Offline';
+                document.getElementById('node-status').className = 'badge bg-danger';
+            }
+        }
+        
+        // アカウント一覧を取得する関数
+        async function fetchAccounts() {
+            try {
+                // モックデータ
+                if (currentDataSource === 'mock') {
+                    return [
+                        {
+                            id: 'acc-' + Math.random().toString(36).substring(2, 10),
+                            name: 'Alice',
+                            public_key: '0x' + Math.random().toString(36).substring(2, 10),
+                            balance: 1000.0,
+                            token_balances: { 'BTC': 1.5, 'ETH': 10.0 }
+                        },
+                        {
+                            id: 'acc-' + Math.random().toString(36).substring(2, 10),
+                            name: 'Bob',
+                            public_key: '0x' + Math.random().toString(36).substring(2, 10),
+                            balance: 500.0,
+                            token_balances: { 'BTC': 0.5, 'ETH': 5.0 }
+                        }
+                    ];
+                }
+                
+                // テストデータ
+                if (currentDataSource === 'test') {
+                    return [
+                        {
+                            id: 'test-acc-' + Math.random().toString(36).substring(2, 10),
+                            name: 'TestUser1',
+                            public_key: '0x' + Math.random().toString(36).substring(2, 10),
+                            balance: 10000.0,
+                            token_balances: { 'BTC': 10.0, 'ETH': 100.0 }
+                        },
+                        {
+                            id: 'test-acc-' + Math.random().toString(36).substring(2, 10),
+                            name: 'TestUser2',
+                            public_key: '0x' + Math.random().toString(36).substring(2, 10),
+                            balance: 5000.0,
+                            token_balances: { 'BTC': 5.0, 'ETH': 50.0 }
+                        }
+                    ];
+                }
+                
+                // 実ノードからデータを取得
+                const response = await fetch(API_ENDPOINTS[currentDataSource].accounts);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching accounts:', error);
+                return [];
+            }
+        }
+        
+        // アカウントテーブルを更新する関数
+        async function updateAccountsTable() {
+            const accounts = await fetchAccounts();
+            const tableBody = document.getElementById('accounts-table');
+            tableBody.innerHTML = '';
+            
+            accounts.forEach(account => {
+                const row = document.createElement('tr');
+                
+                // トークン残高を文字列に変換
+                let tokenBalances = '';
+                for (const [token, balance] of Object.entries(account.token_balances)) {
+                    tokenBalances += `${token}: ${balance.toFixed(2)}<br>`;
+                }
+                
+                row.innerHTML = `
+                    <td><small>${account.id.substring(0, 8)}...</small></td>
+                    <td>${account.name}</td>
+                    <td>${account.balance.toFixed(2)}</td>
+                    <td>${tokenBalances}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-account" data-id="${account.id}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // アカウントセレクトボックスを更新
+            updateAccountSelects(accounts);
+        }
+        
+        // アカウントセレクトボックスを更新する関数
+        function updateAccountSelects(accounts) {
+            const fromAccount = document.getElementById('from-account');
+            const toAccount = document.getElementById('to-account');
+            const orderAccount = document.getElementById('order-account');
+            
+            // 現在の選択値を保存
+            const fromValue = fromAccount.value;
+            const toValue = toAccount.value;
+            const orderValue = orderAccount.value;
+            
+            // オプションをクリア
+            fromAccount.innerHTML = '<option value="">選択してください</option>';
+            toAccount.innerHTML = '<option value="">選択してください</option>';
+            orderAccount.innerHTML = '<option value="">選択してください</option>';
+            
+            // オプションを追加
+            accounts.forEach(account => {
+                const option1 = document.createElement('option');
+                option1.value = account.id;
+                option1.textContent = `${account.name} (残高: ${account.balance.toFixed(2)})`;
+                
+                const option2 = document.createElement('option');
+                option2.value = account.id;
+                option2.textContent = `${account.name} (残高: ${account.balance.toFixed(2)})`;
+                
+                const option3 = document.createElement('option');
+                option3.value = account.id;
+                option3.textContent = `${account.name} (残高: ${account.balance.toFixed(2)})`;
+                
+                fromAccount.appendChild(option1);
+                toAccount.appendChild(option2);
+                orderAccount.appendChild(option3);
+            });
+            
+            // 以前の選択値を復元
+            if (fromValue) fromAccount.value = fromValue;
+            if (toValue) toAccount.value = toValue;
+            if (orderValue) orderAccount.value = orderValue;
+        }
+        
+        // オーダーブックを取得する関数
+        async function fetchOrderBook(pair) {
+            try {
+                // モックデータ
+                if (currentDataSource === 'mock') {
+                    return {
+                        pair: pair,
+                        bids: [
+                            { price: 45000.0, amount: 0.5, total: 22500.0 },
+                            { price: 44900.0, amount: 1.0, total: 44900.0 },
+                            { price: 44800.0, amount: 1.5, total: 67200.0 }
+                        ],
+                        asks: [
+                            { price: 45100.0, amount: 0.3, total: 13530.0 },
+                            { price: 45200.0, amount: 0.7, total: 31640.0 },
+                            { price: 45300.0, amount: 1.2, total: 54360.0 }
+                        ]
+                    };
+                }
+                
+                // テストデータ
+                if (currentDataSource === 'test') {
+                    return {
+                        pair: pair,
+                        bids: [
+                            { price: 45000.0, amount: 5.0, total: 225000.0 },
+                            { price: 44900.0, amount: 10.0, total: 449000.0 },
+                            { price: 44800.0, amount: 15.0, total: 672000.0 }
+                        ],
+                        asks: [
+                            { price: 45100.0, amount: 3.0, total: 135300.0 },
+                            { price: 45200.0, amount: 7.0, total: 316400.0 },
+                            { price: 45300.0, amount: 12.0, total: 543600.0 }
+                        ]
+                    };
+                }
+                
+                // 実ノードからデータを取得
+                const [base, quote] = pair.split('/');
+                const url = `${API_ENDPOINTS[currentDataSource].orderBook}?base=${base}&quote=${quote}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching order book:', error);
+                return { pair: pair, bids: [], asks: [] };
+            }
+        }
+        
+        // オーダーブックを更新する関数
+        async function updateOrderBook() {
+            const pair = document.getElementById('orderbook-pair').value;
+            const orderBook = await fetchOrderBook(pair);
+            
+            // 買い注文テーブルを更新
+            const bidsTable = document.getElementById('bids-table');
+            bidsTable.innerHTML = '';
+            
+            orderBook.bids.forEach(bid => {
+                const row = document.createElement('tr');
+                row.className = 'text-success';
+                row.innerHTML = `
+                    <td>${bid.price.toFixed(2)}</td>
+                    <td>${bid.amount.toFixed(4)}</td>
+                    <td>${bid.total.toFixed(2)}</td>
+                `;
+                bidsTable.appendChild(row);
+            });
+            
+            // 売り注文テーブルを更新
+            const asksTable = document.getElementById('asks-table');
+            asksTable.innerHTML = '';
+            
+            orderBook.asks.forEach(ask => {
+                const row = document.createElement('tr');
+                row.className = 'text-danger';
+                row.innerHTML = `
+                    <td>${ask.price.toFixed(2)}</td>
+                    <td>${ask.amount.toFixed(4)}</td>
+                    <td>${ask.total.toFixed(2)}</td>
+                `;
+                asksTable.appendChild(row);
+            });
+        }
+        
+        // 取引履歴を取得する関数
+        async function fetchTrades(pair) {
+            try {
+                // モックデータ
+                if (currentDataSource === 'mock') {
+                    return [
+                        {
+                            id: 'trade-' + Math.random().toString(36).substring(2, 10),
+                            pair: pair,
+                            price: 45050.0,
+                            amount: 0.2,
+                            executed_at: new Date(Date.now() - 60000).toISOString()
+                        },
+                        {
+                            id: 'trade-' + Math.random().toString(36).substring(2, 10),
+                            pair: pair,
+                            price: 45030.0,
+                            amount: 0.5,
+                            executed_at: new Date(Date.now() - 120000).toISOString()
+                        }
+                    ];
+                }
+                
+                // テストデータ
+                if (currentDataSource === 'test') {
+                    return [
+                        {
+                            id: 'test-trade-' + Math.random().toString(36).substring(2, 10),
+                            pair: pair,
+                            price: 45050.0,
+                            amount: 2.0,
+                            executed_at: new Date(Date.now() - 60000).toISOString()
+                        },
+                        {
+                            id: 'test-trade-' + Math.random().toString(36).substring(2, 10),
+                            pair: pair,
+                            price: 45030.0,
+                            amount: 5.0,
+                            executed_at: new Date(Date.now() - 120000).toISOString()
+                        }
+                    ];
+                }
+                
+                // 実ノードからデータを取得
+                const [base, quote] = pair.split('/');
+                const url = `${API_ENDPOINTS[currentDataSource].trades}?base=${base}&quote=${quote}&limit=10`;
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.trades;
+            } catch (error) {
+                console.error('Error fetching trades:', error);
+                return [];
+            }
+        }
+        
+        // 取引履歴テーブルを更新する関数
+        async function updateTradesTable() {
+            const pair = document.getElementById('orderbook-pair').value;
+            const trades = await fetchTrades(pair);
+            
+            const tradesTable = document.getElementById('trades-table');
+            tradesTable.innerHTML = '';
+            
+            trades.forEach(trade => {
+                const row = document.createElement('tr');
+                const date = new Date(trade.executed_at);
+                
+                row.innerHTML = `
+                    <td>${date.toLocaleString()}</td>
+                    <td>${trade.pair}</td>
+                    <td>${trade.price.toFixed(2)}</td>
+                    <td>${trade.amount.toFixed(4)}</td>
+                    <td>${(trade.price * trade.amount).toFixed(2)}</td>
+                `;
+                
+                tradesTable.appendChild(row);
+            });
+        }
+        
+        // アカウント作成フォームのイベントリスナー
+        document.getElementById('create-account-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('account-name').value;
+            
+            try {
+                // モックデータ
+                if (currentDataSource === 'mock' || currentDataSource === 'test') {
+                    alert(`アカウント「${name}」を作成しました！`);
+                    await updateAccountsTable();
+                    document.getElementById('account-name').value = '';
+                    return;
+                }
+                
+                // 実ノードにリクエスト
+                const response = await fetch(API_ENDPOINTS[currentDataSource].accounts, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`エラー: ${data.error}`);
+                } else {
+                    alert(`アカウント「${name}」を作成しました！`);
+                    await updateAccountsTable();
+                    document.getElementById('account-name').value = '';
+                }
+            } catch (error) {
+                console.error('Error creating account:', error);
+                alert('アカウント作成中にエラーが発生しました。');
+            }
+        });
+        
+        // 送金フォームのイベントリスナー
+        document.getElementById('transfer-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fromAccountId = document.getElementById('from-account').value;
+            const toAccountId = document.getElementById('to-account').value;
+            const amount = parseFloat(document.getElementById('transfer-amount').value);
+            const tokenId = document.getElementById('token-id').value || null;
+            
+            try {
+                // モックデータ
+                if (currentDataSource === 'mock' || currentDataSource === 'test') {
+                    alert(`${amount}${tokenId ? ' ' + tokenId : ''}を送金しました！`);
+                    await updateAccountsTable();
+                    document.getElementById('transfer-amount').value = '';
+                    return;
+                }
+                
+                // 実ノードにリクエスト
+                const response = await fetch(API_ENDPOINTS[currentDataSource].transactions, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        from_account_id: fromAccountId,
+                        to_account_id: toAccountId,
+                        amount,
+                        token_id: tokenId
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`エラー: ${data.error}`);
+                } else {
+                    alert(`${amount}${tokenId ? ' ' + tokenId : ''}を送金しました！`);
+                    await updateAccountsTable();
+                    document.getElementById('transfer-amount').value = '';
+                }
+            } catch (error) {
+                console.error('Error transferring funds:', error);
+                alert('送金中にエラーが発生しました。');
+            }
+        });
+        
+        // 注文作成フォームのイベントリスナー
+        document.getElementById('create-order-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const accountId = document.getElementById('order-account').value;
+            const [base, quote] = document.getElementById('trading-pair').value.split('/');
+            const orderType = document.getElementById('order-type').value;
+            const price = parseFloat(document.getElementById('order-price').value);
+            const amount = parseFloat(document.getElementById('order-amount').value);
+            
+            try {
+                // モックデータ
+                if (currentDataSource === 'mock' || currentDataSource === 'test') {
+                    alert(`${orderType === 'buy' ? '買い' : '売り'}注文を作成しました！`);
+                    await updateOrderBook();
+                    await updateTradesTable();
+                    document.getElementById('order-price').value = '';
+                    document.getElementById('order-amount').value = '';
+                    return;
+                }
+                
+                // 実ノードにリクエスト
+                const response = await fetch(API_ENDPOINTS[currentDataSource].orders, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        account_id: accountId,
+                        base,
+                        quote,
+                        order_type: orderType,
+                        price,
+                        amount
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`エラー: ${data.error}`);
+                } else {
+                    alert(`${orderType === 'buy' ? '買い' : '売り'}注文を作成しました！`);
+                    await updateOrderBook();
+                    await updateTradesTable();
+                    document.getElementById('order-price').value = '';
+                    document.getElementById('order-amount').value = '';
+                }
+            } catch (error) {
+                console.error('Error creating order:', error);
+                alert('注文作成中にエラーが発生しました。');
+            }
+        });
+        
+        // オーダーブックペアセレクトのイベントリスナー
+        document.getElementById('orderbook-pair').addEventListener('change', async function() {
+            await updateOrderBook();
+            await updateTradesTable();
+        });
+        
+        // データソース切り替えのイベントリスナーを設定
+        document.querySelectorAll('.dropdown-item[data-source]').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // 現在のアクティブなアイテムを非アクティブにする
+                document.querySelector('.dropdown-item.active').classList.remove('active');
+                
+                // クリックされたアイテムをアクティブにする
+                this.classList.add('active');
+                
+                // データソースを更新
+                currentDataSource = this.getAttribute('data-source');
+                
+                // データを再取得
+                fetchNodeInfo();
+                updateAccountsTable();
+                updateOrderBook();
+                updateTradesTable();
+                
+                // データソースに応じてメッセージを表示
+                let message = '';
+                if (currentDataSource === 'mock') {
+                    message = 'モックデータモードに切り替えました。ランダムなデータが表示されます。';
+                } else if (currentDataSource === 'test') {
+                    message = 'テストデータモードに切り替えました。高負荷テスト用のデータが表示されます。';
+                } else {
+                    message = '実ノード接続モードに切り替えました。ローカルで実行中のノードに接続します。';
+                }
+                
+                // アラートを表示
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                // 既存のアラートを削除
+                const existingAlert = document.querySelector('.alert-dismissible');
+                if (existingAlert) {
+                    existingAlert.remove();
+                }
+                
+                // アラートを追加
+                document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+            });
+        });
+        
+        // 初期データ取得
+        fetchNodeInfo();
+        updateAccountsTable();
+        updateOrderBook();
+        updateTradesTable();
+        
+        // 定期的にデータを更新（10秒ごと）
+        setInterval(fetchNodeInfo, 10000);
+        setInterval(updateOrderBook, 10000);
+        setInterval(updateTradesTable, 10000);
+    </script>
+</body>
+</html>

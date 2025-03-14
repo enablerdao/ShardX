@@ -1,0 +1,474 @@
+openapi: 3.0.0
+info:
+  title: HyperFlux.io API
+  description: |
+    HyperFlux.io API for interacting with the high-performance blockchain platform.
+    This API allows you to create and manage transactions, wallets, and monitor node status.
+  version: 1.0.0
+  contact:
+    name: HyperFlux.io Team
+    url: https://hyperflux.io
+    email: support@hyperflux.io
+  license:
+    name: MIT
+    url: https://github.com/enablerdao/HyperFlux/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:54868
+    description: Local development server
+  - url: https://api.hyperflux.io
+    description: Production server
+
+tags:
+  - name: Node
+    description: Node information and status
+  - name: Transactions
+    description: Transaction management
+  - name: Wallet
+    description: Wallet operations
+  - name: Sharding
+    description: Sharding information and management
+
+paths:
+  /info:
+    get:
+      summary: Get node information
+      description: Returns basic information about the node
+      tags:
+        - Node
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeInfo'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tx/create:
+    post:
+      summary: Create a new transaction
+      description: Creates a new transaction in the network
+      tags:
+        - Transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '201':
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionCreated'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tx/{tx_id}:
+    get:
+      summary: Get transaction details
+      description: Returns details of a specific transaction
+      tags:
+        - Transactions
+      parameters:
+        - name: tx_id
+          in: path
+          description: Transaction ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tx/list:
+    get:
+      summary: List recent transactions
+      description: Returns a list of recent transactions
+      tags:
+        - Transactions
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of transactions to return
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: offset
+          in: query
+          description: Pagination offset
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          description: Filter by transaction status
+          required: false
+          schema:
+            type: string
+            enum: [pending, confirmed, all]
+            default: all
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionList'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /wallet/create:
+    post:
+      summary: Create a new wallet
+      description: Creates a new wallet
+      tags:
+        - Wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletCreateRequest'
+      responses:
+        '201':
+          description: Wallet created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /wallet/{wallet_id}/balance:
+    get:
+      summary: Get wallet balance
+      description: Returns the balance of a specific wallet
+      tags:
+        - Wallet
+      parameters:
+        - name: wallet_id
+          in: path
+          description: Wallet ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletBalance'
+        '404':
+          description: Wallet not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /shards/info:
+    get:
+      summary: Get sharding information
+      description: Returns information about the current sharding configuration
+      tags:
+        - Sharding
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShardingInfo'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    NodeInfo:
+      type: object
+      properties:
+        node_id:
+          type: string
+          example: node_01a2b3c4
+        version:
+          type: string
+          example: 1.0.0
+        uptime:
+          type: integer
+          example: 3600
+        peers:
+          type: integer
+          example: 5
+        current_tps:
+          type: integer
+          example: 42156
+        shard_count:
+          type: integer
+          example: 256
+        confirmed_transactions:
+          type: integer
+          example: 1284301
+
+    TransactionRequest:
+      type: object
+      required:
+        - payload
+      properties:
+        parent_ids:
+          type: array
+          items:
+            type: string
+          example: ["tx_123456", "tx_789012"]
+        payload:
+          type: string
+          example: Hello, HyperFlux!
+        signature:
+          type: string
+          example: 0x1a2b3c4d5e6f...
+
+    TransactionCreated:
+      type: object
+      properties:
+        tx_id:
+          type: string
+          example: tx_abcdef123456
+        status:
+          type: string
+          enum: [pending, confirmed]
+          example: pending
+        timestamp:
+          type: integer
+          format: int64
+          example: 1647123456789
+
+    Transaction:
+      type: object
+      properties:
+        tx_id:
+          type: string
+          example: tx_abcdef123456
+        parent_ids:
+          type: array
+          items:
+            type: string
+          example: ["tx_123456", "tx_789012"]
+        payload:
+          type: string
+          example: Hello, HyperFlux!
+        signature:
+          type: string
+          example: 0x1a2b3c4d5e6f...
+        status:
+          type: string
+          enum: [pending, confirmed]
+          example: confirmed
+        timestamp:
+          type: integer
+          format: int64
+          example: 1647123456789
+        confirmation_time:
+          type: integer
+          format: int64
+          example: 1647123457012
+        shard_id:
+          type: integer
+          example: 42
+
+    TransactionList:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            type: object
+            properties:
+              tx_id:
+                type: string
+                example: tx_abcdef123456
+              payload:
+                type: string
+                example: Hello, HyperFlux!
+              status:
+                type: string
+                enum: [pending, confirmed]
+                example: confirmed
+              timestamp:
+                type: integer
+                format: int64
+                example: 1647123456789
+        total:
+          type: integer
+          example: 1284301
+        limit:
+          type: integer
+          example: 5
+        offset:
+          type: integer
+          example: 0
+
+    WalletCreateRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          format: password
+          example: secure_password_123
+
+    Wallet:
+      type: object
+      properties:
+        wallet_id:
+          type: string
+          example: wallet_123abc
+        address:
+          type: string
+          example: 0x1a2b3c4d5e6f...
+        public_key:
+          type: string
+          example: 0x7g8h9i0j...
+        created_at:
+          type: integer
+          format: int64
+          example: 1647123456789
+
+    WalletBalance:
+      type: object
+      properties:
+        wallet_id:
+          type: string
+          example: wallet_123abc
+        address:
+          type: string
+          example: 0x1a2b3c4d5e6f...
+        balance:
+          type: number
+          format: float
+          example: 100.5
+        pending_balance:
+          type: number
+          format: float
+          example: 10.25
+        last_updated:
+          type: integer
+          format: int64
+          example: 1647123456789
+
+    ShardingInfo:
+      type: object
+      properties:
+        total_shards:
+          type: integer
+          example: 256
+        active_shards:
+          type: integer
+          example: 256
+        shard_distribution:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            shard_0: 5012
+            shard_1: 4987
+        scaling_status:
+          type: string
+          enum: [scaling_up, scaling_down, stable]
+          example: stable
+        last_scaling_event:
+          type: integer
+          format: int64
+          example: 1647123000000
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: tx_not_found
+            message:
+              type: string
+              example: Transaction with ID tx_invalid123 not found
+            status:
+              type: integer
+              example: 404
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []

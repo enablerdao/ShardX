@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">動的シャーディング - E</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">パフォーマンス比較と利点</text>
+  
+  <!-- パフォーマンスグラフ -->
+  <g transform="translate(100, 120)">
+    <!-- グラフの枠 -->
+    <rect x="0" y="0" width="400" height="200" fill="white" stroke="#ccc" />
+    
+    <!-- X軸 -->
+    <line x1="0" y1="200" x2="400" y2="200" stroke="#333" />
+    <text x="200" y="230" text-anchor="middle" class="label">ノード数</text>
+    <text x="100" y="220" text-anchor="middle" class="small-label">1,000</text>
+    <text x="200" y="220" text-anchor="middle" class="small-label">5,000</text>
+    <text x="300" y="220" text-anchor="middle" class="small-label">10,000</text>
+    
+    <!-- Y軸 -->
+    <line x1="0" y1="0" x2="0" y2="200" stroke="#333" />
+    <text x="-30" y="100" text-anchor="middle" class="label" transform="rotate(-90, -30, 100)">TPS</text>
+    <text x="-10" y="150" text-anchor="end" class="small-label">10,000</text>
+    <text x="-10" y="100" text-anchor="end" class="small-label">25,000</text>
+    <text x="-10" y="50" text-anchor="end" class="small-label">50,000</text>
+    
+    <!-- 静的シャーディング -->
+    <polyline points="0,150 100,130 200,120 300,115 400,110" 
+              fill="none" stroke="#ccc" stroke-width="2" />
+    
+    <!-- 動的シャーディング -->
+    <polyline points="0,150 100,100 200,70 300,50 400,30" 
+              fill="none" stroke="url(#grad1)" stroke-width="3" />
+    
+    <!-- 凡例 -->
+    <rect x="250" y="20" width="120" height="50" fill="white" stroke="#ccc" />
+    <line x1="260" y1="35" x2="280" y2="35" stroke="#ccc" stroke-width="2" />
+    <text x="285" y="40" class="small-label">静的シャーディング</text>
+    <line x1="260" y1="55" x2="280" y2="55" stroke="url(#grad1)" stroke-width="3" />
+    <text x="285" y="60" class="small-label">動的シャーディング</text>
+  </g>
+  
+  <!-- 利点 -->
+  <g transform="translate(550, 120)">
+    <rect x="0" y="0" width="200" height="200" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    
+    <text x="100" y="30" text-anchor="middle" class="label">動的シャーディングの利点</text>
+    
+    <text x="20" y="60" class="small-label">• リソース効率の最大化</text>
+    <text x="20" y="90" class="small-label">• 自動負荷分散</text>
+    <text x="20" y="120" class="small-label">• 高いスケーラビリティ</text>
+    <text x="20" y="150" class="small-label">• 運用コストの削減</text>
+    <text x="20" y="180" class="small-label">• 無停止メンテナンス</text>
+  </g>
+  
+  <!-- 説明 -->
+  <g transform="translate(100, 350)">
+    <text x="300" y="0" text-anchor="middle" class="label">
+      動的シャーディングにより、ノード数の増加に比例してTPSが向上
+    </text>
+    <text x="300" y="25" text-anchor="middle" class="small-label">
+      10,000ノードで50,000+ TPSを実現（静的シャーディングの約5倍）
+    </text>
+  </g>
+</svg>

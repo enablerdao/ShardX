@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "54868:54867"
+    expose:
+      - "54867"
+    # プラットフォーム指定を削除して自動検出に任せる
+    environment:
+      - RUST_LOG=info
+    restart: unless-stopped
+    networks:
+      - shardx-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:54867/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    volumes:
+      # データの永続化
+      - shardx-data:/app/data
+    # リソース制限を追加
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "54867:54867"
+    expose:
+      - "54867"
+    depends_on:
+      node:
+        condition: service_healthy
+    environment:
+      - NODE_URL=http://node:54867
+    networks:
+      - shardx-network
+    restart: unless-stopped
+    # リソース制限を追加
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+volumes:
+  shardx-data:
+    driver: local
+
+networks:
+  shardx-network:
+    driver: bridge

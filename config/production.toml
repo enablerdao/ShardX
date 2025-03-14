@@ -1,0 +1,72 @@
+# HyperFlux.io 本番環境設定ファイル
+
+[node]
+# ノードの基本設定
+id = "auto"                   # 自動生成または指定
+host = "0.0.0.0"              # リッスンするホスト
+port = 54868                  # APIポート
+data_dir = "/app/data"        # データディレクトリ
+log_level = "info"            # ログレベル: debug, info, warn, error
+
+[consensus]
+# Proof of Flow (PoF) コンセンサス設定
+algorithm = "pof"             # コンセンサスアルゴリズム
+validator_count = 16          # バリデータ数（本番環境では増加）
+block_time_ms = 20            # ブロック生成間隔（ミリ秒）
+tx_timeout_ms = 3000          # トランザクションタイムアウト（ミリ秒）
+
+[sharding]
+# シャーディング設定
+enabled = true                # シャーディングの有効化
+initial_shards = 512          # 初期シャード数（本番環境では増加）
+min_shards = 128              # 最小シャード数
+max_shards = 2048             # 最大シャード数
+auto_scaling = true           # 自動スケーリングの有効化
+scaling_threshold = 0.7       # スケーリングしきい値（負荷率）
+
+[ai]
+# AI駆動型トランザクション管理
+enabled = true                # AI機能の有効化
+model_path = "/app/models/priority_prod.onnx"  # 優先度計算モデルのパス
+batch_size = 500              # バッチサイズ（本番環境では増加）
+prediction_window_ms = 500    # 予測ウィンドウ（ミリ秒）
+
+[security]
+# セキュリティ設定
+encryption = "aes-256-gcm"    # 暗号化アルゴリズム
+multi_sig_threshold = 3       # マルチシグの閾値（本番環境では増加）
+zk_snarks_enabled = true      # zk-SNARKsの有効化
+
+[api]
+# API設定
+cors_enabled = true           # CORSの有効化
+rate_limit = 5000             # レート制限（リクエスト/分）
+timeout_ms = 15000            # APIタイムアウト（ミリ秒）
+
+[network]
+# ネットワーク設定
+max_peers = 200               # 最大ピア数（本番環境では増加）
+bootstrap_nodes = [           # ブートストラップノード
+  "node1.hyperflux.io:54868",
+  "node2.hyperflux.io:54868",
+  "node3.hyperflux.io:54868",
+  "node4.hyperflux.io:54868"
+]
+heartbeat_interval_ms = 3000  # ハートビート間隔（ミリ秒）
+
+[storage]
+# ストレージ設定
+engine = "rocksdb"            # ストレージエンジン
+cache_size_mb = 4096          # キャッシュサイズ（MB）（本番環境では増加）
+compaction_style = "level"    # 圧縮スタイル
+
+[metrics]
+# メトリクス設定
+enabled = true                # メトリクスの有効化
+prometheus_enabled = true     # Prometheusエクスポートの有効化
+prometheus_port = 9090        # Prometheusポート
+
+[cloudflare]
+# Cloudflare DDoS保護設定（本番環境のみ）
+enabled = true                # Cloudflare保護の有効化
+api_token = ""                # Cloudflare API Token（環境変数から設定）

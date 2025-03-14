@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">ユーザーフロー - D</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">DApp開発フロー</text>
+  
+  <!-- ユーザーフロー図 -->
+  <g transform="translate(100, 120)">
+    <!-- ステップ1: 環境セットアップ -->
+    <rect x="0" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="60" y="25" text-anchor="middle" class="label">環境</text>
+    <text x="60" y="45" text-anchor="middle" class="small-label">セットアップ</text>
+    
+    <!-- ステップ2: スマートコントラクト開発 -->
+    <rect x="170" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="230" y="25" text-anchor="middle" class="label">スマート</text>
+    <text x="230" y="45" text-anchor="middle" class="small-label">コントラクト開発</text>
+    
+    <!-- ステップ3: フロントエンド開発 -->
+    <rect x="340" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="400" y="25" text-anchor="middle" class="label">フロントエンド</text>
+    <text x="400" y="45" text-anchor="middle" class="small-label">開発</text>
+    
+    <!-- ステップ4: デプロイ・公開 -->
+    <rect x="510" y="0" width="120" height="60" rx="10" fill="white" stroke="#6a11cb" stroke-width="2" />
+    <text x="570" y="25" text-anchor="middle" class="label">デプロイ</text>
+    <text x="570" y="45" text-anchor="middle" class="small-label">公開</text>
+    
+    <!-- 矢印 -->
+    <line x1="120" y1="30" x2="170" y2="30" class="arrow" />
+    <line x1="290" y1="30" x2="340" y2="30" class="arrow" />
+    <line x1="460" y1="30" x2="510" y2="30" class="arrow" />
+    
+    <!-- 詳細説明 -->
+    <g transform="translate(0, 100)">
+      <rect x="0" y="0" width="600" height="150" rx="10" fill="#f1f8ff" stroke="#ccc" />
+      
+      <text x="20" y="30" class="label">1. 環境セットアップ</text>
+      <text x="40" y="50" class="small-label">- HyperFlux SDKのインストール</text>
+      <text x="40" y="70" class="small-label">- 開発環境の構築（Node.js、Rust等）</text>
+      
+      <text x="300" y="30" class="label">2. スマートコントラクト開発</text>
+      <text x="320" y="50" class="small-label">- ビジネスロジックの実装</text>
+      <text x="320" y="70" class="small-label">- テスト環境でのデバッグと最適化</text>
+      
+      <text x="20" y="100" class="label">3. フロントエンド開発</text>
+      <text x="40" y="120" class="small-label">- Web/モバイルインターフェースの構築</text>
+      <text x="40" y="140" class="small-label">- HyperFlux Web3ライブラリとの連携</text>
+      
+      <text x="300" y="100" class="label">4. デプロイ・公開</text>
+      <text x="320" y="120" class="small-label">- コントラクトのメインネットへのデプロイ</text>
+      <text x="320" y="140" class="small-label">- フロントエンドのホスティングと公開</text>
+    </g>
+  </g>
+</svg>

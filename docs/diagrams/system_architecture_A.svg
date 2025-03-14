@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">システムアーキテクチャ - A</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">全体構成</text>
+  
+  <!-- クライアント層 -->
+  <g transform="translate(100, 120)">
+    <rect x="0" y="0" width="600" height="60" rx="10" fill="white" stroke="#ccc" stroke-width="2" />
+    <text x="300" y="-10" text-anchor="middle" class="label">クライアント層</text>
+    
+    <rect x="30" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="80" y="35" text-anchor="middle" class="small-label">ウォレット</text>
+    
+    <rect x="160" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="210" y="35" text-anchor="middle" class="small-label">Webアプリ</text>
+    
+    <rect x="290" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="340" y="35" text-anchor="middle" class="small-label">モバイルアプリ</text>
+    
+    <rect x="420" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="470" y="35" text-anchor="middle" class="small-label">CLI</text>
+  </g>
+  
+  <!-- API層 -->
+  <g transform="translate(100, 200)">
+    <rect x="0" y="0" width="600" height="60" rx="10" fill="white" stroke="url(#grad1)" stroke-width="2" />
+    <text x="300" y="-10" text-anchor="middle" class="label">API層</text>
+    
+    <rect x="30" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="80" y="35" text-anchor="middle" class="small-label">REST API</text>
+    
+    <rect x="160" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="210" y="35" text-anchor="middle" class="small-label">WebSocket</text>
+    
+    <rect x="290" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="340" y="35" text-anchor="middle" class="small-label">GraphQL</text>
+    
+    <rect x="420" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="470" y="35" text-anchor="middle" class="small-label">RPC</text>
+  </g>
+  
+  <!-- コア層 -->
+  <g transform="translate(100, 280)">
+    <rect x="0" y="0" width="600" height="60" rx="10" fill="white" stroke="#ccc" stroke-width="2" />
+    <text x="300" y="-10" text-anchor="middle" class="label">コア層</text>
+    
+    <rect x="30" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="80" y="35" text-anchor="middle" class="small-label">コンセンサス</text>
+    
+    <rect x="160" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="210" y="35" text-anchor="middle" class="small-label">シャーディング</text>
+    
+    <rect x="290" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="340" y="35" text-anchor="middle" class="small-label">AIエンジン</text>
+    
+    <rect x="420" y="15" width="100" height="30" rx="5" fill="#f1f8ff" stroke="#ccc" />
+    <text x="470" y="35" text-anchor="middle" class="small-label">ストレージ</text>
+  </g>
+  
+  <!-- 接続線 -->
+  <g transform="translate(100, 180)">
+    <line x1="80" y1="0" x2="80" y2="20" class="arrow" />
+    <line x1="210" y1="0" x2="210" y2="20" class="arrow" />
+    <line x1="340" y1="0" x2="340" y2="20" class="arrow" />
+    <line x1="470" y1="0" x2="470" y2="20" class="arrow" />
+  </g>
+  
+  <g transform="translate(100, 260)">
+    <line x1="80" y1="0" x2="80" y2="20" class="arrow" />
+    <line x1="210" y1="0" x2="210" y2="20" class="arrow" />
+    <line x1="340" y1="0" x2="340" y2="20" class="arrow" />
+    <line x1="470" y1="0" x2="470" y2="20" class="arrow" />
+  </g>
+  
+  <!-- 説明 -->
+  <g transform="translate(100, 360)">
+    <rect x="0" y="0" width="600" height="30" rx="10" fill="#f1f8ff" stroke="#ccc" />
+    <text x="300" y="20" text-anchor="middle" class="small-label">
+      モジュール化された3層アーキテクチャにより、拡張性と保守性を確保
+    </text>
+  </g>
+</svg>

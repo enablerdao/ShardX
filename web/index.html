@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardX - 高速ブロックチェーンプラットフォーム</title>
+    <meta name="description" content="ShardX - トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。50,000 TPSを実現する次世代プラットフォーム。">
+    <meta name="keywords" content="blockchain, cryptocurrency, high performance, DAG, PoF, sharding, AI">
+    <meta property="og:title" content="ShardX - 高速ブロックチェーンプラットフォーム">
+    <meta property="og:description" content="トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。50,000 TPSを実現する次世代プラットフォーム。">
+    <meta property="og:image" content="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/logo.png">
+    <meta property="og:url" content="https://shardx.io">
+    <meta name="twitter:card" content="summary_large_image">
+    
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #f1f8ff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1s ease-out forwards;
+        }
+        
+        .header p {
+            opacity: 0;
+            animation: fadeIn 1s ease-out 0.5s forwards;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: var(--light-color);
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+        }
+        
+        .stats-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        
+        .stats-value:hover {
+            color: var(--secondary-color);
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .transaction-card {
+            transition: all 0.3s ease;
+        }
+        
+        .transaction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        #tps-chart {
+            height: 300px;
+        }
+        
+        /* アニメーション */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animated {
+            animation-delay: calc(var(--animation-order) * 0.1s);
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        /* レスポンシブデザインの改善 */
+        @media (max-width: 768px) {
+            .stats-value {
+                font-size: 1.5rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+            
+            .header {
+                padding: 1.5rem 0;
+            }
+        }
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="assets/logo.svg" alt="ShardX Logo" height="80" class="me-3" />
+                        <h1 class="display-4 mb-0">ShardX</h1>
+                    </div>
+                    <p class="lead">トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。</p>
+                    <div class="mt-3">
+                        <a href="https://github.com/enablerdao/ShardX" target="_blank" class="btn btn-outline-light me-2">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                        <a href="https://github.com/enablerdao/ShardX/blob/main/README.md" target="_blank" class="btn btn-outline-light me-2">
+                            <i class="bi bi-book"></i> ドキュメント
+                        </a>
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" id="dataSourceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-database"></i> データソース
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dataSourceDropdown">
+                                <li><a class="dropdown-item active" href="#" data-source="mock">モックデータ</a></li>
+                                <li><a class="dropdown-item" href="#" data-source="test">テストデータ</a></li>
+                                <li><a class="dropdown-item" href="#" data-source="live">実ノード接続</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="alert alert-info">
+                            <i class="bi bi-terminal"></i> 1コマンドでノードを起動:
+                            <code>git clone https://github.com/enablerdao/ShardX.git && cd ShardX && docker-compose up --build</code>
+                            <button class="btn btn-sm btn-outline-primary ms-2" onclick="copyToClipboard('git clone https://github.com/enablerdao/ShardX.git && cd ShardX && docker-compose up --build')">
+                                <i class="bi bi-clipboard"></i> コピー
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="https://render.com/deploy?repo=https://github.com/enablerdao/ShardX" target="_blank">
+                            <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
+                        </a>
+                        <a href="https://gitpod.io/#https://github.com/enablerdao/ShardX" target="_blank" class="ms-2">
+                            <img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod">
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <div class="me-3">
+                            <div class="stats-label">ノード状態</div>
+                            <div id="node-status" class="badge bg-success">Running</div>
+                        </div>
+                        <div>
+                            <div class="stats-label">ノードID</div>
+                            <div id="node-id" class="small text-truncate" style="max-width: 150px;">loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="stats-label">現在のTPS</div>
+                        <div id="current-tps" class="stats-value">0</div>
+                        <div class="small text-muted">トランザクション/秒</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="stats-label">シャード数</div>
+                        <div id="shard-count" class="stats-value">256</div>
+                        <div class="small text-muted">動的に調整中</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="stats-label">確認済みトランザクション</div>
+                        <div id="confirmed-tx" class="stats-value">0</div>
+                        <div class="small text-muted">合計</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="connection-success" class="alert alert-success mt-4" style="display: none;">
+            <h4 class="alert-heading"><i class="bi bi-check-circle-fill"></i> おめでとうございます！</h4>
+            <p>ShardXノードに正常に接続されました！これで高速なブロックチェーントランザクションの世界を体験できます。</p>
+            <hr>
+            <p class="mb-0">ウォレットを作成して送金を試したり、DEXで取引を体験してみましょう！</p>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        TPSの推移
+                    </div>
+                    <div class="card-body">
+                        <canvas id="tps-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>新規トランザクション作成</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="tx-form">
+                            <div class="mb-3">
+                                <label for="parent-ids" class="form-label">親トランザクションID（カンマ区切り）</label>
+                                <input type="text" class="form-control" id="parent-ids" placeholder="例: id1,id2,id3">
+                            </div>
+                            <div class="mb-3">
+                                <label for="payload" class="form-label">ペイロード</label>
+                                <textarea class="form-control" id="payload" rows="3" placeholder="トランザクションデータを入力"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="signature" class="form-label">署名</label>
+                                <input type="text" class="form-control" id="signature" placeholder="署名を入力（デモ用にランダム生成されます）">
+                            </div>
+                            <button type="submit" class="btn btn-primary">トランザクション作成</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        最近のトランザクション
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-transactions" class="row">
+                            <!-- トランザクションはJSで動的に追加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        技術アーキテクチャ
+                    </div>
+                    <div class="card-body">
+                        <h5>Proof of Flow (PoF) コンセンサス</h5>
+                        <p>ShardXは、以下の3つの技術を組み合わせた革新的なコンセンサスメカニズムを採用しています：</p>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-diagram-3"></i> 有向非巡回グラフ (DAG)</h6>
+                                        <p class="small">ブロックチェーンの代わりにDAG構造を採用し、トランザクションの並列処理を実現。</p>
+                                        <a href="https://github.com/enablerdao/ShardX/blob/main/src/transaction.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-clock-history"></i> Proof of History (PoH)</h6>
+                                        <p class="small">各トランザクションに暗号学的に検証可能なタイムスタンプを付与し、順序を保証。</p>
+                                        <a href="https://github.com/enablerdao/ShardX/blob/main/src/consensus.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-shield-check"></i> Proof of Stake (PoS)</h6>
+                                        <p class="small">バリデータがステークを保有し、トランザクションを検証する仕組み。</p>
+                                        <a href="https://github.com/enablerdao/ShardX/blob/main/src/consensus.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4">その他の主要技術</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-grid-3x3"></i> 動的シャーディング</h6>
+                                        <p class="small">トラフィック量に応じて自動的にシャード数を調整し、スケーラビリティを確保。</p>
+                                        <a href="https://github.com/enablerdao/ShardX/blob/main/src/sharding.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6><i class="bi bi-robot"></i> AI駆動型トランザクション管理</h6>
+                                        <p class="small">AIを活用してトランザクションの優先順位付けと予測を行い、処理効率を向上。</p>
+                                        <a href="https://github.com/enablerdao/ShardX/blob/main/src/ai.rs" target="_blank" class="btn btn-sm btn-outline-primary">コードを見る</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="https://github.com/enablerdao/ShardX/blob/main/README.md" target="_blank" class="btn btn-primary">
+                                <i class="bi bi-book"></i> 詳細な技術ドキュメントを見る
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2024 ShardX - 高性能ブロックチェーン</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <a href="https://github.com/enablerdao/ShardX" target="_blank" class="text-decoration-none text-muted">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 現在のデータソース
+        let currentDataSource = 'live';
+        
+        // APIエンドポイントの設定
+        const API_ENDPOINTS = {
+            mock: {
+                info: '/mock-info',
+                transactions: '/mock-transactions'
+            },
+            test: {
+                info: '/test-info',
+                transactions: '/test-transactions'
+            },
+            live: {
+                info: '/api/info',
+                transactions: '/api/transactions'
+            }
+        };
+        
+        // クリップボードにコピーする関数
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('コマンドをクリップボードにコピーしました！');
+            }).catch(err => {
+                console.error('クリップボードへのコピーに失敗しました:', err);
+            });
+        }
+        
+        // モックデータを生成する関数
+        function generateMockData() {
+            return {
+                id: 'node-' + Math.random().toString(36).substring(2, 10),
+                status: 'Running',
+                tps: Math.random() * 1000 + 500,
+                shard_count: 256,
+                confirmed_transactions: Math.floor(Math.random() * 10000)
+            };
+        }
+        
+        // テストデータは実際のAPIから取得するため、この関数は不要になりました
+        
+        // ノード情報を取得する関数
+        async function fetchNodeInfo() {
+            try {
+                let data;
+                
+                // データソースに応じてAPIエンドポイントからデータを取得
+                try {
+                    const response = await fetch(API_ENDPOINTS[currentDataSource].info);
+                    data = await response.json();
+                    
+                    // エラーステータスの場合
+                    if (data.error) {
+                        console.warn('API returned error:', data.error);
+                    }
+                } catch (fetchError) {
+                    console.error('Error fetching from API:', fetchError);
+                    
+                    // APIリクエストが失敗した場合はフォールバック
+                    if (currentDataSource === 'mock') {
+                        data = generateMockData();
+                    } else {
+                        data = {
+                            id: currentDataSource + '-error',
+                            status: 'Error',
+                            tps: 0,
+                            shard_count: 0,
+                            confirmed_transactions: 0,
+                            error: fetchError.message
+                        };
+                    }
+                }
+                
+                // UI更新
+                document.getElementById('node-id').textContent = data.id;
+                document.getElementById('node-status').textContent = data.status;
+                document.getElementById('current-tps').textContent = data.tps.toFixed(2);
+                document.getElementById('shard-count').textContent = data.shard_count;
+                document.getElementById('confirmed-tx').textContent = data.confirmed_transactions;
+                
+                // ステータスに応じてバッジの色を変更
+                const statusBadge = document.getElementById('node-status');
+                if (data.status === 'Running') {
+                    statusBadge.className = 'badge bg-success';
+                    
+                    // 接続成功メッセージを表示
+                    document.getElementById('connection-success').style.display = 'block';
+                    
+                    // 3秒後にメッセージをスクロールして表示
+                    setTimeout(() => {
+                        document.getElementById('connection-success').scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                    }, 3000);
+                } else if (data.status === 'Testing') {
+                    statusBadge.className = 'badge bg-warning';
+                } else {
+                    statusBadge.className = 'badge bg-info';
+                }
+                
+                // チャートデータ更新
+                addDataToChart(tpsChart, new Date().toLocaleTimeString(), data.tps);
+                
+                return data;
+            } catch (error) {
+                console.error('Error fetching node info:', error);
+                document.getElementById('node-status').textContent = 'Offline';
+                document.getElementById('node-status').className = 'badge bg-danger';
+            }
+        }
+        
+        // トランザクションを作成する関数
+        async function createTransaction(parentIds, payload, signature) {
+            try {
+                let data;
+                
+                try {
+                    // APIエンドポイントにトランザクションを送信
+                    const response = await fetch(API_ENDPOINTS[currentDataSource].transactions, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            parent_ids: parentIds,
+                            payload: btoa(payload), // Base64エンコード
+                            signature: btoa(signature), // Base64エンコード
+                        }),
+                    });
+                    
+                    data = await response.json();
+                    
+                    // エラーステータスの場合
+                    if (data.error) {
+                        console.warn('Transaction API returned error:', data.error);
+                    }
+                } catch (fetchError) {
+                    console.error('Error sending transaction:', fetchError);
+                    
+                    // APIリクエストが失敗した場合はエラーを返す
+                    throw new Error(`トランザクション送信エラー: ${fetchError.message}`);
+                }
+                
+                if (data.status === 'success') {
+                    // 成功時の処理
+                    addTransactionToUI(data.id, payload, new Date().toISOString());
+                    return data;
+                } else {
+                    // エラー時の処理
+                    alert(`トランザクション作成エラー: ${data.status}`);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error creating transaction:', error);
+                alert('トランザクション作成中にエラーが発生しました。');
+                return null;
+            }
+        }
+        
+        // UIにトランザクションを追加
+        function addTransactionToUI(id, payload, timestamp) {
+            const container = document.getElementById('recent-transactions');
+            
+            // 新しいトランザクションカードを作成
+            const txCard = document.createElement('div');
+            txCard.className = 'col-md-6 mb-3';
+            txCard.innerHTML = `
+                <div class="card transaction-card">
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate" title="${id}">ID: ${id.substring(0, 8)}...</h6>
+                        <p class="card-text small text-truncate">${payload}</p>
+                        <div class="d-flex justify-content-between">
+                            <span class="badge bg-success">確認済み</span>
+                            <small class="text-muted">${new Date(timestamp).toLocaleTimeString()}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 最大10件まで表示
+            if (container.children.length >= 10) {
+                container.removeChild(container.lastChild);
+            }
+            
+            // 先頭に追加
+            container.insertBefore(txCard, container.firstChild);
+        }
+        
+        // チャートにデータを追加
+        function addDataToChart(chart, label, data) {
+            chart.data.labels.push(label);
+            chart.data.datasets[0].data.push(data);
+            
+            // 最大20ポイントまで表示
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update();
+        }
+        
+        // ランダムな16進数文字列を生成
+        function generateRandomHex(length) {
+            const chars = '0123456789abcdef';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        }
+        
+        // TPSチャートの初期化
+        const ctx = document.getElementById('tps-chart').getContext('2d');
+        const tpsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'TPS',
+                    data: [],
+                    borderColor: '#6a11cb',
+                    backgroundColor: 'rgba(106, 17, 203, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // フォーム送信イベントリスナー
+        document.getElementById('tx-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const parentIdsInput = document.getElementById('parent-ids').value;
+            const payload = document.getElementById('payload').value;
+            let signature = document.getElementById('signature').value;
+            
+            // 親IDをパース
+            const parentIds = parentIdsInput ? parentIdsInput.split(',').map(id => id.trim()) : [];
+            
+            // 署名が空の場合はランダム生成
+            if (!signature) {
+                signature = generateRandomHex(64);
+                document.getElementById('signature').value = signature;
+            }
+            
+            // トランザクション作成
+            await createTransaction(parentIds, payload, signature);
+        });
+        
+        // データソース切り替えのイベントリスナーを設定
+        document.querySelectorAll('.dropdown-item[data-source]').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // 現在のアクティブなアイテムを非アクティブにする
+                document.querySelector('.dropdown-item.active').classList.remove('active');
+                
+                // クリックされたアイテムをアクティブにする
+                this.classList.add('active');
+                
+                // データソースを更新
+                currentDataSource = this.getAttribute('data-source');
+                
+                // データを再取得
+                fetchNodeInfo();
+                
+                // データソースに応じてメッセージを表示
+                let message = '';
+                if (currentDataSource === 'mock') {
+                    message = 'モックデータモードに切り替えました。ランダムなデータが表示されます。';
+                } else if (currentDataSource === 'test') {
+                    message = 'テストデータモードに切り替えました。高負荷テスト用のデータが表示されます。';
+                } else {
+                    message = '実ノード接続モードに切り替えました。ローカルで実行中のノードに接続します。';
+                }
+                
+                // アラートを表示
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                // 既存のアラートを削除
+                const existingAlert = document.querySelector('.alert-dismissible');
+                if (existingAlert) {
+                    existingAlert.remove();
+                }
+                
+                // アラートを追加
+                document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+            });
+        });
+        
+        // 初期データ取得
+        fetchNodeInfo();
+        
+        // 定期的にデータを更新（5秒ごと）
+        setInterval(fetchNodeInfo, 5000);
+        
+        // デモ用にサンプルトランザクションを追加
+        addTransactionToUI(
+            generateRandomHex(32),
+            'サンプルトランザクション1',
+            new Date().toISOString()
+        );
+        addTransactionToUI(
+            generateRandomHex(32),
+            'サンプルトランザクション2',
+            new Date(Date.now() - 60000).toISOString()
+        );
+    </script>
+</body>
+</html>

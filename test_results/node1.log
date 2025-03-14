@@ -1,0 +1,29 @@
+[2025-03-14T16:50:18Z INFO  hyperflux] HyperFlux.io ノードを起動中...
+[2025-03-14T16:50:18Z INFO  hyperflux] ノードID: node1
+[2025-03-14T16:50:18Z INFO  hyperflux] ポート: 54868
+[2025-03-14T16:50:18Z INFO  hyperflux] データディレクトリ: ./data/node1
+[2025-03-14T16:50:18Z INFO  hyperflux] ログレベル: info
+[2025-03-14T16:50:18Z INFO  hyperflux] DAGを初期化中...
+[2025-03-14T16:50:18Z INFO  hyperflux] シャーディングマネージャを初期化中 (シャード数: 256)...
+[2025-03-14T16:50:18Z INFO  hyperflux] コンセンサスエンジンを初期化中...
+[2025-03-14T16:50:18Z INFO  hyperflux::node] Starting node node1
+[2025-03-14T16:50:18Z INFO  hyperflux::node] Node node1 started
+[2025-03-14T16:50:18Z INFO  hyperflux] Initializing demo data...
+[2025-03-14T16:50:18Z INFO  hyperflux::wallet] Account created: 30124213-65a3-4c23-b038-791d4d235691
+[2025-03-14T16:50:18Z INFO  hyperflux::wallet] Account created: 3c336774-24ac-4862-b713-ddc291634914
+[2025-03-14T16:50:18Z INFO  hyperflux] Created demo accounts: Alice (30124213-65a3-4c23-b038-791d4d235691), Bob (3c336774-24ac-4862-b713-ddc291634914)
+[2025-03-14T16:50:18Z INFO  hyperflux::dex] Trading pair added: BTC/USD
+[2025-03-14T16:50:18Z INFO  hyperflux::dex] Trading pair added: ETH/USD
+[2025-03-14T16:50:18Z INFO  hyperflux::dex] Trading pair added: BTC/ETH
+[2025-03-14T16:50:18Z INFO  hyperflux] Added trading pairs: BTC/USD, ETH/USD, BTC/ETH
+[2025-03-14T16:50:18Z INFO  hyperflux] APIサーバーを起動中 (ポート: 54868)...
+[2025-03-14T16:50:18Z INFO  hyperflux::api] Starting API server on port 54868
+[2025-03-14T16:50:18Z INFO  warp::server] Server::run; addr=0.0.0.0:54868
+[2025-03-14T16:50:18Z INFO  warp::server] listening on http://0.0.0.0:54868
+[2025-03-14T16:50:50Z INFO  api] 127.0.0.1:34126 "GET /info HTTP/1.1" 200 "-" "curl/7.88.1" 599.709µs
+[2025-03-14T16:51:00Z INFO  hyperflux::api] Transaction b078712b-abf0-4405-986c-1285d85a087f created successfully
+[2025-03-14T16:51:00Z INFO  api] 127.0.0.1:47770 "POST /transactions HTTP/1.1" 200 "-" "curl/7.88.1" 382.125µs
+[2025-03-14T16:51:00Z INFO  hyperflux::ai] Transaction b078712b-abf0-4405-986c-1285d85a087f added to queue with priority 984
+[2025-03-14T16:51:00Z INFO  hyperflux::ai] Transaction b078712b-abf0-4405-986c-1285d85a087f dequeued with priority 984
+[2025-03-14T16:51:00Z INFO  hyperflux::node] Transaction b078712b-abf0-4405-986c-1285d85a087f routed to shard 162
+[2025-03-14T16:51:11Z INFO  api] 127.0.0.1:60750 "GET /info HTTP/1.1" 200 "-" "curl/7.88.1" 63.667µs

@@ -1,0 +1,24 @@
+[2025-03-14T16:50:46Z INFO  hyperflux] HyperFlux.io ノードを起動中...
+[2025-03-14T16:50:46Z INFO  hyperflux] ノードID: node2
+[2025-03-14T16:50:46Z INFO  hyperflux] ポート: 54869
+[2025-03-14T16:50:46Z INFO  hyperflux] データディレクトリ: ./data/node2
+[2025-03-14T16:50:46Z INFO  hyperflux] ログレベル: info
+[2025-03-14T16:50:46Z INFO  hyperflux] DAGを初期化中...
+[2025-03-14T16:50:46Z INFO  hyperflux] シャーディングマネージャを初期化中 (シャード数: 256)...
+[2025-03-14T16:50:46Z INFO  hyperflux] コンセンサスエンジンを初期化中...
+[2025-03-14T16:50:46Z INFO  hyperflux::node] Starting node node2
+[2025-03-14T16:50:46Z INFO  hyperflux::node] Node node2 started
+[2025-03-14T16:50:46Z INFO  hyperflux] Initializing demo data...
+[2025-03-14T16:50:46Z INFO  hyperflux::wallet] Account created: ca5bb4c3-d898-43d0-88e6-12fc0805964b
+[2025-03-14T16:50:46Z INFO  hyperflux::wallet] Account created: d4be52e2-9760-4718-a38d-902c4f250b4f
+[2025-03-14T16:50:46Z INFO  hyperflux] Created demo accounts: Alice (ca5bb4c3-d898-43d0-88e6-12fc0805964b), Bob (d4be52e2-9760-4718-a38d-902c4f250b4f)
+[2025-03-14T16:50:46Z INFO  hyperflux::dex] Trading pair added: BTC/USD
+[2025-03-14T16:50:46Z INFO  hyperflux::dex] Trading pair added: ETH/USD
+[2025-03-14T16:50:46Z INFO  hyperflux::dex] Trading pair added: BTC/ETH
+[2025-03-14T16:50:46Z INFO  hyperflux] Added trading pairs: BTC/USD, ETH/USD, BTC/ETH
+[2025-03-14T16:50:46Z INFO  hyperflux] APIサーバーを起動中 (ポート: 54869)...
+[2025-03-14T16:50:46Z INFO  hyperflux::api] Starting API server on port 54869
+
+thread 'main' panicked at /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/warp-0.3.7/src/server.rs:217:27:
+error binding to 0.0.0.0:54869: error creating server listener: Address already in use (os error 98)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

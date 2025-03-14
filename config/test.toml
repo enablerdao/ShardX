@@ -1,0 +1,68 @@
+# HyperFlux.io テスト環境設定ファイル
+
+[node]
+# ノードの基本設定
+id = "test_node"              # テスト用ノードID
+host = "0.0.0.0"              # リッスンするホスト
+port = 54868                  # APIポート
+data_dir = "./data/test"      # テスト用データディレクトリ
+log_level = "debug"           # ログレベル: debug, info, warn, error
+
+[consensus]
+# Proof of Flow (PoF) コンセンサス設定
+algorithm = "pof"             # コンセンサスアルゴリズム
+validator_count = 1           # テスト用バリデータ数（最小）
+block_time_ms = 10            # ブロック生成間隔（ミリ秒）
+tx_timeout_ms = 1000          # トランザクションタイムアウト（ミリ秒）
+
+[sharding]
+# シャーディング設定
+enabled = true                # シャーディングの有効化
+initial_shards = 2            # 初期シャード数（テスト環境では最小）
+min_shards = 1                # 最小シャード数
+max_shards = 4                # 最大シャード数
+auto_scaling = false          # 自動スケーリングの無効化（テスト環境）
+scaling_threshold = 0.9       # スケーリングしきい値（負荷率）
+
+[ai]
+# AI駆動型トランザクション管理
+enabled = false               # AI機能の無効化（テスト環境）
+model_path = "./models/priority_test.onnx"  # 優先度計算モデルのパス
+batch_size = 5                # バッチサイズ（テスト環境では最小）
+prediction_window_ms = 100    # 予測ウィンドウ（ミリ秒）
+
+[security]
+# セキュリティ設定
+encryption = "aes-256-gcm"    # 暗号化アルゴリズム
+multi_sig_threshold = 1       # マルチシグの閾値（テスト環境では最小）
+zk_snarks_enabled = false     # zk-SNARKsの無効化（テスト環境）
+
+[api]
+# API設定
+cors_enabled = true           # CORSの有効化
+rate_limit = 0                # レート制限なし（テスト環境）
+timeout_ms = 5000             # APIタイムアウト（ミリ秒）
+
+[network]
+# ネットワーク設定
+max_peers = 1                 # 最大ピア数（テスト環境では最小）
+bootstrap_nodes = []          # ブートストラップノードなし（テスト環境）
+heartbeat_interval_ms = 1000  # ハートビート間隔（ミリ秒）
+
+[storage]
+# ストレージ設定
+engine = "memory"             # テスト用メモリストレージ
+cache_size_mb = 64            # キャッシュサイズ（MB）
+compaction_style = "level"    # 圧縮スタイル
+
+[metrics]
+# メトリクス設定
+enabled = false               # メトリクスの無効化（テスト環境）
+prometheus_enabled = false    # Prometheusエクスポートの無効化（テスト環境）
+prometheus_port = 9090        # Prometheusポート
+
+[test]
+# テスト固有の設定
+mock_responses = true         # モックレスポンスの使用
+deterministic = true          # 決定論的な動作（テスト用）
+skip_validation = true        # 検証のスキップ（テスト高速化用）

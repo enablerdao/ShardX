@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+    .subtitle { font-family: Arial, sans-serif; font-size: 18px; fill: #666; }
+    .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+    .small-label { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+    .node { fill: #6a11cb; }
+    .node-alt { fill: #2575fc; }
+    .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 5,5; }
+    .highlight { filter: drop-shadow(0px 0px 5px rgba(106, 17, 203, 0.5)); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a11cb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2575fc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="400" fill="#f8f9fa" />
+  
+  <text x="400" y="40" text-anchor="middle" class="title">Proof of Flow (PoF) コンセンサスメカニズム - E</text>
+  <text x="400" y="70" text-anchor="middle" class="subtitle">従来のブロックチェーンとの比較</text>
+  
+  <!-- 従来のブロックチェーン -->
+  <g transform="translate(100, 120)">
+    <text x="150" y="-20" text-anchor="middle" class="label">従来のブロックチェーン</text>
+    
+    <rect x="0" y="0" width="60" height="60" fill="white" stroke="#ccc" stroke-width="2" />
+    <rect x="80" y="0" width="60" height="60" fill="white" stroke="#ccc" stroke-width="2" />
+    <rect x="160" y="0" width="60" height="60" fill="white" stroke="#ccc" stroke-width="2" />
+    <rect x="240" y="0" width="60" height="60" fill="white" stroke="#ccc" stroke-width="2" />
+    
+    <line x1="60" y1="30" x2="80" y2="30" class="arrow" />
+    <line x1="140" y1="30" x2="160" y2="30" class="arrow" />
+    <line x1="220" y1="30" x2="240" y2="30" class="arrow" />
+    
+    <text x="30" y="35" text-anchor="middle" class="small-label">ブロック1</text>
+    <text x="110" y="35" text-anchor="middle" class="small-label">ブロック2</text>
+    <text x="190" y="35" text-anchor="middle" class="small-label">ブロック3</text>
+    <text x="270" y="35" text-anchor="middle" class="small-label">ブロック4</text>
+    
+    <text x="150" y="100" text-anchor="middle" class="small-label">• 直列処理</text>
+    <text x="150" y="120" text-anchor="middle" class="small-label">• ブロック生成に時間がかかる</text>
+    <text x="150" y="140" text-anchor="middle" class="small-label">• スケーラビリティに制限</text>
+  </g>
+  
+  <!-- HyperFlux.io (PoF) -->
+  <g transform="translate(450, 120)">
+    <text x="150" y="-20" text-anchor="middle" class="label">HyperFlux.io (PoF)</text>
+    
+    <circle cx="30" cy="30" r="15" fill="url(#grad1)" />
+    <circle cx="90" cy="0" r="15" fill="url(#grad1)" />
+    <circle cx="90" cy="60" r="15" fill="url(#grad1)" />
+    <circle cx="150" cy="-15" r="15" fill="url(#grad1)" />
+    <circle cx="150" cy="30" r="15" fill="url(#grad1)" />
+    <circle cx="150" cy="75" r="15" fill="url(#grad1)" />
+    <circle cx="210" cy="15" r="15" fill="url(#grad1)" />
+    <circle cx="210" cy="45" r="15" fill="url(#grad1)" />
+    <circle cx="270" cy="30" r="15" fill="url(#grad1)" />
+    
+    <line x1="45" y1="30" x2="75" y2="0" class="arrow" />
+    <line x1="45" y1="30" x2="75" y2="60" class="arrow" />
+    <line x1="105" y1="0" x2="135" y2="-15" class="arrow" />
+    <line x1="105" y1="0" x2="135" y2="30" class="arrow" />
+    <line x1="105" y1="60" x2="135" y2="30" class="arrow" />
+    <line x1="105" y1="60" x2="135" y2="75" class="arrow" />
+    <line x1="165" y1="-15" x2="195" y2="15" class="arrow" />
+    <line x1="165" y1="30" x2="195" y2="15" class="arrow" />
+    <line x1="165" y1="30" x2="195" y2="45" class="arrow" />
+    <line x1="165" y1="75" x2="195" y2="45" class="arrow" />
+    <line x1="225" y1="15" x2="255" y2="30" class="arrow" />
+    <line x1="225" y1="45" x2="255" y2="30" class="arrow" />
+    
+    <text x="150" y="100" text-anchor="middle" class="small-label">• 並列処理 (DAG)</text>
+    <text x="150" y="120" text-anchor="middle" class="small-label">• 即時確定 (PoH + PoS)</text>
+    <text x="150" y="140" text-anchor="middle" class="small-label">• 高いスケーラビリティ</text>
+  </g>
+  
+  <!-- 比較表 -->
+  <g transform="translate(200, 280)">
+    <rect x="0" y="0" width="400" height="30" fill="#6a11cb" fill-opacity="0.1" stroke="#ccc" />
+    <rect x="0" y="30" width="200" height="30" fill="white" stroke="#ccc" />
+    <rect x="200" y="30" width="200" height="30" fill="white" stroke="#ccc" />
+    <rect x="0" y="60" width="200" height="30" fill="white" stroke="#ccc" />
+    <rect x="200" y="60" width="200" height="30" fill="white" stroke="#ccc" />
+    <rect x="0" y="90" width="200" height="30" fill="white" stroke="#ccc" />
+    <rect x="200" y="90" width="200" height="30" fill="white" stroke="#ccc" />
+    
+    <text x="100" y="20" text-anchor="middle" class="label">従来のブロックチェーン</text>
+    <text x="300" y="20" text-anchor="middle" class="label">HyperFlux.io (PoF)</text>
+    
+    <text x="100" y="50" text-anchor="middle" class="small-label">3-20 TPS</text>
+    <text x="300" y="50" text-anchor="middle" class="small-label">50,000+ TPS</text>
+    
+    <text x="100" y="80" text-anchor="middle" class="small-label">数分〜数十分</text>
+    <text x="300" y="80" text-anchor="middle" class="small-label">数秒以内</text>
+    
+    <text x="100" y="110" text-anchor="middle" class="small-label">高エネルギー消費</text>
+    <text x="300" y="110" text-anchor="middle" class="small-label">エネルギー効率的</text>
+  </g>
+</svg>
