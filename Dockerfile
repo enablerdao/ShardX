@@ -41,16 +41,18 @@ COPY --from=builder /app/target/release/shardx /app/shardx
 RUN chmod +x /app/shardx
 
 # APIポートを公開
-EXPOSE ${PORT:-54867}
+EXPOSE ${PORT:-54868}
 
 # ヘルスチェック設定
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-54867}/info || exit 1
+    CMD curl -f http://localhost:${PORT:-54868}/info || exit 1
 
 # 環境変数の設定
 ENV RUST_LOG=info
 ENV DATA_DIR=/app/data
-ENV PORT=10000
+ENV PORT=54868
+ENV NODE_ID=node1
+ENV INITIAL_SHARDS=256
 
 # アプリケーションを実行
 CMD ["/app/shardx"]

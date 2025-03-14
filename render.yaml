@@ -1,0 +1,51 @@
+services:
+  # ShardXノードサービス
+  - type: web
+    name: shardx-node
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /info
+    envVars:
+      - key: PORT
+        value: 54868
+      - key: NODE_ID
+        generateValue: true
+      - key: LOG_LEVEL
+        value: info
+      - key: INITIAL_SHARDS
+        value: 256
+    disk:
+      name: shardx-data
+      mountPath: /app/data
+      sizeGB: 10
+
+  # ShardX Webインターフェース
+  - type: web
+    name: shardx-web
+    env: static
+    buildCommand: cd web && npm install && npm run build
+    staticPublishPath: ./web/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: API_URL
+        fromService:
+          name: shardx-node
+          type: web
+          property: url
+
+# データベース（オプション）
+databases:
+  - name: shardx-db
+    plan: starter
+    databaseName: shardx
+    user: shardx
+
+# Redis（オプション - クロスシャード通信用）
+redis:
+  - name: shardx-redis
+    plan: starter
+    ipAllowList: []
