@@ -1,65 +1,88 @@
-use std::fmt;
-use std::error::Error as StdError;
+use thiserror::Error;
 use std::io;
 
 /// ShardXのエラー型
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum Error {
+    /// 無効な入力
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+    
     /// 無効な署名
+    #[error("Invalid signature")]
     InvalidSignature,
+    
     /// 無効なトランザクション
+    #[error("Invalid transaction: {0}")]
     InvalidTransaction(String),
+    
     /// 無効なシャードID
+    #[error("Invalid shard ID: {0}")]
     InvalidShardId(u32),
+    
     /// 無効なノードID
+    #[error("Invalid node ID: {0}")]
     InvalidNodeId(String),
+    
+    /// 無効なトランザクションID
+    #[error("Invalid transaction ID: {0}")]
+    InvalidTransactionId(String),
+    
+    /// 無効なキー
+    #[error("Invalid key: {0}")]
+    InvalidKey(String),
+    
     /// タイムスタンプエラー
+    #[error("Timestamp error: {0}")]
     TimestampError(String),
+    
     /// ストレージエラー
+    #[error("Storage error: {0}")]
     StorageError(String),
+    
     /// ネットワークエラー
+    #[error("Network error: {0}")]
     NetworkError(String),
+    
     /// I/Oエラー
-    IoError(io::Error),
+    #[error("I/O error: {0}")]
+    IoError(#[from] io::Error),
+    
     /// シリアライズエラー
+    #[error("Serialization error: {0}")]
     SerializeError(String),
+    
     /// デシリアライズエラー
+    #[error("Deserialization error: {0}")]
     DeserializeError(String),
+    
     /// 内部エラー
+    #[error("Internal error: {0}")]
     InternalError(String),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::InvalidSignature => write!(f, "Invalid signature"),
-            Error::InvalidTransaction(msg) => write!(f, "Invalid transaction: {}", msg),
-            Error::InvalidShardId(id) => write!(f, "Invalid shard ID: {}", id),
-            Error::InvalidNodeId(id) => write!(f, "Invalid node ID: {}", id),
-            Error::TimestampError(msg) => write!(f, "Timestamp error: {}", msg),
-            Error::StorageError(msg) => write!(f, "Storage error: {}", msg),
-            Error::NetworkError(msg) => write!(f, "Network error: {}", msg),
-            Error::IoError(err) => write!(f, "I/O error: {}", err),
-            Error::SerializeError(msg) => write!(f, "Serialize error: {}", msg),
-            Error::DeserializeError(msg) => write!(f, "Deserialize error: {}", msg),
-            Error::InternalError(msg) => write!(f, "Internal error: {}", msg),
-        }
-    }
-}
-
-impl StdError for Error {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self {
-            Error::IoError(err) => Some(err),
-            _ => None,
-        }
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Error::IoError(err)
-    }
+    
+    /// タイムアウト
+    #[error("Timeout: {0}")]
+    Timeout(String),
+    
+    /// 重複
+    #[error("Duplicate: {0}")]
+    Duplicate(String),
+    
+    /// 未実装
+    #[error("Not implemented: {0}")]
+    NotImplemented(String),
+    
+    /// 権限エラー
+    #[error("Permission denied: {0}")]
+    PermissionDenied(String),
+    
+    /// リソース不足
+    #[error("Resource exhausted: {0}")]
+    ResourceExhausted(String),
+    
+    /// 不明なエラー
+    #[error("Unknown error: {0}")]
+    Unknown(String),
 }
 
 impl From<prost::EncodeError> for Error {
@@ -71,5 +94,17 @@ impl From<prost::EncodeError> for Error {
 impl From<prost::DecodeError> for Error {
     fn from(err: prost::DecodeError) -> Self {
         Error::DeserializeError(err.to_string())
+    }
+}
+
+impl From<bincode::Error> for Error {
+    fn from(err: bincode::Error) -> Self {
+        Error::SerializeError(err.to_string())
+    }
+}
+
+impl From<rocksdb::Error> for Error {
+    fn from(err: rocksdb::Error) -> Self {
+        Error::StorageError(err.to_string())
     }
 }
