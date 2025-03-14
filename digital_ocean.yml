@@ -1,0 +1,56 @@
+name: shardx
+region: sgp
+services:
+  - name: shardx-node
+    dockerfile_path: Dockerfile
+    source_dir: .
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: enablerdao/ShardX
+    health_check:
+      http_path: /info
+    http_port: 54868
+    instance_count: 1
+    instance_size_slug: basic-xs
+    routes:
+      - path: /api
+    envs:
+      - key: PORT
+        value: "54868"
+      - key: NODE_ID
+        value: "do_node"
+      - key: LOG_LEVEL
+        value: "info"
+      - key: INITIAL_SHARDS
+        value: "256"
+      - key: DATA_DIR
+        value: "/app/data"
+    volumes:
+      - name: shardx-data
+        mount_path: /app/data
+        
+  - name: shardx-web
+    dockerfile_path: Dockerfile
+    source_dir: web
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: enablerdao/ShardX
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: basic-xs
+    routes:
+      - path: /
+
+databases:
+  - name: shardx-redis
+    engine: REDIS
+    version: "6"
+    production: false
+    db_user: shardx
+    db_name: shardx
+
+volumes:
+  - name: shardx-data
+    size_gb: 10

@@ -1,0 +1,52 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: '1.76.0'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: BuildAndTest
+        steps:
+          - script: |
+              curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $(RUST_VERSION)
+              echo "##vso[task.prependpath]$HOME/.cargo/bin"
+            displayName: 'Install Rust'
+
+          - script: |
+              cargo build --release
+            displayName: 'Build ShardX'
+
+          - script: |
+              cargo test
+            displayName: 'Run tests'
+
+          - task: Docker@2
+            inputs:
+              containerRegistry: 'DockerHub'
+              repository: 'enablerdao/shardx'
+              command: 'buildAndPush'
+              Dockerfile: '**/Dockerfile'
+              tags: |
+                latest
+                $(Build.BuildId)
+            displayName: 'Build and push Docker image'
+
+  - stage: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: Build
+    jobs:
+      - job: DeployToAzure
+        steps:
+          - task: AzureWebAppContainer@1
+            inputs:
+              azureSubscription: 'Azure Subscription'
+              appName: 'shardx'
+              containers: 'enablerdao/shardx:$(Build.BuildId)'
+            displayName: 'Deploy to Azure App Service'

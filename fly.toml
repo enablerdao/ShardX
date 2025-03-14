@@ -1,0 +1,29 @@
+# fly.toml - Fly.io設定ファイル
+app = "shardx"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "54868"
+  NODE_ID = "fly_node"
+  LOG_LEVEL = "info"
+  INITIAL_SHARDS = "256"
+
+[http_service]
+  internal_port = 54868
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024
+
+[mounts]
+  source = "shardx_data"
+  destination = "/app/data"

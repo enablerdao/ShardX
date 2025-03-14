@@ -1,61 +1,77 @@
-version: '3'
+version: '3.8'
 
 services:
+  # ShardXノード
   node:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "54868:54867"
+      - "54868:54868"
     expose:
-      - "54867"
-    # プラットフォーム指定を削除して自動検出に任せる
+      - "54868"
     environment:
-      - RUST_LOG=info
+      - PORT=54868
+      - NODE_ID=node1
+      - LOG_LEVEL=info
+      - INITIAL_SHARDS=256
+      - DATA_DIR=/app/data
     restart: unless-stopped
     networks:
       - shardx-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:54867/info"]
+      test: ["CMD", "curl", "-f", "http://localhost:54868/info"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 5s
     volumes:
-      # データの永続化
       - shardx-data:/app/data
-    # リソース制限を追加
     deploy:
       resources:
         limits:
           cpus: '2'
           memory: 2G
 
+  # Webインターフェース
   web:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
+    image: nginx:alpine
     ports:
-      - "54867:54867"
+      - "54867:80"
     expose:
-      - "54867"
+      - "80"
+    volumes:
+      - ./web/dist:/usr/share/nginx/html
     depends_on:
       node:
         condition: service_healthy
     environment:
-      - NODE_URL=http://node:54867
+      - API_URL=http://node:54868
     networks:
       - shardx-network
     restart: unless-stopped
-    # リソース制限を追加
     deploy:
       resources:
         limits:
           cpus: '1'
           memory: 1G
+          
+  # Redis（クロスシャード通信用 - オプション）
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - shardx-network
 
 volumes:
   shardx-data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

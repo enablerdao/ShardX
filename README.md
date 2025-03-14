@@ -17,7 +17,9 @@
 ## 🌌 ビジョン
 「まるで呼吸をするように自然で快適に、誰もがストレスなく繋がり、自由に価値をやりとりできる世界を創造する。」
 
-## 🚀 ワンクリックデプロイ
+## 🚀 様々なデプロイ方法
+
+### ワンクリックデプロイ
 
 <div align="center">
   <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
@@ -29,7 +31,30 @@
   <a href="https://app.netlify.com/start/deploy?repository=https://github.com/enablerdao/ShardX">
     <img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" />
   </a>
+  <a href="https://deploy.cloud.run?git_repo=https://github.com/enablerdao/ShardX">
+    <img src="https://deploy.cloud.run/button.svg" alt="Run on Google Cloud" />
+  </a>
+  <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fenablerdao%2FShardX%2Fmain%2Fazure-pipelines.yml">
+    <img src="https://aka.ms/deploytoazurebutton" alt="Deploy to Azure" />
+  </a>
 </div>
+
+### クラウドプロバイダー別のデプロイ
+
+- **AWS**: [CloudFormation テンプレート](cloudformation.yml)
+- **Digital Ocean**: [App Platform 設定](digital_ocean.yml)
+- **Fly.io**: [設定ファイル](fly.toml)
+- **Railway**: [設定ファイル](railway.json)
+
+### ローカルインストール
+
+```bash
+# 対話なしの簡単インストール (Docker必須)
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/simple_install.sh | bash
+
+# または詳細オプション付きインストール
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/quick_install.sh | bash
+```
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX コンセンサスメカニズム" width="80%"/>
