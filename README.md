@@ -156,7 +156,15 @@ AIを活用してトランザクションの優先順位付けと予測を行い
 以下の1コマンドで、ShardXのノードとWebインターフェースを起動できます：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/quick_install.sh | bash
+```
+
+または、より簡単なインストール方法：
+
+```bash
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
+./quick_install.sh
 ```
 
 <details>
