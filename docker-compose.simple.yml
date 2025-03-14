@@ -1,0 +1,27 @@
+name: shardx-simple
+
+services:
+  # ShardXオールインワンコンテナ
+  shardx:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    ports:
+      - "54867:54867"  # Webインターフェース
+      - "54868:54868"  # API
+    environment:
+      - PORT=54868
+      - NODE_ID=simple_node
+      - LOG_LEVEL=info
+      - RUST_LOG=info
+      - INITIAL_SHARDS=256
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:54868/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

@@ -19,12 +19,20 @@
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/auto_install.sh | bash
 ```
 
-または、より簡単なインストール方法：
+### Docker での簡単起動（推奨）
+
+Dockerがインストールされている環境では、以下のコマンドで簡単に起動できます：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/quick_start.sh | bash
+```
+
+または、リポジトリをクローンして起動：
 
 ```bash
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
-./quick_install.sh
+./quick_start.sh
 ```
 
 ## 🚀 ワンクリックデプロイ

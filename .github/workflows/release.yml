@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-binaries:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: x86_64-unknown-linux-gnu
+      
+      - name: Build Linux Binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target x86_64-unknown-linux-gnu
+      
+      - name: Package Web Interface
+        run: |
+          cd web
+          npm install
+          npm run build
+          cd dist
+          tar -czf ../../web-dist.tar.gz .
+      
+      - name: Upload Linux Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: shardx-linux-amd64
+          path: target/x86_64-unknown-linux-gnu/release/shardx
+      
+      - name: Upload Web Interface
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-dist
+          path: web-dist.tar.gz
+  
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: build-binaries
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download Linux Binary
+        uses: actions/download-artifact@v3
+        with:
+          name: shardx-linux-amd64
+          path: ./bin
+      
+      - name: Download Web Interface
+        uses: actions/download-artifact@v3
+        with:
+          name: web-dist
+          path: ./web-dist
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Extract tag version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+      
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.simple
+          push: true
+          tags: |
+            enablerdao/shardx:latest
+            enablerdao/shardx:${{ env.VERSION }}
+  
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-binaries, build-docker]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download Linux Binary
+        uses: actions/download-artifact@v3
+        with:
+          name: shardx-linux-amd64
+          path: ./
+      
+      - name: Download Web Interface
+        uses: actions/download-artifact@v3
+        with:
+          name: web-dist
+          path: ./
+      
+      - name: Rename binary
+        run: |
+          chmod +x shardx
+          mv shardx shardx-linux-amd64
+      
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            shardx-linux-amd64
+            web-dist.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true

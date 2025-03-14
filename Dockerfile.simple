@@ -1,0 +1,52 @@
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# 必要なパッケージをインストール
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    wget \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# ShardXのバイナリをダウンロード
+RUN mkdir -p /app/bin && \
+    curl -L -o /app/bin/shardx https://github.com/enablerdao/ShardX/releases/download/v0.1.0/shardx-linux-amd64 && \
+    chmod +x /app/bin/shardx
+
+# データディレクトリを作成
+RUN mkdir -p /app/data && chmod 777 /app/data
+
+# Webインターフェースをダウンロード
+RUN mkdir -p /app/web && \
+    curl -L -o /tmp/web.tar.gz https://github.com/enablerdao/ShardX/releases/download/v0.1.0/web-dist.tar.gz && \
+    tar -xzf /tmp/web.tar.gz -C /app/web && \
+    rm /tmp/web.tar.gz
+
+# Nginxをインストール
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends nginx && \
+    rm -rf /var/lib/apt/lists/*
+
+# Nginx設定
+COPY web/nginx.conf /etc/nginx/conf.d/default.conf
+
+# APIポートを公開
+EXPOSE 54867 54868
+
+# 環境変数の設定
+ENV RUST_LOG=info
+ENV DATA_DIR=/app/data
+ENV PORT=54868
+ENV NODE_ID=node1
+ENV INITIAL_SHARDS=256
+
+# 起動スクリプト
+COPY scripts/docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
+# アプリケーションを実行
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
