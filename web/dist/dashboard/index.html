@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardX - ダッシュボード</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #3f51b5 !important;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            background-color: #3f51b5;
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #3f51b5;
+            border-color: #3f51b5;
+        }
+        .btn-primary:hover {
+            background-color: #303f9f;
+            border-color: #303f9f;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #3f51b5;
+        }
+        .stat-label {
+            font-size: 1rem;
+            color: #6c757d;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .status-healthy {
+            background-color: #28a745;
+        }
+        .status-warning {
+            background-color: #ffc107;
+        }
+        .status-error {
+            background-color: #dc3545;
+        }
+        .sidebar {
+            background-color: #fff;
+            border-right: 1px solid #dee2e6;
+            height: calc(100vh - 56px);
+            position: sticky;
+            top: 56px;
+        }
+        .sidebar-link {
+            padding: 0.75rem 1rem;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: #f8f9fa;
+            color: #3f51b5;
+            border-left-color: #3f51b5;
+        }
+        .sidebar-link i {
+            margin-right: 0.5rem;
+            width: 24px;
+            text-align: center;
+        }
+        .node-table th, .node-table td {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">ShardX</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">ホーム</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard">ダッシュボード</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api/info">API</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="https://github.com/enablerdao/ShardX" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-github"></i> GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 d-none d-md-block sidebar py-3">
+                <div class="mb-4">
+                    <div class="fw-bold text-uppercase text-muted small mb-3 ps-3">メインメニュー</div>
+                    <a href="#overview" class="sidebar-link active">
+                        <i class="bi bi-speedometer2"></i> 概要
+                    </a>
+                    <a href="#nodes" class="sidebar-link">
+                        <i class="bi bi-hdd-network"></i> ノード
+                    </a>
+                    <a href="#transactions" class="sidebar-link">
+                        <i class="bi bi-arrow-left-right"></i> トランザクション
+                    </a>
+                    <a href="#shards" class="sidebar-link">
+                        <i class="bi bi-grid-3x3"></i> シャード
+                    </a>
+                </div>
+                <div>
+                    <div class="fw-bold text-uppercase text-muted small mb-3 ps-3">管理</div>
+                    <a href="#settings" class="sidebar-link">
+                        <i class="bi bi-gear"></i> 設定
+                    </a>
+                    <a href="#logs" class="sidebar-link">
+                        <i class="bi bi-journal-text"></i> ログ
+                    </a>
+                </div>
+            </div>
+            <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2" id="overview">ダッシュボード</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBtn">
+                                <i class="bi bi-arrow-repeat"></i> 更新
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-download"></i> エクスポート
+                            </button>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-calendar3"></i> 今日
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">今日</a></li>
+                                <li><a class="dropdown-item" href="#">今週</a></li>
+                                <li><a class="dropdown-item" href="#">今月</a></li>
+                                <li><a class="dropdown-item" href="#">今年</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ステータスカード -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="stat-value" id="tps-value">0</div>
+                            <div class="stat-label">TPS</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="stat-value" id="node-count">0</div>
+                            <div class="stat-label">アクティブノード</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="stat-value" id="shard-count">0</div>
+                            <div class="stat-label">シャード数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="stat-value" id="tx-count">0</div>
+                            <div class="stat-label">総トランザクション</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- パフォーマンスチャート -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                TPS（1秒あたりのトランザクション数）
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="tpsChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                シャード負荷
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="shardLoadChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ノード一覧 -->
+                <h2 class="mt-5 mb-3" id="nodes">ノード</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover node-table">
+                                <thead>
+                                    <tr>
+                                        <th>ノードID</th>
+                                        <th>ステータス</th>
+                                        <th>シャード</th>
+                                        <th>CPU使用率</th>
+                                        <th>メモリ使用率</th>
+                                        <th>最終同期</th>
+                                        <th>アクション</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nodeTableBody">
+                                    <!-- ノードデータはJavaScriptで動的に生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- トランザクション一覧 -->
+                <h2 class="mt-5 mb-3" id="transactions">最近のトランザクション</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>トランザクションID</th>
+                                        <th>タイプ</th>
+                                        <th>ステータス</th>
+                                        <th>シャード</th>
+                                        <th>タイムスタンプ</th>
+                                        <th>サイズ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="txTableBody">
+                                    <!-- トランザクションデータはJavaScriptで動的に生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- シャード情報 -->
+                <h2 class="mt-5 mb-3" id="shards">シャード情報</h2>
+                <div class="row" id="shardCards">
+                    <!-- シャードカードはJavaScriptで動的に生成 -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ダミーデータ生成
+        function generateDummyData() {
+            // TPS値を更新
+            document.getElementById('tps-value').textContent = Math.floor(Math.random() * 5000 + 45000);
+            
+            // ノード数を更新
+            document.getElementById('node-count').textContent = Math.floor(Math.random() * 50 + 950);
+            
+            // シャード数を更新
+            const shardCount = Math.floor(Math.random() * 50 + 200);
+            document.getElementById('shard-count').textContent = shardCount;
+            
+            // トランザクション数を更新
+            document.getElementById('tx-count').textContent = Math.floor(Math.random() * 1000000 + 9000000).toLocaleString();
+            
+            // ノードテーブルを生成
+            const nodeTableBody = document.getElementById('nodeTableBody');
+            nodeTableBody.innerHTML = '';
+            
+            for (let i = 0; i < 10; i++) {
+                const statusClass = Math.random() > 0.9 ? 'warning' : (Math.random() > 0.95 ? 'error' : 'healthy');
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>node_${Math.random().toString(36).substring(2, 10)}</td>
+                    <td><span class="badge status-${statusClass} status-badge">${statusClass === 'healthy' ? 'オンライン' : (statusClass === 'warning' ? '警告' : 'エラー')}</span></td>
+                    <td>${Math.floor(Math.random() * 5 + 1)}</td>
+                    <td>${Math.floor(Math.random() * 60 + 20)}%</td>
+                    <td>${Math.floor(Math.random() * 40 + 30)}%</td>
+                    <td>${Math.floor(Math.random() * 60)} 秒前</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-info-circle"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i></button>
+                    </td>
+                `;
+                nodeTableBody.appendChild(row);
+            }
+            
+            // トランザクションテーブルを生成
+            const txTableBody = document.getElementById('txTableBody');
+            txTableBody.innerHTML = '';
+            
+            const txTypes = ['送金', 'スマートコントラクト', 'データ保存', 'トークン交換', 'NFT転送'];
+            const txStatuses = ['成功', '処理中', '失敗'];
+            const statusClasses = ['success', 'warning', 'danger'];
+            
+            for (let i = 0; i < 10; i++) {
+                const statusIndex = Math.floor(Math.random() * txStatuses.length);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 10)}</td>
+                    <td>${txTypes[Math.floor(Math.random() * txTypes.length)]}</td>
+                    <td><span class="badge bg-${statusClasses[statusIndex]}">${txStatuses[statusIndex]}</span></td>
+                    <td>${Math.floor(Math.random() * shardCount)}</td>
+                    <td>${new Date(Date.now() - Math.floor(Math.random() * 3600000)).toLocaleString()}</td>
+                    <td>${Math.floor(Math.random() * 900 + 100)} バイト</td>
+                `;
+                txTableBody.appendChild(row);
+            }
+            
+            // シャードカードを生成
+            const shardCards = document.getElementById('shardCards');
+            shardCards.innerHTML = '';
+            
+            for (let i = 0; i < 8; i++) {
+                const load = Math.floor(Math.random() * 100);
+                const loadClass = load > 80 ? 'danger' : (load > 60 ? 'warning' : 'success');
+                
+                const card = document.createElement('div');
+                card.className = 'col-md-3 mb-4';
+                card.innerHTML = `
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>シャード #${i}</span>
+                            <span class="badge bg-${loadClass}">${load}% 負荷</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-1"><strong>ノード数:</strong> ${Math.floor(Math.random() * 10 + 5)}</p>
+                            <p class="mb-1"><strong>トランザクション/秒:</strong> ${Math.floor(Math.random() * 1000 + 500)}</p>
+                            <p class="mb-1"><strong>レイテンシ:</strong> ${Math.floor(Math.random() * 100 + 10)} ms</p>
+                            <p class="mb-0"><strong>タイプ:</strong> ${Math.random() > 0.7 ? '高負荷' : (Math.random() > 0.4 ? '標準' : '軽量')}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-sm btn-outline-primary">詳細</button>
+                        </div>
+                    </div>
+                `;
+                shardCards.appendChild(card);
+            }
+            
+            // チャートを更新
+            updateCharts();
+        }
+        
+        // チャートを更新する関数
+        function updateCharts() {
+            // TPSチャート
+            const tpsCtx = document.getElementById('tpsChart').getContext('2d');
+            const tpsLabels = Array.from({length: 24}, (_, i) => `${i}:00`);
+            const tpsData = Array.from({length: 24}, () => Math.floor(Math.random() * 10000 + 40000));
+            
+            if (window.tpsChart) {
+                window.tpsChart.data.datasets[0].data = tpsData;
+                window.tpsChart.update();
+            } else {
+                window.tpsChart = new Chart(tpsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: tpsLabels,
+                        datasets: [{
+                            label: 'TPS',
+                            data: tpsData,
+                            borderColor: '#3f51b5',
+                            backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // シャード負荷チャート
+            const shardCtx = document.getElementById('shardLoadChart').getContext('2d');
+            const shardLabels = Array.from({length: 10}, (_, i) => `シャード ${i}`);
+            const shardData = Array.from({length: 10}, () => Math.floor(Math.random() * 100));
+            
+            if (window.shardChart) {
+                window.shardChart.data.datasets[0].data = shardData;
+                window.shardChart.update();
+            } else {
+                window.shardChart = new Chart(shardCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: shardLabels,
+                        datasets: [{
+                            label: '負荷 (%)',
+                            data: shardData,
+                            backgroundColor: shardData.map(value => 
+                                value > 80 ? 'rgba(220, 53, 69, 0.7)' : 
+                                (value > 60 ? 'rgba(255, 193, 7, 0.7)' : 'rgba(40, 167, 69, 0.7)')
+                            ),
+                            borderColor: shardData.map(value => 
+                                value > 80 ? 'rgb(220, 53, 69)' : 
+                                (value > 60 ? 'rgb(255, 193, 7)' : 'rgb(40, 167, 69)')
+                            ),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // ページ読み込み時にデータを生成
+        document.addEventListener('DOMContentLoaded', function() {
+            generateDummyData();
+            
+            // 更新ボタンのイベントリスナー
+            document.getElementById('refreshBtn').addEventListener('click', generateDummyData);
+            
+            // サイドバーのアクティブ状態を切り替え
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    sidebarLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // 実際のAPIからデータを取得する場合は以下のようなコードを使用
+            /*
+            async function fetchNodeInfo() {
+                try {
+                    const response = await fetch('/api/info');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    // データを表示
+                    document.getElementById('node-count').textContent = data.node_count;
+                    document.getElementById('shard-count').textContent = data.shard_count;
+                    // その他のデータ更新...
+                } catch (error) {
+                    console.error('Error fetching node info:', error);
+                }
+            }
+            
+            // 定期的にデータを更新
+            fetchNodeInfo();
+            setInterval(fetchNodeInfo, 10000); // 10秒ごとに更新
+            */
+        });
+    </script>
+</body>
+</html>
