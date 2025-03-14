@@ -28,7 +28,7 @@
     <circle cx="60" cy="15" r="6" fill="#2ecc71"/>
     
     <!-- ターミナルタイトル -->
-    <text x="300" y="20" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">HyperFlux.io CLI</text>
+    <text x="300" y="20" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">ShardX CLI</text>
     
     <!-- コマンドとレスポンス -->
     <g font-family="Courier, monospace" font-size="14" fill="white">
@@ -36,7 +36,7 @@
       <text x="20" y="50">$ npm run cli</text>
       
       <!-- 出力1 -->
-      <text x="20" y="80">HyperFlux.io CLI v1.0.0</text>
+      <text x="20" y="80">ShardX CLI v1.0.0</text>
       <text x="20" y="100">接続中... ノードに接続しました (ID: node_01a2b3c4)</text>
       <text x="20" y="120">タイプ 'help' でコマンド一覧を表示</text>
       
@@ -64,8 +64,8 @@
   </g>
   
   <!-- タイトル -->
-  <text x="400" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">HyperFlux.io コマンドラインインターフェース</text>
+  <text x="400" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">ShardX コマンドラインインターフェース</text>
   
   <!-- フッター -->
-  <text x="400" y="460" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">© 2025 HyperFlux.io - 高性能ブロックチェーンをコマンドラインから操作</text>
+  <text x="400" y="460" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">© 2025 ShardX - 高性能ブロックチェーンをコマンドラインから操作</text>
 </svg>

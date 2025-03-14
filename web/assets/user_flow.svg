@@ -18,7 +18,7 @@
   <rect width="800" height="500" fill="#f8f9fa" rx="10" ry="10"/>
   
   <!-- タイトル -->
-  <text x="400" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">HyperFlux.io ユーザーフロー</text>
+  <text x="400" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">ShardX ユーザーフロー</text>
   
   <!-- ステップ1: インストール -->
   <g transform="translate(150, 150)">
@@ -81,10 +81,10 @@
   <!-- 中央のロゴ/アイコン -->
   <g transform="translate(400, 400)">
     <circle cx="0" cy="0" r="40" fill="#E1F5FE" stroke="#4FC3F7" stroke-width="2"/>
-    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#0288D1">HyperFlux</text>
-    <text x="0" y="25" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#0288D1">.io</text>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#0288D1">ShardX</text>
+    <text x="0" y="25" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#0288D1"></text>
   </g>
   
   <!-- フッター -->
-  <text x="400" y="480" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">© 2025 HyperFlux.io - 簡単セットアップで高性能ブロックチェーンを体験</text>
+  <text x="400" y="480" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">© 2025 ShardX - 簡単セットアップで高性能ブロックチェーンを体験</text>
 </svg>

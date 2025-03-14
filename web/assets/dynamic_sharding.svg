@@ -85,5 +85,5 @@
   <text x="275" y="345" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2196F3">クロスシャード通信</text>
   
   <!-- フッター -->
-  <text x="400" y="480" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">© 2025 HyperFlux.io - トラフィックに応じて自動的にシャード数を調整</text>
+  <text x="400" y="480" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">© 2025 ShardX - トラフィックに応じて自動的にシャード数を調整</text>
 </svg>
