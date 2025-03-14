@@ -15,34 +15,34 @@
 「トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。」
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/pof_consensus.svg" alt="HyperFlux.io コンセンサスメカニズム" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX コンセンサスメカニズム" width="80%"/>
 </div>
 
 ## 📋 概要
-HyperFlux.ioは高速処理、スケーラビリティ、セキュリティを兼ね備えた次世代ブロックチェーンプラットフォームです。
+ShardXは高速処理、スケーラビリティ、セキュリティを兼ね備えた次世代ブロックチェーンプラットフォームです。
 初期フェーズでは50,000 TPS（1秒あたりのトランザクション数）を目標とし、フェーズ2では100,000 TPSを目指します。
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/system_architecture.svg" alt="HyperFlux.io システムアーキテクチャ" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/system_architecture.svg" alt="ShardX システムアーキテクチャ" width="80%"/>
 </div>
 
 ## ✨ 特徴
 - **⚡ Proof of Flow (PoF)**: DAG、PoH、PoSを組み合わせた革新的なコンセンサスアルゴリズム
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/pof_consensus.svg" alt="HyperFlux.io PoF比較" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX PoF比較" width="80%"/>
 </div>
 
 - **🔄 動的シャーディング**: トラフィックに応じて自動的にシャード数を調整
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/dynamic_sharding.svg" alt="HyperFlux.io 動的シャーディング" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/dynamic_sharding.svg" alt="ShardX 動的シャーディング" width="80%"/>
 </div>
 
 - **🧠 AI駆動型トランザクション管理**: 優先順位付けと予測によるスマートな処理
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/ai_transaction.svg" alt="HyperFlux.io AI駆動型トランザクション管理" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/ai_transaction.svg" alt="ShardX AI駆動型トランザクション管理" width="80%"/>
 </div>
 
 - **🔒 高度なセキュリティ**: AES-256暗号化とマルチシグネチャによる堅牢な保護
@@ -53,7 +53,7 @@ HyperFlux.ioは高速処理、スケーラビリティ、セキュリティを�
 PoFは以下の3つの技術を組み合わせた革新的なコンセンサスメカニズムです：
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/pof_consensus.svg" alt="HyperFlux.io PoFフロー" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX PoFフロー" width="80%"/>
 </div>
 
 1. **有向非巡回グラフ (DAG)**
@@ -75,7 +75,7 @@ PoFは以下の3つの技術を組み合わせた革新的なコンセンサス�
 トラフィック量に応じて自動的にシャード数を調整する仕組みを実装：
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/dynamic_sharding.svg" alt="HyperFlux.io シャード再分割" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/dynamic_sharding.svg" alt="ShardX シャード再分割" width="80%"/>
 </div>
 
 1. **シャード割り当て**
@@ -94,7 +94,7 @@ PoFは以下の3つの技術を組み合わせた革新的なコンセンサス�
 AIを活用してトランザクションの優先順位付けと予測を行います：
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/ai_transaction.svg" alt="HyperFlux.io AIモデルアーキテクチャ" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/ai_transaction.svg" alt="ShardX AIモデルアーキテクチャ" width="80%"/>
 </div>
 
 1. **優先順位付け**
@@ -128,7 +128,7 @@ AIを活用してトランザクションの優先順位付けと予測を行い
 ## 🚀 クイックスタート
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/user_flow.svg" alt="HyperFlux.io ユーザーフロー" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/user_flow.svg" alt="ShardX ユーザーフロー" width="80%"/>
 </div>
 
 > **注意**: Dockerビルドに問題がある場合は、以下の手順を試してください：
@@ -139,20 +139,20 @@ AIを活用してトランザクションの優先順位付けと予測を行い
 ### 🌐 ワンクリックデプロイ
 
 <div align="center">
-  <a href="https://render.com/deploy?repo=https://github.com/enablerdao/HyperFlux">
+  <a href="https://render.com/deploy?repo=https://github.com/enablerdao/ShardX">
     <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" />
   </a>
-  <a href="https://gitpod.io/#https://github.com/enablerdao/HyperFlux">
+  <a href="https://gitpod.io/#https://github.com/enablerdao/ShardX">
     <img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod" />
   </a>
 </div>
 
 ### 🔥 1コマンドでの起動（すべてのOS対応）
 
-以下の1コマンドで、HyperFlux.ioのノードとWebインターフェースを起動できます：
+以下の1コマンドで、ShardXのノードとWebインターフェースを起動できます：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/enablerdao/HyperFlux/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
 ```
 
 <details>
@@ -173,10 +173,10 @@ curl -fsSL https://raw.githubusercontent.com/enablerdao/HyperFlux/main/install.s
 
 ```bash
 # リポジトリのクローン
-git clone https://github.com/enablerdao/HyperFlux.git
+git clone https://github.com/enablerdao/ShardX.git
 
 # ディレクトリに移動
-cd HyperFlux
+cd ShardX
 
 # インストールスクリプトを実行
 ./install.sh
@@ -192,19 +192,19 @@ cd HyperFlux
 - 🖥️ **Webインターフェース**: [http://localhost:54867](http://localhost:54867)
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/dashboard.svg" alt="HyperFlux.io Dashboard" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/dashboard.svg" alt="ShardX Dashboard" width="80%"/>
 </div>
 
 ### 💻 コマンドラインインターフェース (CLI)
 
-HyperFlux.ioはコマンドラインからの操作も可能です：
+ShardXはコマンドラインからの操作も可能です：
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/user_flow.svg" alt="HyperFlux.io 開発フロー" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/user_flow.svg" alt="ShardX 開発フロー" width="80%"/>
 </div>
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/cli.svg" alt="HyperFlux.io CLI" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/cli.svg" alt="ShardX CLI" width="80%"/>
 </div>
 
 ```bash
@@ -318,7 +318,7 @@ package.jsonに定義されたスクリプトを使用して、簡単に操作�
     </tr>
     <tr>
       <td>
-        <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/docs/images/linux.png" width="20" alt="Linux" />
+        <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/docs/images/linux.png" width="20" alt="Linux" />
         Linux
       </td>
       <td>x86_64, ARM64</td>
@@ -326,7 +326,7 @@ package.jsonに定義されたスクリプトを使用して、簡単に操作�
     </tr>
     <tr>
       <td>
-        <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/docs/images/macos.png" width="20" alt="macOS" />
+        <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/docs/images/macos.png" width="20" alt="macOS" />
         macOS
       </td>
       <td>Intel Chip, Apple Silicon (M1/M2/M3)</td>
@@ -334,7 +334,7 @@ package.jsonに定義されたスクリプトを使用して、簡単に操作�
     </tr>
     <tr>
       <td>
-        <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/docs/images/windows.png" width="20" alt="Windows" />
+        <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/docs/images/windows.png" width="20" alt="Windows" />
         Windows
       </td>
       <td>x86_64 (WSL2経由)</td>
@@ -365,7 +365,7 @@ TARGETARCH=arm64 ./docker-start.sh -r
 <details>
 <summary>🛠️ クロスプラットフォームビルドの仕組み</summary>
 
-HyperFlux.ioは、異なるアーキテクチャでのビルドを自動的に処理するための改良されたDockerfileを使用しています：
+ShardXは、異なるアーキテクチャでのビルドを自動的に処理するための改良されたDockerfileを使用しています：
 
 1. **アーキテクチャの自動検出**：
    - ホストマシンのアーキテクチャを自動的に検出
@@ -415,8 +415,8 @@ sudo usermod -aG docker $USER
 
 2. **プロジェクトのクローンと起動**
 ```bash
-git clone https://github.com/enablerdao/HyperFlux.git
-cd HyperFlux
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
 docker-compose up --build
 ```
 
@@ -431,8 +431,8 @@ docker-compose up --build
 
 2. **プロジェクトのクローンと起動**
 ```bash
-git clone https://github.com/enablerdao/HyperFlux.git
-cd HyperFlux
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
 docker-compose up --build
 ```
 
@@ -444,8 +444,8 @@ docker-compose up --build
 
 2. **プロジェクトのクローンと起動**
 ```bash
-git clone https://github.com/enablerdao/HyperFlux.git
-cd HyperFlux
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
 docker-compose up --build
 ```
 
@@ -481,8 +481,8 @@ brew install node
 
 ```bash
 # リポジトリのクローン
-git clone https://github.com/enablerdao/HyperFlux.git
-cd HyperFlux
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
 
 # Rustの依存関係をインストール
 cargo build
@@ -514,7 +514,7 @@ Webインターフェースでは、以下の3つのデータソースを切り�
 ### 主要コンポーネントの実装詳細
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/system_architecture.svg" alt="HyperFlux.io コンポーネント間の相互作用" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/system_architecture.svg" alt="ShardX コンポーネント間の相互作用" width="80%"/>
 </div>
 
 #### 1. トランザクション処理
@@ -676,7 +676,7 @@ curl -X POST -H "Content-Type: application/json" \
 
 ##### 結論
 
-HyperFlux.ioのマルチノードテストは成功しました。各ノードは正常に起動し、トランザクションを受け付けることができました。また、2番目のトランザクションでは最初のトランザクションを親として参照することができ、DAG（有向非巡回グラフ）構造の基本的な機能が動作していることを確認しました。
+ShardXのマルチノードテストは成功しました。各ノードは正常に起動し、トランザクションを受け付けることができました。また、2番目のトランザクションでは最初のトランザクションを親として参照することができ、DAG（有向非巡回グラフ）構造の基本的な機能が動作していることを確認しました。
 
 詳細なテスト結果は[こちら](./test_results/transaction_test.md)をご覧ください。
 
@@ -714,7 +714,7 @@ HyperFlux.ioのマルチノードテストは成功しました。各ノード�
 ## コントリビューションガイド
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/HyperFlux/main/web/assets/user_flow.svg" alt="HyperFlux.io エコシステム" width="80%"/>
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/user_flow.svg" alt="ShardX エコシステム" width="80%"/>
 </div>
 
 1. このリポジトリをフォーク
@@ -722,6 +722,14 @@ HyperFlux.ioのマルチノードテストは成功しました。各ノード�
 3. 変更をコミット: `git commit -m 'Add amazing feature'`
 4. ブランチをプッシュ: `git push origin feature/amazing-feature`
 5. プルリクエストを作成
+
+## 📞 お問い合わせ
+
+- **公式サイト**: [https://shardx.org](https://shardx.org)
+- **GitHub**: [https://github.com/enablerdao/ShardX](https://github.com/enablerdao/ShardX)
+- **Twitter**: [@ShardXOrg](https://twitter.com/ShardXOrg)
+- **Discord**: [ShardX Community](https://discord.gg/shardx)
+- **メール**: [info@shardx.org](mailto:info@shardx.org)
 
 ## ライセンス
 MIT

@@ -1,6 +1,6 @@
-# HyperFlux.io API ドキュメント
+# ShardX API ドキュメント
 
-このドキュメントでは、HyperFlux.io APIの使用方法について説明します。
+このドキュメントでは、ShardX APIの使用方法について説明します。
 
 ## 基本情報
 
@@ -48,7 +48,7 @@ curl -X POST http://localhost:54868/tx/create \
   -H "Content-Type: application/json" \
   -d '{
     "parent_ids": ["tx_123456", "tx_789012"],
-    "payload": "Hello, HyperFlux!",
+    "payload": "Hello, ShardX!",
     "signature": "0x1a2b3c4d5e6f..."
   }'
 ```
@@ -76,7 +76,7 @@ curl -X GET http://localhost:54868/tx/tx_abcdef123456
 {
   "tx_id": "tx_abcdef123456",
   "parent_ids": ["tx_123456", "tx_789012"],
-  "payload": "Hello, HyperFlux!",
+  "payload": "Hello, ShardX!",
   "signature": "0x1a2b3c4d5e6f...",
   "status": "confirmed",
   "timestamp": 1647123456789,
@@ -105,7 +105,7 @@ curl -X GET "http://localhost:54868/tx/list?limit=5&status=confirmed"
   "transactions": [
     {
       "tx_id": "tx_abcdef123456",
-      "payload": "Hello, HyperFlux!",
+      "payload": "Hello, ShardX!",
       "status": "confirmed",
       "timestamp": 1647123456789
     },

@@ -1,6 +1,6 @@
-# HyperFlux.io AI モデル
+# ShardX AI モデル
 
-このディレクトリには、HyperFlux.ioで使用されるAIモデルが格納されています。
+このディレクトリには、ShardXで使用されるAIモデルが格納されています。
 
 ## モデルの概要
 
