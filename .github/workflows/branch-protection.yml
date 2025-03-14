@@ -1,0 +1,32 @@
+name: Branch Protection
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  setup-branch-protection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup branch protection
+        uses: relaxdiego/github-branch-protection-bot@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          branch: main
+          enforce-admins: false
+          required-status-checks: |
+            test
+            build
+          required-pull-request-reviews: |
+            required_approving_review_count: 1
+            dismiss_stale_reviews: true
+            require_code_owner_reviews: false
+          restrictions: |
+            users: []
+            teams: []
