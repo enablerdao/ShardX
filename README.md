@@ -27,12 +27,22 @@ Dockerがインストールされている環境では、以下のコマンド�
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/quick_start.sh | bash
 ```
 
+#### Mac向け特別インストール
+
+MacOSでメモリ不足エラーが発生する場合は、以下のコマンドを使用してください：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/mac_install.sh | bash
+```
+
 または、リポジトリをクローンして起動：
 
 ```bash
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
-./quick_start.sh
+./quick_start.sh  # 一般的な環境用
+# または
+./mac_install.sh  # Mac専用
 ```
 
 ## 🚀 ワンクリックデプロイ
