@@ -1,0 +1,48 @@
+{
+  "name": "ShardX",
+  "description": "高速処理、スケーラビリティ、セキュリティを兼ね備えた次世代ブロックチェーンプラットフォーム",
+  "repository": "https://github.com/enablerdao/ShardX",
+  "logo": "https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/logo.svg",
+  "keywords": ["blockchain", "rust", "shardx", "dag", "proof-of-flow"],
+  "success_url": "/",
+  "env": {
+    "NODE_ID": {
+      "description": "ノードの一意の識別子",
+      "generator": "secret"
+    },
+    "PORT": {
+      "description": "アプリケーションが使用するポート",
+      "value": "54868"
+    },
+    "LOG_LEVEL": {
+      "description": "ログレベル (debug, info, warn, error)",
+      "value": "info"
+    },
+    "INITIAL_SHARDS": {
+      "description": "初期シャード数",
+      "value": "256"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "standard-1x"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:hobby-dev"
+    },
+    {
+      "plan": "heroku-redis:hobby-dev"
+    }
+  ],
+  "buildpacks": [
+    {
+      "url": "https://github.com/emk/heroku-buildpack-rust"
+    }
+  ],
+  "scripts": {
+    "postdeploy": "cargo run --bin init_db"
+  }
+}

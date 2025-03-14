@@ -1,0 +1,18 @@
+{
+  "name": "shardx-web",
+  "version": 2,
+  "public": true,
+  "builds": [
+    { "src": "web/dist/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/web/dist/$1" },
+    { "src": "/", "dest": "/web/dist/index.html" },
+    { "src": "/dashboard", "dest": "/web/dist/index.html" },
+    { "src": "/assets/(.*)", "dest": "/web/dist/assets/$1" }
+  ],
+  "github": {
+    "enabled": true,
+    "silent": false
+  }
+}

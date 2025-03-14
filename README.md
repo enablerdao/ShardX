@@ -17,6 +17,20 @@
 ## 🌌 ビジョン
 「まるで呼吸をするように自然で快適に、誰もがストレスなく繋がり、自由に価値をやりとりできる世界を創造する。」
 
+## 🚀 ワンクリックデプロイ
+
+<div align="center">
+  <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
+    <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
+  </a>
+  <a href="https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX">
+    <img src="https://vercel.com/button" alt="Deploy to Vercel" />
+  </a>
+  <a href="https://app.netlify.com/start/deploy?repository=https://github.com/enablerdao/ShardX">
+    <img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" />
+  </a>
+</div>
+
 <div align="center">
   <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/pof_consensus.svg" alt="ShardX コンセンサスメカニズム" width="80%"/>
 </div>
