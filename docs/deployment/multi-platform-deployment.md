@@ -6,6 +6,7 @@
 - [Railway](#railway)
 - [Heroku](#heroku)
 - [Fly.io](#flyio)
+- [Google Cloud Run](#google-cloud-run)
 - [統合デプロイスクリプト](#統合デプロイスクリプト)
 - [トラブルシューティング](#トラブルシューティング)
 
@@ -168,6 +169,67 @@ Herokuでは、以下のファイルを通じて設定が可能です：
 
 Fly.ioでデプロイする際に「launch manifest was created for a app, but this is a app」というエラーが発生する場合は、`fly.toml`ファイルの構造を最新のFly.io仕様に合わせて修正する必要があります。修正済みの`deploy-fly-fix.sh`スクリプトを使用することで、この問題を回避できます。
 
+## Google Cloud Run
+
+[Google Cloud Run](https://cloud.google.com/run)は、コンテナ化されたアプリケーションをサーバーレスで実行するためのプラットフォームです。自動スケーリングと従量課金制のため、トラフィックの変動が大きいアプリケーションに最適です。
+
+### 特徴
+
+- サーバーレスコンテナプラットフォーム
+- 自動スケーリング（ゼロインスタンスまでスケールダウン可能）
+- 従量課金制（無料枠あり）
+- グローバルに分散されたインフラストラクチャ
+
+### デプロイ手順
+
+1. [Google Cloudアカウント](https://console.cloud.google.com/)を作成します
+2. Google Cloud SDKをインストールします：
+   ```bash
+   # Debian/Ubuntu
+   echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+   curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+   sudo apt-get update && sudo apt-get install google-cloud-sdk
+   
+   # macOS
+   brew install --cask google-cloud-sdk
+   ```
+
+3. ログインします：
+   ```bash
+   gcloud auth login
+   ```
+
+4. プロジェクトを設定します：
+   ```bash
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+
+5. Dockerイメージをビルドしてアップロードします：
+   ```bash
+   gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/shardx
+   ```
+
+6. Cloud Runにデプロイします：
+   ```bash
+   gcloud run deploy shardx \
+     --image gcr.io/YOUR_PROJECT_ID/shardx \
+     --platform managed \
+     --allow-unauthenticated \
+     --port 54868 \
+     --memory 1Gi
+   ```
+
+### ワンクリックデプロイ
+
+以下のボタンをクリックして、Google Cloud Shellを使用してデプロイすることもできます：
+
+[![Run on Google Cloud](https://storage.googleapis.com/gweb-cloudblog-publish/images/run_on_google_cloud.max-300x300.png)](https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/enablerdao/ShardX)
+
+### 注意事項
+
+- Google Cloud Runでは、コンテナが一定時間アイドル状態になると自動的にシャットダウンされます。これにより、コストを削減できますが、長時間実行が必要なプロセスには適さない場合があります。
+- 永続的なデータストレージには、Cloud Storage、Firestore、Cloud SQLなどのマネージドサービスを使用することをお勧めします。
+
 ## 統合デプロイスクリプト
 
 複数のクラウドプラットフォームへのデプロイを簡単に行うために、統合デプロイスクリプト`deploy-all.sh`を用意しています。
@@ -182,7 +244,7 @@ Fly.ioでデプロイする際に「launch manifest was created for a app, but t
 
 ### 機能
 
-- Render、Railway、Heroku、Fly.ioへのデプロイをサポート
+- Render、Railway、Heroku、Fly.io、Google Cloud Runへのデプロイをサポート
 - 各プラットフォームの特性に合わせた最適な設定を自動適用
 - デプロイ中の問題に対するガイダンスを提供
 
@@ -234,6 +296,14 @@ Fly.ioでデプロイする際に「launch manifest was created for a app, but t
 
 - **問題**: ボリュームマウントエラー
   **解決策**: ボリュームが正しく作成されているか確認し、必要に応じて新しいボリュームを作成します。
+
+### Google Cloud Run
+
+- **問題**: コンテナが起動しない
+  **解決策**: ログを確認し、メモリ割り当てが十分か確認してください。必要に応じて`--memory`フラグで増やします。
+
+- **問題**: 「Permission denied」エラー
+  **解決策**: サービスアカウントに適切な権限が付与されているか確認してください。
 
 ## パフォーマンスの最適化
 

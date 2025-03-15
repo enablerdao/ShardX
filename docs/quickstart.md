@@ -26,7 +26,11 @@ docker run -d -p 54867:54867 -p 54868:54868 --name shardx enablerdao/shardx:late
 
 - [Renderにデプロイ](https://render.com/deploy?repo=https://github.com/enablerdao/ShardX)
 - [Railwayにデプロイ](https://railway.app/template/ShardX)
-- [Vercelにデプロイ](https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX)
+- [Herokuにデプロイ](https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX)
+- [Fly.ioにデプロイ](https://fly.io/launch/github/enablerdao/ShardX)
+- [Vercelにデプロイ](https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX)（Webインターフェースのみ）
+- [Netlifyにデプロイ](https://app.netlify.com/start/deploy?repository=https://github.com/enablerdao/ShardX)（Webインターフェースのみ）
+- [Google Cloud Runにデプロイ](https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/enablerdao/ShardX)
 
 詳細な手順は[デプロイガイド](deployment/multi-platform-deployment.md)を参照してください。
 

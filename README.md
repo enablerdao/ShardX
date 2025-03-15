@@ -54,6 +54,15 @@ shardx
   <a href="https://fly.io/launch/github/enablerdao/ShardX">
     <img src="https://fly.io/static/images/brand/logo-mark-dark.svg" alt="Deploy to Fly.io" height="44px" />
   </a>
+  <a href="https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX">
+    <img src="https://vercel.com/button" alt="Deploy with Vercel" height="44px" />
+  </a>
+  <a href="https://app.netlify.com/start/deploy?repository=https://github.com/enablerdao/ShardX">
+    <img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" height="44px" />
+  </a>
+  <a href="https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/enablerdao/ShardX">
+    <img src="https://storage.googleapis.com/gweb-cloudblog-publish/images/run_on_google_cloud.max-300x300.png" alt="Run on Google Cloud" height="44px" />
+  </a>
 </div>
 
 各プラットフォームの特徴:
@@ -61,6 +70,9 @@ shardx
 - **Railway**: 高速デプロイ、直感的なUI、開発・テスト向け
 - **Heroku**: 安定性と拡張性、PostgreSQL・Redis連携、本番環境向け
 - **Fly.io**: グローバル分散デプロイ、低レイテンシー、本番環境向け
+- **Vercel**: 高速CDN、自動HTTPS、フロントエンド特化（Webインターフェースのみ）
+- **Netlify**: 継続的デプロイ、エッジネットワーク、フロントエンド特化（Webインターフェースのみ）
+- **Google Cloud Run**: サーバーレス、自動スケーリング、本番環境向け
 
 詳細は[デプロイガイド](docs/deployment/multi-platform-deployment.md)を参照してください。
 
@@ -270,7 +282,9 @@ curl https://your-app-url.onrender.com/api/v1/predictions/transaction-count?hori
 - [API リファレンス](docs/api/README.md) - すべてのエンドポイントの説明
 - [デプロイガイド](docs/deployment/multi-platform-deployment.md) - 各クラウドプラットフォームへのデプロイ方法
 - [クロスチェーン機能](docs/cross_chain/README.md) - 異なるブロックチェーンとの連携方法
-- [パフォーマンステスト結果](docs/benchmarks/performance_results.md) - 100,000 TPS達成の詳細
+- [パフォーマンステスト結果](docs/test_results/index.md) - 100,000 TPS達成の詳細
+- [コントリビューションガイド](docs/contributing/index.md) - 開発に参加する方法
+- [ロードマップ](docs/roadmap/index.md) - 今後の開発計画
 
 ## 🤝 コントリビューション
 
@@ -281,7 +295,7 @@ curl https://your-app-url.onrender.com/api/v1/predictions/transaction-count?hori
 3. プルリクエストを送信
 4. フィードバックを受けて改善
 
-詳細は[コントリビューションガイド](CONTRIBUTING.md)を参照してください。
+詳細は[コントリビューションガイド](docs/contributing/index.md)を参照してください。
 
 ## 📄 ライセンス
 
