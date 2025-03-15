@@ -4,45 +4,78 @@
   "repository": "https://github.com/enablerdao/ShardX",
   "logo": "https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/logo.svg",
   "keywords": ["blockchain", "rust", "shardx", "dag", "proof-of-flow"],
-  "success_url": "/",
+  "website": "https://shardx.org",
+  "success_url": "/dashboard",
   "env": {
     "NODE_ID": {
       "description": "ノードの一意の識別子",
       "generator": "secret"
     },
     "PORT": {
-      "description": "アプリケーションが使用するポート",
+      "description": "APIが使用するポート",
       "value": "54868"
     },
-    "LOG_LEVEL": {
+    "P2P_PORT": {
+      "description": "P2P通信に使用するポート",
+      "value": "54867"
+    },
+    "RUST_LOG": {
       "description": "ログレベル (debug, info, warn, error)",
       "value": "info"
     },
     "INITIAL_SHARDS": {
       "description": "初期シャード数",
-      "value": "256"
+      "value": "32"
+    },
+    "DATA_DIR": {
+      "description": "データ保存ディレクトリ",
+      "value": "/app/data"
+    },
+    "REDIS_ENABLED": {
+      "description": "Redisを使用するかどうか",
+      "value": "true"
+    },
+    "WEB_ENABLED": {
+      "description": "Webインターフェースを有効にするかどうか",
+      "value": "true"
     }
   },
   "formation": {
     "web": {
       "quantity": 1,
-      "size": "standard-1x"
+      "size": "basic"
+    },
+    "worker": {
+      "quantity": 1,
+      "size": "basic"
     }
   },
   "addons": [
     {
-      "plan": "heroku-postgresql:hobby-dev"
+      "plan": "heroku-postgresql:hobby-dev",
+      "as": "DATABASE"
     },
     {
-      "plan": "heroku-redis:hobby-dev"
+      "plan": "heroku-redis:hobby-dev",
+      "as": "REDIS"
     }
   ],
   "buildpacks": [
     {
       "url": "https://github.com/emk/heroku-buildpack-rust"
+    },
+    {
+      "url": "heroku/nodejs"
     }
   ],
   "scripts": {
-    "postdeploy": "cargo run --bin init_db"
-  }
+    "postdeploy": "cargo run --bin init_db && cd web && npm install && npm run build"
+  },
+  "stack": "heroku-22",
+  "cron": [
+    {
+      "command": "./target/release/shardx --maintenance",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }

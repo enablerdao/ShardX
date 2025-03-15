@@ -18,6 +18,13 @@ services:
         value: "10" # シャード数を減らして軽量化
       - key: DATA_DIR
         value: /tmp/shardx-data # 一時ディレクトリを使用
+      - key: REDIS_ENABLED
+        value: "true"
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: redis
+          property: connectionString
 
   # Webインターフェース（Node.js）
   - type: web
@@ -34,3 +41,35 @@ services:
         value: 52153
       - key: API_URL
         value: https://shardx-node.onrender.com
+      - key: NODE_ENV
+        value: production
+
+  # Redis（キャッシュとメッセージングに使用）
+  - type: redis
+    name: redis
+    ipAllowList: # 全てのIPからのアクセスを許可
+      - source: 0.0.0.0/0
+        description: everywhere
+    plan: free # 無料プラン
+
+  # バックグラウンドワーカー（分析処理用）
+  - type: worker
+    name: shardx-worker
+    env: docker
+    dockerfilePath: ./Dockerfile.simple
+    dockerContext: .
+    plan: free # 無料プラン
+    envVars:
+      - key: NODE_ID
+        value: render_worker
+      - key: RUST_LOG
+        value: info
+      - key: WORKER_MODE
+        value: "true"
+      - key: REDIS_ENABLED
+        value: "true"
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: redis
+          property: connectionString
