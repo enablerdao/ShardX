@@ -1,7 +1,7 @@
 use crate::ai::AIPriorityManager;
 use crate::consensus::{ProofOfFlow, SimpleValidator, Validator};
-use crate::sharding::{CrossShardManager, ShardingManager};
-use crate::transaction::{DAG, Transaction};
+use crate::sharding::{ShardManager as ShardingManager};
+use crate::transaction::Transaction;
 use log::{error, info};
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -52,8 +52,8 @@ pub struct Node {
     pub id: String,
     /// ノードの状態
     pub status: NodeStatus,
-    /// DAG
-    pub dag: Arc<DAG>,
+    /// DAG (temporarily using a placeholder)
+    pub dag: Arc<std::sync::Mutex<Vec<Transaction>>>,
     /// コンセンサスエンジン
     pub consensus: Arc<ProofOfFlow>,
     /// シャーディングマネージャー
@@ -70,7 +70,8 @@ pub struct Node {
 impl Node {
     /// 新しいノードを作成
     pub fn new(config: NodeConfig) -> Self {
-        let dag = Arc::new(DAG::new());
+        // Using a placeholder for DAG until it's properly implemented
+        let dag = Arc::new(std::sync::Mutex::new(Vec::new()));
         
         // バリデータを作成
         let mut validators: Vec<Arc<dyn Validator>> = Vec::new();
