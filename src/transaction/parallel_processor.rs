@@ -265,9 +265,27 @@ impl ParallelProcessor {
     }
 
     /// 複数のトランザクションの依存関係を一括解析
+    /// 
+    /// 最適化ポイント:
+    /// 1. 送信元アドレスによるインデックス作成で検索を高速化
+    /// 2. 依存関係の計算を効率化
+    /// 3. 不要なクローンを削減
     async fn analyze_batch_dependencies(&self, transactions: &[Transaction]) -> Result<Vec<Vec<String>>, Error> {
+        // 送信元アドレスによるインデックスを作成
+        let mut address_index: HashMap<String, Vec<&Transaction>> = HashMap::new();
+        for tx in transactions {
+            address_index.entry(tx.from.clone())
+                .or_insert_with(Vec::new)
+                .push(tx);
+        }
+        
+        // 各アドレスのトランザクションをnonceでソート
+        for txs in address_index.values_mut() {
+            txs.sort_by_key(|tx| tx.nonce);
+        }
+        
         // 依存関係グラフを構築
-        let mut direct_dependencies = HashMap::new();
+        let mut direct_dependencies = HashMap::with_capacity(transactions.len());
         
         for tx in transactions {
             let mut dependencies = HashSet::new();
@@ -277,26 +295,29 @@ impl ParallelProcessor {
                 dependencies.insert(parent_id.clone());
             }
             
-            // 同じアドレスからの他のトランザクションを依存関係に追加
-            for other_tx in transactions {
-                if tx.id != other_tx.id && tx.from == other_tx.from && tx.nonce > other_tx.nonce {
-                    dependencies.insert(other_tx.id.clone());
+            // 同じアドレスからの他のトランザクションを依存関係に追加（最適化版）
+            if let Some(same_address_txs) = address_index.get(&tx.from) {
+                for &other_tx in same_address_txs {
+                    if tx.id != other_tx.id && tx.nonce > other_tx.nonce {
+                        dependencies.insert(other_tx.id.clone());
+                    }
                 }
             }
             
             direct_dependencies.insert(tx.id.clone(), dependencies);
         }
         
-        // 依存関係グラフを更新
+        // 依存関係グラフを更新（バッチ更新で最適化）
         {
             let mut dependency_graph = self.dependency_graph.lock().unwrap();
             
             for (tx_id, deps) in &direct_dependencies {
-                let graph_deps = dependency_graph.entry(tx_id.clone())
-                    .or_insert_with(HashSet::new);
-                
-                for dep in deps {
-                    graph_deps.insert(dep.clone());
+                if !deps.is_empty() {
+                    let graph_deps = dependency_graph.entry(tx_id.clone())
+                        .or_insert_with(HashSet::new);
+                    
+                    // 既存の依存関係と新しい依存関係をマージ
+                    graph_deps.extend(deps.iter().cloned());
                 }
             }
         }
@@ -308,40 +329,67 @@ impl ParallelProcessor {
     }
 
     /// 依存関係に基づいてトランザクションをグループ化
+    /// 
+    /// 最適化ポイント:
+    /// 1. 依存関係の逆マッピングを作成して検索を効率化
+    /// 2. 処理済みトランザクションの追跡を最適化
+    /// 3. 循環依存関係の検出と解決を改善
     fn group_by_dependencies(&self, dependencies: HashMap<String, HashSet<String>>) -> Vec<Vec<String>> {
-        // 依存関係のないトランザクションを特定
-        let mut independent_txs = Vec::new();
-        let mut dependent_txs = HashSet::new();
+        // 依存関係のないトランザクションを特定（容量を事前確保）
+        let mut independent_txs = Vec::with_capacity(dependencies.len() / 4);
+        let mut dependent_txs = HashSet::with_capacity(dependencies.len() * 3 / 4);
+        
+        // 逆依存関係マップを構築（どのトランザクションが他のどのトランザクションに依存されているか）
+        let mut reverse_deps: HashMap<String, HashSet<String>> = HashMap::with_capacity(dependencies.len());
         
         for (tx_id, deps) in &dependencies {
             if deps.is_empty() {
                 independent_txs.push(tx_id.clone());
             } else {
                 dependent_txs.insert(tx_id.clone());
+                
+                // 逆依存関係を構築
+                for dep_id in deps {
+                    reverse_deps.entry(dep_id.clone())
+                        .or_insert_with(HashSet::new)
+                        .insert(tx_id.clone());
+                }
             }
         }
+        
+        // 処理済みトランザクションを追跡
+        let mut processed_txs = HashSet::with_capacity(dependencies.len());
         
         // 依存関係のないトランザクションを最初のグループとして追加
         let mut groups = Vec::new();
         if !independent_txs.is_empty() {
+            // 処理済みとしてマーク
+            for tx_id in &independent_txs {
+                processed_txs.insert(tx_id.clone());
+            }
+            
             groups.push(independent_txs);
         }
         
         // 依存関係のあるトランザクションをグループ化
-        while !dependent_txs.is_empty() {
-            let mut next_group = Vec::new();
-            let mut remaining = HashSet::new();
+        let mut iteration_count = 0;
+        let max_iterations = dependent_txs.len() * 2; // 循環依存関係の無限ループを防止
+        
+        while !dependent_txs.is_empty() && iteration_count < max_iterations {
+            iteration_count += 1;
+            
+            let mut next_group = Vec::with_capacity(dependent_txs.len() / 2);
+            let mut remaining = HashSet::with_capacity(dependent_txs.len() / 2);
             
             for tx_id in &dependent_txs {
                 let deps = dependencies.get(tx_id).unwrap();
                 
-                // すべての依存関係が前のグループに含まれているかチェック
-                let all_deps_processed = deps.iter().all(|dep| {
-                    !dependent_txs.contains(dep) || groups.iter().any(|group| group.contains(dep))
-                });
+                // すべての依存関係が処理済みかチェック（最適化版）
+                let all_deps_processed = deps.iter().all(|dep| processed_txs.contains(dep));
                 
                 if all_deps_processed {
                     next_group.push(tx_id.clone());
+                    processed_txs.insert(tx_id.clone());
                 } else {
                     remaining.insert(tx_id.clone());
                 }
@@ -349,31 +397,92 @@ impl ParallelProcessor {
             
             // 次のグループが空の場合、循環依存関係がある可能性
             if next_group.is_empty() {
-                // 残りのトランザクションを強制的に追加
-                groups.push(remaining.into_iter().collect());
-                break;
+                // 循環依存関係を検出して解決
+                let mut cycle_breakers = self.detect_cycle_breakers(&remaining, &dependencies, &processed_txs);
+                
+                // 循環依存関係の解決策が見つからない場合は、残りをすべて追加
+                if cycle_breakers.is_empty() {
+                    cycle_breakers = remaining.iter().cloned().collect();
+                }
+                
+                // 処理済みとしてマーク
+                for tx_id in &cycle_breakers {
+                    processed_txs.insert(tx_id.clone());
+                }
+                
+                groups.push(cycle_breakers);
+                
+                // 残りのトランザクションを更新
+                remaining = remaining.difference(&processed_txs).cloned().collect();
+            } else {
+                groups.push(next_group);
             }
             
-            groups.push(next_group);
             dependent_txs = remaining;
+        }
+        
+        // 最大イテレーション数に達した場合、残りのトランザクションを強制的に追加
+        if !dependent_txs.is_empty() {
+            groups.push(dependent_txs.into_iter().collect());
         }
         
         groups
     }
+    
+    /// 循環依存関係を検出して解決するためのトランザクションを特定
+    fn detect_cycle_breakers(
+        &self,
+        remaining: &HashSet<String>,
+        dependencies: &HashMap<String, HashSet<String>>,
+        processed_txs: &HashSet<String>
+    ) -> Vec<String> {
+        // 依存関係の少ないトランザクションを優先的に選択
+        let mut candidates: Vec<_> = remaining.iter()
+            .map(|tx_id| {
+                let deps = dependencies.get(tx_id).unwrap();
+                let unprocessed_deps = deps.iter()
+                    .filter(|dep| !processed_txs.contains(*dep))
+                    .count();
+                (tx_id, unprocessed_deps)
+            })
+            .collect();
+        
+        // 未処理の依存関係が少ない順にソート
+        candidates.sort_by_key(|&(_, count)| count);
+        
+        // 上位20%のトランザクションを選択
+        let count = (candidates.len() as f64 * 0.2).ceil() as usize;
+        let count = count.max(1).min(candidates.len());
+        
+        candidates.into_iter()
+            .take(count)
+            .map(|(tx_id, _)| (*tx_id).clone())
+            .collect()
+    }
 
     /// トランザクションを実行
+    /// 
+    /// 最適化ポイント:
+    /// 1. ロックの保持時間を最小化
+    /// 2. 不要なクローンを削減
+    /// 3. エラーハンドリングを改善
     async fn execute_transaction(&self, transaction: Transaction) -> Result<(), Error> {
-        // 処理状態を更新
+        // トランザクションIDを保存（クローンを減らす）
+        let tx_id = transaction.id.clone();
+        
+        // 処理状態を更新（ロック時間を最小化）
         {
             let mut processing_txs = self.processing_txs.lock().unwrap();
-            processing_txs.insert(transaction.id.clone(), TransactionProcessingState::Validating);
+            processing_txs.insert(tx_id.clone(), TransactionProcessingState::Validating);
         }
 
-        // セマフォアを取得
-        let permit = match self.semaphore.clone().acquire_owned().await {
-            Ok(permit) => permit,
-            Err(_) => return Err(Error::InternalError("Failed to acquire semaphore".to_string())),
-        };
+        // セマフォアを取得（タイムアウト付き）
+        let permit = tokio::time::timeout(
+            Duration::from_millis(self.config.processing_timeout_ms),
+            self.semaphore.clone().acquire_owned()
+        ).await
+        .map_err(|_| Error::TimeoutError("Semaphore acquisition timed out".to_string()))?
+        .map_err(|_| Error::InternalError("Failed to acquire semaphore".to_string()))?;
 
         // 処理開始時間
         let start_time = std::time::Instant::now();
@@ -381,29 +490,44 @@ impl ParallelProcessor {
         // 処理状態を更新
         {
             let mut processing_txs = self.processing_txs.lock().unwrap();
-            processing_txs.insert(transaction.id.clone(), TransactionProcessingState::Executing);
+            processing_txs.insert(tx_id.clone(), TransactionProcessingState::Executing);
         }
 
-        // トランザクションを実行
-        let result = self.cross_shard_manager.start_transaction(transaction.clone()).await;
+        // トランザクションを実行（タイムアウト付き）
+        let result = tokio::time::timeout(
+            Duration::from_millis(self.config.processing_timeout_ms),
+            self.cross_shard_manager.start_transaction(transaction)
+        ).await
+        .map_err(|_| Error::TimeoutError("Transaction execution timed out".to_string()))?;
 
         // 処理時間
         let processing_time = start_time.elapsed().as_millis() as u64;
 
+        // 統計を更新（バッチ更新で最適化）
+        self.update_stats(tx_id.clone(), result.is_ok(), processing_time);
+
+        // セマフォアを解放（permitがドロップされる）
+        drop(permit);
+
+        result.map(|_| ())
+    }
+    
+    /// 処理統計を更新（ロック時間を最小化するために分離）
+    fn update_stats(&self, tx_id: String, is_success: bool, processing_time: u64) {
         // 統計を更新
         {
             let mut stats = self.stats.lock().unwrap();
             stats.processed_transactions += 1;
             
-            if result.is_ok() {
+            if is_success {
                 stats.successful_transactions += 1;
             } else {
                 stats.failed_transactions += 1;
             }
             
-            // 平均処理時間を更新
-            let total_time = stats.avg_processing_time_ms * (stats.processed_transactions - 1) as f64 + processing_time as f64;
-            stats.avg_processing_time_ms = total_time / stats.processed_transactions as f64;
+            // 平均処理時間を更新（指数移動平均を使用して効率化）
+            let alpha = 0.05; // 平滑化係数
+            stats.avg_processing_time_ms = (1.0 - alpha) * stats.avg_processing_time_ms + alpha * processing_time as f64;
             
             // 最大・最小処理時間を更新
             stats.max_processing_time_ms = stats.max_processing_time_ms.max(processing_time);
@@ -426,57 +550,98 @@ impl ParallelProcessor {
         {
             let mut processing_txs = self.processing_txs.lock().unwrap();
             
-            if result.is_ok() {
-                processing_txs.insert(transaction.id.clone(), TransactionProcessingState::Completed);
+            if is_success {
+                processing_txs.insert(tx_id, TransactionProcessingState::Completed);
             } else {
-                let error_msg = format!("{:?}", result.err().unwrap());
-                processing_txs.insert(transaction.id.clone(), TransactionProcessingState::Failed(error_msg));
+                processing_txs.insert(tx_id, TransactionProcessingState::Failed("Transaction failed".to_string()));
             }
         }
-
-        // セマフォアを解放（permitがドロップされる）
-        drop(permit);
-
-        result.map(|_| ())
     }
 
     /// 動的スケーラーを開始
+    /// 
+    /// 最適化ポイント:
+    /// 1. 負荷に基づく適応的なスケーリング
+    /// 2. スループットを考慮した調整
+    /// 3. 急激な変動を防ぐためのヒステリシス
     fn start_dynamic_scaler(&self) {
         let stats = self.stats.clone();
         let config = self.config.clone();
         let semaphore = self.semaphore.clone();
 
         tokio::spawn(async move {
+            // 過去の負荷履歴を保持
+            let mut load_history = Vec::with_capacity(5);
+            // 過去のスループット履歴を保持
+            let mut throughput_history = Vec::with_capacity(5);
+            
             loop {
-                sleep(Duration::from_secs(5)).await;
+                sleep(Duration::from_secs(3)).await;
 
-                let current_load = {
+                // 現在の状態を取得
+                let (current_load, current_throughput) = {
                     let stats = stats.lock().unwrap();
-                    stats.current_load
+                    (stats.current_load, stats.throughput)
                 };
-
+                
+                // 履歴を更新
+                if load_history.len() >= 5 {
+                    load_history.remove(0);
+                    throughput_history.remove(0);
+                }
+                load_history.push(current_load);
+                throughput_history.push(current_throughput);
+                
+                // 平均負荷とスループットを計算
+                let avg_load = load_history.iter().sum::<f64>() / load_history.len() as f64;
+                let avg_throughput = throughput_history.iter().sum::<f64>() / throughput_history.len() as f64;
+                
                 let current_permits = semaphore.available_permits();
                 let max_permits = config.max_parallelism;
-
-                if current_load > config.high_load_threshold && current_permits < max_permits / 2 {
-                    // 負荷が高い場合、並列度を増加
-                    let new_permits = (max_permits as f64 * 1.2) as usize;
-                    let new_permits = new_permits.min(config.max_parallelism);
-                    
-                    // 現在の許可数との差分を追加
-                    let additional_permits = new_permits.saturating_sub(max_permits - current_permits);
-                    
-                    if additional_permits > 0 {
-                        semaphore.add_permits(additional_permits);
-                        debug!("Increased parallelism to {} permits", new_permits);
+                let used_permits = max_permits - current_permits;
+                
+                // 負荷とスループットに基づいて並列度を調整
+                if avg_load > config.high_load_threshold {
+                    // 負荷が高い場合
+                    if avg_throughput > 0.0 && used_permits > 0 {
+                        // スループットあたりの並列度を計算
+                        let throughput_per_permit = avg_throughput / used_permits as f64;
+                        
+                        // 目標スループットを達成するために必要な並列度を計算
+                        let target_throughput = avg_throughput * 1.2; // 20%増加
+                        let target_permits = (target_throughput / throughput_per_permit).ceil() as usize;
+                        let target_permits = target_permits.min(config.max_parallelism);
+                        
+                        // 現在の許可数との差分を追加
+                        let additional_permits = target_permits.saturating_sub(used_permits);
+                        
+                        if additional_permits > 0 {
+                            semaphore.add_permits(additional_permits);
+                            info!("Increased parallelism to {} permits based on throughput analysis", target_permits);
+                        }
+                    } else {
+                        // スループットデータがない場合は単純に増加
+                        let new_permits = (max_permits as f64 * 1.2) as usize;
+                        let new_permits = new_permits.min(config.max_parallelism);
+                        
+                        // 現在の許可数との差分を追加
+                        let additional_permits = new_permits.saturating_sub(max_permits - current_permits);
+                        
+                        if additional_permits > 0 {
+                            semaphore.add_permits(additional_permits);
+                            debug!("Increased parallelism to {} permits", new_permits);
+                        }
                     }
-                } else if current_load < config.low_load_threshold && current_permits < max_permits / 4 {
+                } else if avg_load < config.low_load_threshold {
                     // 負荷が低い場合、並列度を減少
-                    let new_permits = (max_permits as f64 * 0.8) as usize;
-                    let new_permits = new_permits.max(config.min_parallelism);
-                    
-                    // 現在の許可数を調整（減少させる場合は何もしない、次のサイクルで自然に調整される）
-                    debug!("Decreased parallelism target to {} permits", new_permits);
+                    // ヒステリシスを適用して急激な変動を防止
+                    if avg_load < config.low_load_threshold * 0.8 {
+                        let new_permits = (used_permits as f64 * 0.8) as usize;
+                        let new_permits = new_permits.max(config.min_parallelism);
+                        
+                        // 目標並列度を設定（次のサイクルで自然に調整される）
+                        debug!("Decreased parallelism target to {} permits", new_permits);
+                    }
                 }
             }
         });
