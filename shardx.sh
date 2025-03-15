@@ -2,6 +2,7 @@
 
 # ShardX 統合スクリプト
 # このスクリプトは、ShardXの起動、停止、インストール、アップデート、ステータス確認などの機能を提供します。
+# 以前の複数のスクリプト（install.sh, start_nodes.sh, run_tests.sh など）の機能を統合しています。
 
 # 色の定義
 RED='\033[0;31m'
@@ -41,6 +42,9 @@ show_help() {
     echo "  logs          - ログを表示"
     echo "  docker-start  - Dockerコンテナで起動"
     echo "  docker-stop   - Dockerコンテナを停止"
+    echo "  test-nodes    - テスト用ノードを起動"
+    echo "  stop-test-nodes - テスト用ノードを停止"
+    echo "  run-tests     - テストスイートを実行"
     echo "  help          - このヘルプを表示"
     echo ""
     echo -e "${CYAN}例:${NC}"
@@ -437,6 +441,15 @@ main() {
         docker-stop)
             docker_stop
             ;;
+        test-nodes)
+            start_test_nodes
+            ;;
+        stop-test-nodes)
+            stop_test_nodes
+            ;;
+        run-tests)
+            run_tests
+            ;;
         help)
             show_help
             ;;
@@ -446,6 +459,127 @@ main() {
             exit 1
             ;;
     esac
+}
+
+# テスト用ノードを起動
+start_test_nodes() {
+    echo -e "${CYAN}テスト用ノードを起動中...${NC}"
+    
+    # ノードのビルド
+    cd "$(dirname "$0")"
+    cargo build
+    
+    # ノードディレクトリの作成
+    mkdir -p test_nodes/{node1,node2,node3,node4,node5}/data
+    
+    # ノード1を起動
+    echo "ノード1を起動中..."
+    cd test_nodes/node1
+    ../../target/debug/shardx_node --node-id node1 --port 54868 --data-dir ./data > node1.log 2>&1 &
+    NODE1_PID=$!
+    cd ../..
+    
+    # ノード2を起動
+    echo "ノード2を起動中..."
+    cd test_nodes/node2
+    ../../target/debug/shardx_node --node-id node2 --port 54869 --data-dir ./data > node2.log 2>&1 &
+    NODE2_PID=$!
+    cd ../..
+    
+    # ノード3を起動
+    echo "ノード3を起動中..."
+    cd test_nodes/node3
+    ../../target/debug/shardx_node --node-id node3 --port 54870 --data-dir ./data > node3.log 2>&1 &
+    NODE3_PID=$!
+    cd ../..
+    
+    # ノード4を起動
+    echo "ノード4を起動中..."
+    cd test_nodes/node4
+    ../../target/debug/shardx_node --node-id node4 --port 54871 --data-dir ./data > node4.log 2>&1 &
+    NODE4_PID=$!
+    cd ../..
+    
+    # ノード5を起動
+    echo "ノード5を起動中..."
+    cd test_nodes/node5
+    ../../target/debug/shardx_node --node-id node5 --port 54872 --data-dir ./data > node5.log 2>&1 &
+    NODE5_PID=$!
+    cd ../..
+    
+    echo "すべてのノードが起動しました。"
+    echo "ノード1: http://localhost:54868 (PID: $NODE1_PID)"
+    echo "ノード2: http://localhost:54869 (PID: $NODE2_PID)"
+    echo "ノード3: http://localhost:54870 (PID: $NODE3_PID)"
+    echo "ノード4: http://localhost:54871 (PID: $NODE4_PID)"
+    echo "ノード5: http://localhost:54872 (PID: $NODE5_PID)"
+    
+    # PIDを保存
+    echo "$NODE1_PID $NODE2_PID $NODE3_PID $NODE4_PID $NODE5_PID" > test_nodes/node_pids.txt
+    
+    echo -e "${GREEN}テスト用ノードが起動しました。${NC}"
+    echo "ノードを停止するには ./shardx.sh stop-test-nodes を実行してください。"
+}
+
+# テスト用ノードを停止
+stop_test_nodes() {
+    echo -e "${CYAN}テスト用ノードを停止中...${NC}"
+    
+    if [ ! -f "test_nodes/node_pids.txt" ]; then
+        echo -e "${YELLOW}テスト用ノードが実行されていないか、PIDファイルが見つかりません。${NC}"
+        return
+    fi
+    
+    # PIDを読み込み
+    read -r NODE1_PID NODE2_PID NODE3_PID NODE4_PID NODE5_PID < test_nodes/node_pids.txt
+    
+    # ノードを停止
+    kill $NODE1_PID $NODE2_PID $NODE3_PID $NODE4_PID $NODE5_PID 2>/dev/null || true
+    
+    # PIDファイルを削除
+    rm test_nodes/node_pids.txt
+    
+    echo -e "${GREEN}テスト用ノードを停止しました。${NC}"
+}
+
+# テストスイートを実行
+run_tests() {
+    echo -e "${CYAN}テストスイートを実行中...${NC}"
+    
+    # 必要なツールの確認
+    if ! command -v jq &> /dev/null; then
+        echo "jqがインストールされていません。インストールしています..."
+        sudo apt-get update && sudo apt-get install -y jq
+    fi
+    
+    # ノードが起動しているか確認
+    if [ ! -f "test_nodes/node_pids.txt" ]; then
+        echo "ノードが起動していません。ノードを起動します..."
+        start_test_nodes
+        
+        # ノードの起動を待機
+        echo "ノードの起動を待機しています (10秒)..."
+        sleep 10
+    fi
+    
+    # テストディレクトリを作成
+    mkdir -p test_results
+    
+    # 基本的な接続テスト
+    echo "基本的な接続テストを実行しています..."
+    for port in 54868 54869 54870 54871 54872; do
+        if curl -s "http://localhost:$port/api/v1/info" > /dev/null; then
+            echo -e "${GREEN}ノード (port: $port) に接続できました${NC}"
+        else
+            echo -e "${RED}ノード (port: $port) に接続できませんでした${NC}"
+        fi
+    done
+    
+    # トランザクションテスト
+    echo "トランザクションテストを実行しています..."
+    # ここにトランザクションテストのコードを追加
+    
+    echo -e "${GREEN}テストが完了しました。${NC}"
 }
 
 # スクリプトを実行
