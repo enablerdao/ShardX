@@ -124,6 +124,46 @@ pub enum Error {
     #[error("Security violation: {0}")]
     SecurityViolation(String),
     
+    /// シャードエラー
+    #[error("Shard error: {0}")]
+    ShardError(String),
+    
+    /// 暗号化エラー
+    #[error("Crypto error: {0}")]
+    CryptoError(String),
+    
+    /// その他のエラー
+    #[error("Other error: {0}")]
+    Other(String),
+    
+    /// シリアライズエラー
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
+    
+    /// デシリアライズエラー
+    #[error("Deserialization error: {0}")]
+    DeserializationError(String),
+    
+    /// 無効な状態エラー
+    #[error("Invalid state: {0}")]
+    InvalidState(String),
+    
+    /// I/Oエラー
+    #[error("IO error: {0}")]
+    IOError(String),
+    
+    /// 解析エラー
+    #[error("Parse error: {0}")]
+    ParseError(String),
+    
+    /// 既に存在するエラー
+    #[error("Already exists: {0}")]
+    AlreadyExists(String),
+    
+    /// 見つからないエラー
+    #[error("Not found: {0}")]
+    NotFound(String),
+    
     /// 不明なエラー
     #[error("Unknown error: {0}")]
     Unknown(String),

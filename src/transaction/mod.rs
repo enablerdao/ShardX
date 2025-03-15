@@ -2,6 +2,7 @@ mod cross_shard_manager;
 
 use std::fmt;
 use serde::{Serialize, Deserialize};
+use async_trait::async_trait;
 
 pub use cross_shard_manager::{CrossShardManager, CrossShardTransaction, CrossShardTransactionState};
 
@@ -14,6 +15,8 @@ pub enum TransactionStatus {
     Confirmed,
     /// 失敗
     Failed,
+    /// 拒否
+    Rejected,
 }
 
 impl fmt::Display for TransactionStatus {
@@ -22,8 +25,44 @@ impl fmt::Display for TransactionStatus {
             TransactionStatus::Pending => write!(f, "pending"),
             TransactionStatus::Confirmed => write!(f, "confirmed"),
             TransactionStatus::Failed => write!(f, "failed"),
+            TransactionStatus::Rejected => write!(f, "rejected"),
         }
     }
+}
+
+/// 基本トランザクショントレイト
+/// すべてのトランザクション実装が実装すべき共通インターフェース
+#[async_trait]
+pub trait BaseTransaction: Send + Sync + Clone {
+    /// トランザクションIDを取得
+    fn id(&self) -> &str;
+    
+    /// タイムスタンプを取得
+    fn timestamp(&self) -> u64;
+    
+    /// 署名を取得
+    fn signature(&self) -> &str;
+    
+    /// シャードIDを取得
+    fn shard_id(&self) -> &str;
+    
+    /// トランザクションが確認済みかどうかを確認
+    fn is_confirmed(&self) -> bool;
+    
+    /// トランザクションが保留中かどうかを確認
+    fn is_pending(&self) -> bool;
+    
+    /// トランザクションが失敗したかどうかを確認
+    fn is_failed(&self) -> bool;
+    
+    /// トランザクションがクロスシャードトランザクションかどうかを確認
+    fn is_cross_shard(&self) -> bool;
+    
+    /// トランザクションを検証
+    async fn validate(&self) -> Result<(), crate::error::Error>;
+    
+    /// トランザクションをシリアライズ
+    fn serialize(&self) -> Result<Vec<u8>, crate::error::Error>;
 }
 
 /// トランザクション
@@ -57,6 +96,10 @@ pub struct Transaction {
     pub block_height: Option<u64>,
     /// 親トランザクションID（クロスシャードトランザクションの場合）
     pub parent_id: Option<String>,
+    /// ペイロード（バイナリデータ）
+    pub payload: Vec<u8>,
+    /// 親トランザクションIDs（複数の親を持つ場合）
+    pub parent_ids: Vec<String>,
 }
 
 impl Transaction {
@@ -89,27 +132,87 @@ impl Transaction {
             block_hash: None,
             block_height: None,
             parent_id: None,
+            payload: Vec::new(),
+            parent_ids: Vec::new(),
         }
     }
     
-    /// トランザクションが確認済みかどうかを確認
-    pub fn is_confirmed(&self) -> bool {
+    /// シリアライズ可能なデータを生成
+    pub fn to_signable(&self) -> Vec<u8> {
+        let mut data = Vec::new();
+        data.extend_from_slice(self.id.as_bytes());
+        data.extend_from_slice(self.from.as_bytes());
+        data.extend_from_slice(self.to.as_bytes());
+        data.extend_from_slice(self.amount.as_bytes());
+        data.extend_from_slice(self.fee.as_bytes());
+        if let Some(ref d) = self.data {
+            data.extend_from_slice(d.as_bytes());
+        }
+        data.extend_from_slice(&self.nonce.to_be_bytes());
+        data.extend_from_slice(&self.timestamp.to_be_bytes());
+        data.extend_from_slice(self.shard_id.as_bytes());
+        data
+    }
+}
+
+#[async_trait]
+impl BaseTransaction for Transaction {
+    fn id(&self) -> &str {
+        &self.id
+    }
+    
+    fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
+    
+    fn signature(&self) -> &str {
+        &self.signature
+    }
+    
+    fn shard_id(&self) -> &str {
+        &self.shard_id
+    }
+    
+    fn is_confirmed(&self) -> bool {
         self.status == TransactionStatus::Confirmed
     }
     
-    /// トランザクションが保留中かどうかを確認
-    pub fn is_pending(&self) -> bool {
+    fn is_pending(&self) -> bool {
         self.status == TransactionStatus::Pending
     }
     
-    /// トランザクションが失敗したかどうかを確認
-    pub fn is_failed(&self) -> bool {
+    fn is_failed(&self) -> bool {
         self.status == TransactionStatus::Failed
     }
     
-    /// トランザクションがクロスシャードトランザクションかどうかを確認
-    pub fn is_cross_shard(&self) -> bool {
+    fn is_cross_shard(&self) -> bool {
         self.parent_id.is_some()
+    }
+    
+    async fn validate(&self) -> Result<(), crate::error::Error> {
+        // 基本的な検証ロジック
+        if self.id.is_empty() {
+            return Err(crate::error::Error::ValidationError("Empty transaction ID".to_string()));
+        }
+        
+        if self.from.is_empty() {
+            return Err(crate::error::Error::ValidationError("Empty sender address".to_string()));
+        }
+        
+        if self.to.is_empty() {
+            return Err(crate::error::Error::ValidationError("Empty recipient address".to_string()));
+        }
+        
+        if self.signature.is_empty() {
+            return Err(crate::error::Error::ValidationError("Empty signature".to_string()));
+        }
+        
+        Ok(())
+    }
+    
+    fn serialize(&self) -> Result<Vec<u8>, crate::error::Error> {
+        serde_json::to_vec(self)
+            .map_err(|e| crate::error::Error::SerializationError(e.to_string()))
     }
 }
 
