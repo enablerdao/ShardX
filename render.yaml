@@ -15,13 +15,15 @@ services:
       - key: RUST_LOG
         value: info
       - key: INITIAL_SHARDS
-        value: "10" # シャード数を減らして軽量化
+        value: "5" # シャード数をさらに減らして軽量化
       - key: DATA_DIR
         value: /tmp/shardx-data # 一時ディレクトリを使用
       - key: REDIS_ENABLED
         value: "true"
       - key: CORS_ENABLED
         value: "true"
+      - key: WORKER_MODE
+        value: "true" # ワーカー機能をメインノードに統合
       - key: REDIS_URL
         fromService:
           name: redis
@@ -52,24 +54,25 @@ services:
         description: everywhere
     plan: free # 無料プラン
 
-  # バックグラウンドワーカー（分析処理用）
-  - type: worker
-    name: shardx-worker
-    env: docker
-    dockerfilePath: ./Dockerfile.simple
-    dockerContext: .
-    plan: free # 無料プラン
-    envVars:
-      - key: NODE_ID
-        value: render_worker
-      - key: RUST_LOG
-        value: info
-      - key: WORKER_MODE
-        value: "true"
-      - key: REDIS_ENABLED
-        value: "true"
-      - key: REDIS_URL
-        fromService:
-          name: redis
-          type: redis
-          property: connectionString
+  # バックグラウンドワーカー（分析処理用）- 有料プランでのみ有効
+  # 無料プランでは以下のセクションをコメントアウトしてください
+  # - type: worker
+  #   name: shardx-worker
+  #   env: docker
+  #   dockerfilePath: ./Dockerfile.simple
+  #   dockerContext: .
+  #   plan: starter # 有料プランが必要
+  #   envVars:
+  #     - key: NODE_ID
+  #       value: render_worker
+  #     - key: RUST_LOG
+  #       value: info
+  #     - key: WORKER_MODE
+  #       value: "true"
+  #     - key: REDIS_ENABLED
+  #       value: "true"
+  #     - key: REDIS_URL
+  #       fromService:
+  #         name: redis
+  #         type: redis
+  #         property: connectionString

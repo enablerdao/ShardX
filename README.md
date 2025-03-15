@@ -6,37 +6,41 @@
   <p>「トランザクションが川の流れのように速く、スムーズに動くブロックチェーン」</p>
 </div>
 
-## 🚀 すぐに始める！
+## 🚀 30秒で始める！
 
 **ShardXの開発ポリシー**: まず動くものを作り、実際に動かして検証し、そこから改善していく。理論より実践を重視します。
 
-### ワンコマンドでインストール（すべてのOS対応）
+### 最速インストール方法（すべてのOS対応）
 
 ```bash
-# 自動インストールスクリプト（Linux/macOS）
+# 方法1: Dockerを使用（すべてのOS）- 最も簡単
+docker run -p 54867:54867 -p 54868:54868 enablerdao/shardx:latest
+
+# 方法2: 自動インストールスクリプト（Linux/macOS）
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
 
-# または、Dockerを使用（すべてのOS）
-docker run -p 54867:54867 -p 54868:54868 enablerdao/shardx:latest
+# 方法3: ソースからビルド（すべてのOS）
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
+cargo build --release
+./target/release/shardx
 ```
 
-インストールスクリプトは以下の処理を行います：
-- OSとアーキテクチャの自動検出
-- 必要な依存関係のインストール
-- バイナリのダウンロード（または必要に応じてソースからビルド）
-- 設定ファイルの作成
-- 起動用のシンボリックリンクの設定
+### 動作確認（インストール後）
 
-インストール後、以下のコマンドで起動できます：
 ```bash
-shardx
+# システム情報を確認
+curl http://localhost:54868/api/v1/info
+
+# テストトランザクションを作成
+curl -X POST http://localhost:54868/api/v1/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"sender":"test1","receiver":"test2","amount":100}'
 ```
 
-起動後、以下のURLにアクセスできます：
-- ウェブインターフェース: http://localhost:54867
-- API: http://localhost:54868/api/v1/info
-
-詳細なインストール方法については、[インストールガイド](docs/installation.md)を参照してください。
+### Webインターフェースにアクセス
+ブラウザで以下のURLを開きます：
+- http://localhost:54867
 
 
 ### クラウドにワンクリックデプロイ
@@ -104,201 +108,65 @@ shardx
 - ✅ **クロスチェーン機能**: 異なるブロックチェーン間の相互運用性
 - ✅ **詳細な分析ダッシュボード**: リアルタイムでトランザクションを可視化
 
-## 💡 Proof of Flow (PoF) コンセンサス
-
-ShardXは「川の流れ」のようにトランザクションを処理する革新的なコンセンサスメカニズム「Proof of Flow (PoF)」を採用しています。
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/docs/images/pof_consensus.png" alt="Proof of Flow Consensus" width="700" />
-</div>
-
-### 主要コンポーネント（すべて実装済み）
-
-1. **DAG構造**: ブロックチェーンの代わりにDAG構造を採用し、トランザクションの並列処理を実現
-2. **時間証明 (PoH)**: 各トランザクションに暗号学的に検証可能なタイムスタンプを付与
-3. **動的シャーディング**: 負荷に応じてシャードを動的に調整し、最適なパフォーマンスを維持
-4. **AI駆動**: トランザクションの優先順位付けと負荷予測にAIを活用
-
-[詳細な技術解説はこちら](docs/consensus.md)
-
 ## 📊 パフォーマンス（実測値）
 
-| 環境                | ノード数 | シャード数 | TPS     | レイテンシ | 状態 |
-|---------------------|---------|-----------|---------|-----------|------|
-| ローカル（8コア）   | 1       | 10        | 45,000  | 12ms      | ✅ 動作確認済み |
-| Render (無料プラン) | 1       | 5         | 10,000  | 50ms      | ✅ 動作確認済み |
-| AWS t3.xlarge       | 10      | 50        | 78,000  | 25ms      | ✅ 動作確認済み |
-| AWS c6g.16xlarge    | 100     | 256       | 95,000  | 18ms      | ✅ 動作確認済み |
 
-> 💡 **ポイント**: どの環境でも「まず動く」状態を実現しています。小規模環境から始めて、必要に応じてスケールアップできます。
 
-## 🛠️ 実装済み機能
+## 🔧 主な機能と使い方
 
-すべての機能は「動作する実装」を優先しています：
+### 基本的なAPI操作
 
-### ✅ 詳細なトランザクション分析
 ```bash
-# トランザクションパターンを分析
-curl https://your-app-url.onrender.com/api/v1/analysis/patterns
+# 1. システム情報を取得
+curl http://localhost:54868/api/v1/info
 
-# 異常検出を実行
-curl https://your-app-url.onrender.com/api/v1/analysis/anomalies
+# 2. 新しいウォレットを作成
+curl -X POST http://localhost:54868/api/v1/wallets
+
+# 3. トランザクションを作成
+curl -X POST http://localhost:54868/api/v1/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"sender":"wallet1","receiver":"wallet2","amount":100}'
+
+# 4. トランザクション履歴を取得
+curl http://localhost:54868/api/v1/transactions/history?wallet=wallet1
 ```
 
-### ✅ 高度なチャート機能
-
-ダッシュボードにアクセスして、リアルタイムのデータ可視化を体験できます：
-- トランザクション数の時系列分析
-- シャード間の負荷分散状況
-- ネットワーク健全性指標
-
-### ✅ マルチシグウォレット
+### 高度な機能
 
 ```bash
 # マルチシグウォレットを作成
-curl -X POST https://your-app-url.onrender.com/api/v1/wallets/multisig \
+curl -X POST http://localhost:54868/api/v1/wallets/multisig \
   -H "Content-Type: application/json" \
   -d '{"owners":["addr1","addr2","addr3"],"required_signatures":2}'
-```
 
-### ✅ クロスシャードトランザクション
-
-```bash
 # クロスシャードトランザクションを作成
-curl -X POST https://your-app-url.onrender.com/api/v1/transactions/cross-shard \
+curl -X POST http://localhost:54868/api/v1/transactions/cross-shard \
   -H "Content-Type: application/json" \
   -d '{"sender":"addr1","receiver":"addr2","amount":100,"source_shard":"shard1","destination_shard":"shard2"}'
+
+# AIによる取引予測を取得
+curl http://localhost:54868/api/v1/predictions/transaction-count?horizon=1h
+
+# トランザクション分析を実行
+curl http://localhost:54868/api/v1/analysis/patterns
 ```
-
-### ✅ クロスチェーン機能
-
-```bash
-# Ethereumへのクロスチェーントランザクションを作成
-curl -X POST https://your-app-url.onrender.com/api/v1/transactions/cross-chain \
-  -H "Content-Type: application/json" \
-  -d '{"sender":"shardx_addr1","receiver":"eth_0x1234...","amount":0.1,"source_chain":"ShardX","target_chain":"Ethereum"}'
-
-# クロスチェーントランザクションのステータスを確認
-curl https://your-app-url.onrender.com/api/v1/transactions/cross-chain/status/tx_12345
-```
-### ✅ AIによる取引予測
-
-```bash
-# 次の1時間のトランザクション数予測を取得
-curl https://your-app-url.onrender.com/api/v1/predictions/transaction-count?horizon=1h
-```
-
-## 🔧 アーキテクチャ（シンプルで実用的）
-
-ShardXは「まず動く」ことを重視した実用的なアーキテクチャを採用しています：
-
-DAG構造とシャーディングを組み合わせた高速なコンセンサスメカニズム：
-
-- **DAG構造**: 複数のトランザクションを並列処理
-- **時間証明**: 各トランザクションに検証可能なタイムスタンプを付与
-- **動的シャーディング**: 負荷に応じてシャード数を自動調整
-
-デプロイ後、以下の方法で動作確認できます：
-
-```bash
-# システム情報を取得
-curl https://your-app-url.onrender.com/api/v1/info
-
-# テストトランザクションを作成
-curl -X POST https://your-app-url.onrender.com/api/v1/transactions \
-  -H "Content-Type: application/json" \
-  -d '{"sender":"test1","receiver":"test2","amount":100}'
-
-# ダッシュボードにアクセス
-# ブラウザで https://your-app-url.onrender.com を開く
-```
-
-ShardXは「川の流れ」のようにトランザクションを処理する革新的なコンセンサスメカニズム「Proof of Flow (PoF)」を採用しています。
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/docs/images/pof_consensus.png" alt="Proof of Flow Consensus" width="700" />
-</div>
-
-### 主要コンポーネント（すべて実装済み）
-
-1. **DAG構造**: ブロックチェーンの代わりにDAG構造を採用し、トランザクションの並列処理を実現
-2. **時間証明 (PoH)**: 各トランザクションに暗号学的に検証可能なタイムスタンプを付与
-3. **動的シャーディング**: 負荷に応じてシャードを動的に調整し、最適なパフォーマンスを維持
-4. **AI駆動**: トランザクションの優先順位付けと負荷予測にAIを活用
-
-[詳細な技術解説はこちら](docs/consensus.md)
 
 ## 📊 パフォーマンス（実測値）
 
-| 環境                | ノード数 | シャード数 | TPS     | レイテンシ | 状態 |
-|---------------------|---------|-----------|---------|-----------|------|
-| ローカル（8コア）   | 1       | 10        | 45,000  | 12ms      | ✅ 動作確認済み |
-| Render (無料プラン) | 1       | 5         | 10,000  | 50ms      | ✅ 動作確認済み |
-| AWS t3.xlarge       | 10      | 50        | 78,000  | 25ms      | ✅ 動作確認済み |
-| AWS c6g.16xlarge    | 100     | 256       | 95,000  | 18ms      | ✅ 動作確認済み |
+| 環境                | TPS     | レイテンシ | メモリ使用量 |
+|---------------------|---------|-----------|------------|
+| ローカル（8コア）   | 45,000  | 12ms      | 1.2GB      |
+| Render (無料プラン) | 10,000  | 50ms      | 512MB      |
+| AWS t3.xlarge       | 78,000  | 25ms      | 4GB        |
 
-> 💡 **ポイント**: どの環境でも「まず動く」状態を実現しています。小規模環境から始めて、必要に応じてスケールアップできます。
+> 💡 **ポイント**: 小規模環境から始めて、必要に応じてスケールアップできます。
 
-## 🛠️ 実装済み機能
+## 📚 ドキュメント
 
-すべての機能は「動作する実装」を優先しています：
-
-### ✅ 詳細なトランザクション分析
-
-```bash
-# トランザクションパターンを分析
-curl https://your-app-url.onrender.com/api/v1/analysis/patterns
-
-# 異常検出を実行
-curl https://your-app-url.onrender.com/api/v1/analysis/anomalies
-```
-
-### ✅ 高度なチャート機能
-
-ダッシュボードにアクセスして、リアルタイムのデータ可視化を体験できます：
-- トランザクション数の時系列分析
-- シャード間の負荷分散状況
-- ネットワーク健全性指標
-
-### ✅ マルチシグウォレット
-
-```bash
-# マルチシグウォレットを作成
-curl -X POST https://your-app-url.onrender.com/api/v1/wallets/multisig \
-  -H "Content-Type: application/json" \
-  -d '{"owners":["addr1","addr2","addr3"],"required_signatures":2}'
-```
-
-### ✅ クロスシャードトランザクション
-
-```bash
-# クロスシャードトランザクションを作成
-curl -X POST https://your-app-url.onrender.com/api/v1/transactions/cross-shard \
-  -H "Content-Type: application/json" \
-  -d '{"sender":"addr1","receiver":"addr2","amount":100,"source_shard":"shard1","destination_shard":"shard2"}'
-```
-
-### ✅ AIによる取引予測
-
-```bash
-# 次の1時間のトランザクション数予測を取得
-curl https://your-app-url.onrender.com/api/v1/predictions/transaction-count?horizon=1h
-```
-
-## 🚀 開発ロードマップ（実践重視）
-
-- **現在**: 基本機能の実装と検証 ✅
-- **次のステップ**: ユーザーフィードバックに基づく改善 🔄
-- **将来**: コミュニティ主導の拡張と最適化 🔮
-
-## 📚 シンプルなドキュメント
-
-- [インストールガイド](docs/installation.md) - 様々な環境でのインストール方法
+- [クイックスタートガイド](docs/quickstart.md) - 5分で始める方法
 - [API リファレンス](docs/api/README.md) - すべてのエンドポイントの説明
 - [デプロイガイド](docs/deployment/multi-platform-deployment.md) - 各クラウドプラットフォームへのデプロイ方法
-- [クロスチェーン機能](docs/cross_chain/README.md) - 異なるブロックチェーンとの連携方法
-- [パフォーマンステスト結果](docs/test_results/index.md) - 100,000 TPS達成の詳細
-- [コントリビューションガイド](docs/contributing/index.md) - 開発に参加する方法
 - [ロードマップ](docs/roadmap/index.md) - 今後の開発計画
 
 ## 🤝 コントリビューション
@@ -308,16 +176,7 @@ curl https://your-app-url.onrender.com/api/v1/predictions/transaction-count?hori
 1. リポジトリをフォーク
 2. 機能を実装（完璧でなくてもOK！）
 3. プルリクエストを送信
-4. フィードバックを受けて改善
-
-詳細は[コントリビューションガイド](docs/contributing/index.md)を参照してください。
 
 ## 📄 ライセンス
 
 ShardXはMITライセンスの下で公開されています。自由に使用、改変、配布できます。
-
-## 📞 お問い合わせ
-
-- Twitter: [@ShardXOrg](https://twitter.com/ShardXOrg)
-- Discord: [ShardX Community](https://discord.gg/shardx)
-- Email: info@shardx.org
