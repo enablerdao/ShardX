@@ -212,7 +212,7 @@ impl BaseTransaction for Transaction {
     
     fn serialize(&self) -> Result<Vec<u8>, crate::error::Error> {
         serde_json::to_vec(self)
-            .map_err(|e| crate::error::Error::SerializationError(e.to_string()))
+            .map_err(|e| crate::error::Error::SerializeError(e.to_string()))
     }
 }
 

@@ -192,3 +192,15 @@ impl From<rocksdb::Error> for Error {
         Error::StorageError(err.to_string())
     }
 }
+
+impl From<snow::Error> for Error {
+    fn from(err: snow::Error) -> Self {
+        Error::CryptoError(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Self {
+        Error::SerializationError(err.to_string())
+    }
+}

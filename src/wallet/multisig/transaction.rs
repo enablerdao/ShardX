@@ -184,6 +184,6 @@ impl BaseTransaction for MultisigTransaction {
     
     fn serialize(&self) -> Result<Vec<u8>, Error> {
         serde_json::to_vec(self)
-            .map_err(|e| Error::SerializationError(e.to_string()))
+            .map_err(|e| Error::SerializeError(e.to_string()))
     }
 }
