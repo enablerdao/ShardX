@@ -118,7 +118,7 @@ impl ShardManager {
         
         shards.get(shard_id)
             .cloned()
-            .ok_or_else(|| Error::ShardError(format!("Shard not found: {}", shard_id)))
+            .ok_or_else(|| Error::ShardError(format!("Shard not found: {}", shard_id.clone())))
     }
     
     /// すべてのシャードを取得
