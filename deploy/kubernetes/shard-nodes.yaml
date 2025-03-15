@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: shardx-shard-node
+  namespace: shardx
+  labels:
+    app: shardx-shard-node
+spec:
+  serviceName: "shardx-shard"
+  replicas: 5
+  selector:
+    matchLabels:
+      app: shardx-shard-node
+  template:
+    metadata:
+      labels:
+        app: shardx-shard-node
+    spec:
+      containers:
+      - name: shard-node
+        image: enablerdao/shardx:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: api
+        - containerPort: 9000
+          name: p2p
+        - containerPort: 8545
+          name: rpc
+        env:
+        - name: NODE_TYPE
+          value: "shard"
+        - name: NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: SHARD_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MAIN_NODE
+          value: "shardx-main-node:9000"
+        envFrom:
+        - configMapRef:
+            name: shardx-config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        volumeMounts:
+        - name: shardx-shard-data
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: shardx-shard-data
+        persistentVolumeClaim:
+          claimName: shardx-shard-data
+  volumeClaimTemplates:
+  - metadata:
+      name: shardx-shard-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shardx-shard
+  namespace: shardx
+  labels:
+    app: shardx-shard-node
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: api
+  - port: 9000
+    targetPort: 9000
+    name: p2p
+  - port: 8545
+    targetPort: 8545
+    name: rpc
+  selector:
+    app: shardx-shard-node
+  clusterIP: None

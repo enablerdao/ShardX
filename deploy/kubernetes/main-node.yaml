@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shardx-main-node
+  namespace: shardx
+  labels:
+    app: shardx-main-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shardx-main-node
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: shardx-main-node
+    spec:
+      containers:
+      - name: main-node
+        image: enablerdao/shardx:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: api
+        - containerPort: 9000
+          name: p2p
+        - containerPort: 8545
+          name: rpc
+        env:
+        - name: NODE_TYPE
+          value: "main"
+        - name: NODE_ID
+          value: "main-node"
+        envFrom:
+        - configMapRef:
+            name: shardx-config
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        volumeMounts:
+        - name: shardx-main-data
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: shardx-main-data
+        persistentVolumeClaim:
+          claimName: shardx-main-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shardx-main-node
+  namespace: shardx
+  labels:
+    app: shardx-main-node
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: api
+  - port: 9000
+    targetPort: 9000
+    name: p2p
+  - port: 8545
+    targetPort: 8545
+    name: rpc
+  selector:
+    app: shardx-main-node
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shardx-main-data-pvc
+  namespace: shardx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard
