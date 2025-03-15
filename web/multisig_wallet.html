@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardX - マルチシグウォレット</title>
+    <meta name="description" content="ShardX - トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。マルチシグウォレット機能。">
+    <meta name="keywords" content="blockchain, cryptocurrency, multisig, wallet, security">
+    
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #f1f8ff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            transition: all 0.3s ease;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        /* モバイル対応の改善 */
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+            
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            
+            .header {
+                padding: 1rem 0;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* ダークモード対応 */
+        @media (prefers-color-scheme: dark) {
+            body.auto-dark-mode {
+                background-color: #121212;
+                color: #f8f9fa;
+            }
+            
+            body.auto-dark-mode .card {
+                background-color: #1e1e1e;
+                color: #f8f9fa;
+            }
+            
+            body.auto-dark-mode .table {
+                color: #f8f9fa;
+            }
+            
+            body.auto-dark-mode .modal-content {
+                background-color: #1e1e1e;
+                color: #f8f9fa;
+            }
+            
+            body.auto-dark-mode .form-control,
+            body.auto-dark-mode .form-select {
+                background-color: #2d2d2d;
+                color: #f8f9fa;
+                border-color: #444;
+            }
+        }
+        
+        /* 手動ダークモード */
+        body.dark-mode {
+            background-color: #121212;
+            color: #f8f9fa;
+        }
+        
+        body.dark-mode .card {
+            background-color: #1e1e1e;
+            color: #f8f9fa;
+        }
+        
+        body.dark-mode .table {
+            color: #f8f9fa;
+        }
+        
+        body.dark-mode .modal-content {
+            background-color: #1e1e1e;
+            color: #f8f9fa;
+        }
+        
+        body.dark-mode .form-control,
+        body.dark-mode .form-select {
+            background-color: #2d2d2d;
+            color: #f8f9fa;
+            border-color: #444;
+        }
+        
+        body.dark-mode .nav-tabs .nav-link {
+            color: #adb5bd;
+        }
+        
+        body.dark-mode .nav-tabs .nav-link.active {
+            color: #6a11cb;
+            background-color: #1e1e1e;
+            border-color: #444 #444 #1e1e1e;
+        }
+        
+        body.dark-mode .header {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.dark-mode .footer {
+            background-color: #1e1e1e;
+            border-top: 1px solid #444;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* アクセシビリティの向上 */
+        .btn:focus, .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
+        }
+        
+        /* スクリーンリーダー用のテキスト */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
+        /* タッチターゲットの最小サイズを確保 */
+        .btn, .nav-link, .form-check-input {
+            min-height: 44px;
+            min-width: 44px;
+        }
+        
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .wallet-card {
+            border-left: 5px solid #6a11cb;
+        }
+        
+        .transaction-card {
+            border-left: 5px solid #2575fc;
+        }
+        
+        .transaction-pending {
+            border-left-color: var(--warning-color);
+        }
+        
+        .transaction-confirmed {
+            border-left-color: var(--success-color);
+        }
+        
+        .transaction-rejected {
+            border-left-color: var(--danger-color);
+        }
+        
+        .signature-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .signature-pending {
+            background-color: var(--warning-color);
+        }
+        
+        .signature-signed {
+            background-color: var(--success-color);
+        }
+        
+        .signature-rejected {
+            background-color: var(--danger-color);
+        }
+        
+        .progress-multisig {
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .signer-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem;
+            border-radius: 50px;
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            font-size: 0.85rem;
+        }
+        
+        .signer-badge.owner {
+            background-color: rgba(106, 17, 203, 0.2);
+            font-weight: 500;
+        }
+        
+        .wallet-balance {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .wallet-token-balance {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body class="auto-dark-mode">
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="assets/logo.svg" alt="ShardX Logo" height="80" class="me-3" />
+                        <h1 class="display-4 mb-0">ShardX</h1>
+                    </div>
+                    <p class="lead">マルチシグウォレット</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <div class="me-3">
+                            <div class="stats-label">ノード状態</div>
+                            <div id="node-status" class="badge bg-success">Running</div>
+                        </div>
+                        <div class="me-3">
+                            <div class="stats-label">ノードID</div>
+                            <div id="node-id" class="small text-truncate" style="max-width: 150px;">loading...</div>
+                        </div>
+                        <div>
+                            <button id="theme-toggle" class="btn btn-sm btn-outline-light" aria-label="ダークモード切替">
+                                <i class="bi bi-moon-stars"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="index.html">
+                    <i class="bi bi-hdd-network"></i> ブロックチェーン
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="wallet_dex.html">
+                    <i class="bi bi-wallet2"></i> ウォレット & DEX
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="multisig_wallet.html">
+                    <i class="bi bi-shield-lock"></i> マルチシグウォレット
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="advanced_charts.html">
+                    <i class="bi bi-graph-up"></i> 高度なチャート
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="transaction_analysis.html">
+                    <i class="bi bi-search"></i> トランザクション分析
+                </a>
+            </li>
+        </ul>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> マルチシグウォレットは、複数の署名者による承認が必要なウォレットです。高いセキュリティが求められる場合や、組織での資金管理に最適です。
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <span>ウォレット作成</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="create-wallet-form">
+                            <div class="mb-3">
+                                <label for="wallet-name" class="form-label">ウォレット名</label>
+                                <input type="text" class="form-control" id="wallet-name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="owner-account" class="form-label">所有者アカウント</label>
+                                <select class="form-select" id="owner-account" required>
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="signers" class="form-label">署名者</label>
+                                <select class="form-select" id="signers" multiple required>
+                                    <!-- アカウントはJSで動的に追加 -->
+                                </select>
+                                <div class="form-text">Ctrlキーを押しながら複数選択できます。所有者は自動的に署名者に含まれます。</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="required-signatures" class="form-label">必要署名数</label>
+                                <input type="number" class="form-control" id="required-signatures" min="1" value="2" required>
+                                <div class="form-text">トランザクションの実行に必要な署名の数</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">ウォレット作成</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span>マルチシグとは？</span>
+                    </div>
+                    <div class="card-body">
+                        <h5>マルチシグウォレットの特徴</h5>
+                        <ul>
+                            <li>複数の署名者による承認が必要</li>
+                            <li>単一障害点の排除</li>
+                            <li>組織の資金管理に最適</li>
+                            <li>高額取引のセキュリティ強化</li>
+                        </ul>
+                        
+                        <h5>一般的なユースケース</h5>
+                        <ul>
+                            <li>企業の資金管理</li>
+                            <li>共同プロジェクトの資金管理</li>
+                            <li>家族の共有資産</li>
+                            <li>高額資産の保護</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>マイマルチシグウォレット</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="walletFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-funnel"></i> フィルター
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="walletFilterDropdown">
+                                <li><a class="dropdown-item active" href="#" data-filter="all">すべて</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="owner">所有者のみ</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="signer">署名者のみ</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="wallets-container">
+                            <!-- ウォレットはJSで動的に追加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>保留中のトランザクション</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="txFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-funnel"></i> フィルター
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="txFilterDropdown">
+                                <li><a class="dropdown-item active" href="#" data-filter="all">すべて</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="pending">署名待ち</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="signed">署名済み</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="rejected">拒否済み</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="transactions-container">
+                            <!-- トランザクションはJSで動的に追加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ウォレット詳細モーダル -->
+        <div class="modal fade" id="wallet-detail-modal" tabindex="-1" aria-labelledby="wallet-detail-modal-label" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="wallet-detail-modal-label">ウォレット詳細</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>基本情報</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>ウォレットID</th>
+                                            <td id="detail-wallet-id"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>ウォレット名</th>
+                                            <td id="detail-wallet-name"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>所有者</th>
+                                            <td id="detail-owner"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>必要署名数</th>
+                                            <td id="detail-required-signatures"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>作成日時</th>
+                                            <td id="detail-created-at"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>残高</h6>
+                                <div class="wallet-balance mb-2" id="detail-balance">0.00</div>
+                                <div id="detail-token-balances">
+                                    <!-- トークン残高はJSで動的に追加 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6>署名者</h6>
+                                <div id="detail-signers" class="mb-3">
+                                    <!-- 署名者はJSで動的に追加 -->
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-outline-primary btn-sm me-2" id="add-signer-btn">
+                                        <i class="bi bi-person-plus"></i> 署名者追加
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm me-2" id="remove-signer-btn">
+                                        <i class="bi bi-person-dash"></i> 署名者削除
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="change-required-btn">
+                                        <i class="bi bi-gear"></i> 必要署名数変更
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6>トランザクション履歴</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>操作</th>
+                                                <th>状態</th>
+                                                <th>作成日時</th>
+                                                <th>署名数</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detail-transactions">
+                                            <!-- トランザクションはJSで動的に追加 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-primary" id="create-tx-btn">新規トランザクション</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- トランザクション作成モーダル -->
+        <div class="modal fade" id="create-tx-modal" tabindex="-1" aria-labelledby="create-tx-modal-label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="create-tx-modal-label">新規トランザクション</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="create-tx-form">
+                            <input type="hidden" id="tx-wallet-id">
+                            
+                            <div class="mb-3">
+                                <label for="tx-operation" class="form-label">操作タイプ</label>
+                                <select class="form-select" id="tx-operation" required>
+                                    <option value="transfer">送金</option>
+                                    <option value="add_signer">署名者追加</option>
+                                    <option value="remove_signer">署名者削除</option>
+                                    <option value="change_required">必要署名数変更</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 送金操作のフィールド -->
+                            <div id="transfer-fields">
+                                <div class="mb-3">
+                                    <label for="tx-to" class="form-label">送信先</label>
+                                    <select class="form-select" id="tx-to">
+                                        <option value="">選択してください</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tx-amount" class="form-label">金額</label>
+                                    <input type="number" class="form-control" id="tx-amount" min="0.01" step="0.01">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tx-token" class="form-label">トークン（オプション）</label>
+                                    <select class="form-select" id="tx-token">
+                                        <option value="">ネイティブトークン</option>
+                                        <option value="BTC">BTC</option>
+                                        <option value="ETH">ETH</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- 署名者追加のフィールド -->
+                            <div id="add-signer-fields" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="tx-new-signer" class="form-label">追加する署名者</label>
+                                    <select class="form-select" id="tx-new-signer">
+                                        <option value="">選択してください</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- 署名者削除のフィールド -->
+                            <div id="remove-signer-fields" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="tx-remove-signer" class="form-label">削除する署名者</label>
+                                    <select class="form-select" id="tx-remove-signer">
+                                        <option value="">選択してください</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- 必要署名数変更のフィールド -->
+                            <div id="change-required-fields" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="tx-new-required" class="form-label">新しい必要署名数</label>
+                                    <input type="number" class="form-control" id="tx-new-required" min="1">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="tx-memo" class="form-label">メモ（オプション）</label>
+                                <textarea class="form-control" id="tx-memo" rows="2"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                        <button type="button" class="btn btn-primary" id="submit-tx-btn">トランザクション作成</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- トランザクション詳細モーダル -->
+        <div class="modal fade" id="tx-detail-modal" tabindex="-1" aria-labelledby="tx-detail-modal-label" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tx-detail-modal-label">トランザクション詳細</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>基本情報</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>トランザクションID</th>
+                                            <td id="tx-detail-id"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>ウォレット</th>
+                                            <td id="tx-detail-wallet"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>作成者</th>
+                                            <td id="tx-detail-creator"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>状態</th>
+                                            <td id="tx-detail-status"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>作成日時</th>
+                                            <td id="tx-detail-created-at"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>実行日時</th>
+                                            <td id="tx-detail-executed-at"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>トランザクションデータ</h6>
+                                <pre id="tx-detail-data" class="p-3 bg-light rounded" style="max-height: 200px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6>署名状況</h6>
+                                <div class="progress progress-multisig mb-2">
+                                    <div id="tx-detail-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <p id="tx-detail-signatures-count" class="small text-muted mb-3">0/0 署名</p>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>署名者</th>
+                                                <th>状態</th>
+                                                <th>署名日時</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tx-detail-signatures">
+                                            <!-- 署名はJSで動的に追加 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-danger me-2" id="reject-tx-btn">拒否</button>
+                        <button type="button" class="btn btn-success" id="sign-tx-btn">署名</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2024 ShardX - 高性能ブロックチェーン</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <a href="https://github.com/enablerdao/ShardX" target="_blank" class="text-decoration-none text-muted">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script>
+        // APIエンドポイントの設定
+        const API_ENDPOINTS = {
+            accounts: '/api/accounts',
+            multisig: {
+                wallets: '/api/multisig/wallets',
+                transactions: '/api/multisig/transactions',
+                sign: '/api/multisig/sign',
+                reject: '/api/multisig/reject'
+            }
+        };
+        
+        // 現在のアカウント（実際の実装ではログインユーザーから取得）
+        const currentAccount = {
+            id: 'account1',
+            name: 'ユーザー1'
+        };
+        
+        // モックデータ生成関数
+        function generateMockAccounts() {
+            return [
+                { id: 'account1', name: 'ユーザー1' },
+                { id: 'account2', name: 'ユーザー2' },
+                { id: 'account3', name: 'ユーザー3' },
+                { id: 'account4', name: 'ユーザー4' },
+                { id: 'account5', name: 'ユーザー5' }
+            ];
+        }
+        
+        function generateMockWallets() {
+            return [
+                {
+                    id: 'wallet1',
+                    name: '組織資金ウォレット',
+                    owner_id: 'account1',
+                    signers: ['account1', 'account2', 'account3'],
+                    required_signatures: 2,
+                    balance: 5000.0,
+                    token_balances: {
+                        'BTC': 0.5,
+                        'ETH': 10.0
+                    },
+                    created_at: luxon.DateTime.now().minus({ days: 30 }).toISO()
+                },
+                {
+                    id: 'wallet2',
+                    name: 'プロジェクトAウォレット',
+                    owner_id: 'account2',
+                    signers: ['account1', 'account2', 'account4'],
+                    required_signatures: 2,
+                    balance: 2500.0,
+                    token_balances: {
+                        'ETH': 5.0
+                    },
+                    created_at: luxon.DateTime.now().minus({ days: 15 }).toISO()
+                },
+                {
+                    id: 'wallet3',
+                    name: '緊急用ウォレット',
+                    owner_id: 'account1',
+                    signers: ['account1', 'account3', 'account5'],
+                    required_signatures: 3,
+                    balance: 10000.0,
+                    token_balances: {},
+                    created_at: luxon.DateTime.now().minus({ days: 7 }).toISO()
+                }
+            ];
+        }
+        
+        function generateMockTransactions() {
+            return [
+                {
+                    id: 'tx1',
+                    wallet_id: 'wallet1',
+                    creator_id: 'account1',
+                    required_signatures: 2,
+                    signatures: {
+                        'account1': {
+                            signer_id: 'account1',
+                            status: 'Signed',
+                            timestamp: luxon.DateTime.now().minus({ hours: 5 }).toISO()
+                        },
+                        'account2': {
+                            signer_id: 'account2',
+                            status: 'Pending',
+                            timestamp: null
+                        },
+                        'account3': {
+                            signer_id: 'account3',
+                            status: 'Pending',
+                            timestamp: null
+                        }
+                    },
+                    transaction_data: {
+                        operation: {
+                            type: 'Transfer',
+                            to: 'account4',
+                            amount: 100.0,
+                            token_id: null
+                        },
+                        memo: '開発費用',
+                        timestamp: luxon.DateTime.now().minus({ hours: 5 }).toISO()
+                    },
+                    status: 'Pending',
+                    created_at: luxon.DateTime.now().minus({ hours: 5 }).toISO(),
+                    executed_at: null
+                },
+                {
+                    id: 'tx2',
+                    wallet_id: 'wallet2',
+                    creator_id: 'account2',
+                    required_signatures: 2,
+                    signatures: {
+                        'account1': {
+                            signer_id: 'account1',
+                            status: 'Signed',
+                            timestamp: luxon.DateTime.now().minus({ days: 1, hours: 2 }).toISO()
+                        },
+                        'account2': {
+                            signer_id: 'account2',
+                            status: 'Signed',
+                            timestamp: luxon.DateTime.now().minus({ days: 1, hours: 3 }).toISO()
+                        },
+                        'account4': {
+                            signer_id: 'account4',
+                            status: 'Pending',
+                            timestamp: null
+                        }
+                    },
+                    transaction_data: {
+                        operation: {
+                            type: 'Transfer',
+                            to: 'account5',
+                            amount: 0.1,
+                            token_id: 'ETH'
+                        },
+                        memo: 'テスト送金',
+                        timestamp: luxon.DateTime.now().minus({ days: 1, hours: 3 }).toISO()
+                    },
+                    status: 'Confirmed',
+                    created_at: luxon.DateTime.now().minus({ days: 1, hours: 3 }).toISO(),
+                    executed_at: luxon.DateTime.now().minus({ days: 1, hours: 1 }).toISO()
+                },
+                {
+                    id: 'tx3',
+                    wallet_id: 'wallet1',
+                    creator_id: 'account3',
+                    required_signatures: 2,
+                    signatures: {
+                        'account1': {
+                            signer_id: 'account1',
+                            status: 'Rejected',
+                            timestamp: luxon.DateTime.now().minus({ days: 2, hours: 5 }).toISO()
+                        },
+                        'account2': {
+                            signer_id: 'account2',
+                            status: 'Pending',
+                            timestamp: null
+                        },
+                        'account3': {
+                            signer_id: 'account3',
+                            status: 'Signed',
+                            timestamp: luxon.DateTime.now().minus({ days: 2, hours: 6 }).toISO()
+                        }
+                    },
+                    transaction_data: {
+                        operation: {
+                            type: 'AddSigner',
+                            signer_id: 'account5'
+                        },
+                        memo: '新メンバー追加',
+                        timestamp: luxon.DateTime.now().minus({ days: 2, hours: 6 }).toISO()
+                    },
+                    status: 'Rejected',
+                    created_at: luxon.DateTime.now().minus({ days: 2, hours: 6 }).toISO(),
+                    executed_at: null
+                }
+            ];
+        }
+        
+        // UI更新関数
+        function updateAccountsDropdown() {
+            const accounts = generateMockAccounts();
+            
+            // 所有者アカウントのドロップダウンを更新
+            const ownerSelect = document.getElementById('owner-account');
+            ownerSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = `${account.name} (${account.id})`;
+                if (account.id === currentAccount.id) {
+                    option.selected = true;
+                }
+                ownerSelect.appendChild(option);
+            });
+            
+            // 署名者のドロップダウンを更新
+            const signersSelect = document.getElementById('signers');
+            signersSelect.innerHTML = '';
+            
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = `${account.name} (${account.id})`;
+                signersSelect.appendChild(option);
+            });
+            
+            // 送信先のドロップダウンを更新
+            const toSelect = document.getElementById('tx-to');
+            toSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            // アカウントを追加
+            const accountsGroup = document.createElement('optgroup');
+            accountsGroup.label = 'アカウント';
+            
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = `${account.name} (${account.id})`;
+                accountsGroup.appendChild(option);
+            });
+            
+            toSelect.appendChild(accountsGroup);
+            
+            // ウォレットを追加
+            const wallets = generateMockWallets();
+            const walletsGroup = document.createElement('optgroup');
+            walletsGroup.label = 'マルチシグウォレット';
+            
+            wallets.forEach(wallet => {
+                const option = document.createElement('option');
+                option.value = wallet.id;
+                option.textContent = `${wallet.name} (${wallet.id})`;
+                walletsGroup.appendChild(option);
+            });
+            
+            toSelect.appendChild(walletsGroup);
+            
+            // 新規署名者のドロップダウンを更新
+            const newSignerSelect = document.getElementById('tx-new-signer');
+            newSignerSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = `${account.name} (${account.id})`;
+                newSignerSelect.appendChild(option);
+            });
+        }
+        
+        function updateWalletsUI(filter = 'all') {
+            const wallets = generateMockWallets();
+            const container = document.getElementById('wallets-container');
+            container.innerHTML = '';
+            
+            // フィルタリング
+            let filteredWallets = wallets;
+            if (filter === 'owner') {
+                filteredWallets = wallets.filter(wallet => wallet.owner_id === currentAccount.id);
+            } else if (filter === 'signer') {
+                filteredWallets = wallets.filter(wallet => 
+                    wallet.signers.includes(currentAccount.id) && wallet.owner_id !== currentAccount.id
+                );
+            }
+            
+            if (filteredWallets.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">表示するウォレットがありません。</div>';
+                return;
+            }
+            
+            filteredWallets.forEach(wallet => {
+                const card = document.createElement('div');
+                card.className = 'card wallet-card mb-3';
+                
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body';
+                
+                const row = document.createElement('div');
+                row.className = 'row';
+                
+                // 左側（ウォレット情報）
+                const leftCol = document.createElement('div');
+                leftCol.className = 'col-md-8';
+                
+                const title = document.createElement('h5');
+                title.className = 'card-title';
+                title.textContent = wallet.name;
+                
+                const id = document.createElement('p');
+                id.className = 'card-text small text-muted';
+                id.textContent = `ID: ${wallet.id}`;
+                
+                const signers = document.createElement('p');
+                signers.className = 'card-text';
+                signers.innerHTML = `<strong>署名者:</strong> ${wallet.signers.length}名 (${wallet.required_signatures}名の署名が必要)`;
+                
+                const created = document.createElement('p');
+                created.className = 'card-text small text-muted';
+                created.textContent = `作成日時: ${luxon.DateTime.fromISO(wallet.created_at).toFormat('yyyy/MM/dd HH:mm')}`;
+                
+                leftCol.appendChild(title);
+                leftCol.appendChild(id);
+                leftCol.appendChild(signers);
+                leftCol.appendChild(created);
+                
+                // 右側（残高と操作）
+                const rightCol = document.createElement('div');
+                rightCol.className = 'col-md-4 text-end';
+                
+                const balance = document.createElement('div');
+                balance.className = 'wallet-balance';
+                balance.textContent = `${wallet.balance.toLocaleString()} SHDX`;
+                
+                const tokenBalances = document.createElement('div');
+                tokenBalances.className = 'mb-3';
+                
+                for (const [token, amount] of Object.entries(wallet.token_balances)) {
+                    const tokenBalance = document.createElement('div');
+                    tokenBalance.className = 'wallet-token-balance';
+                    tokenBalance.textContent = `${amount} ${token}`;
+                    tokenBalances.appendChild(tokenBalance);
+                }
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'btn btn-primary';
+                viewBtn.textContent = '詳細';
+                viewBtn.dataset.walletId = wallet.id;
+                viewBtn.addEventListener('click', () => showWalletDetails(wallet.id));
+                
+                rightCol.appendChild(balance);
+                rightCol.appendChild(tokenBalances);
+                rightCol.appendChild(viewBtn);
+                
+                row.appendChild(leftCol);
+                row.appendChild(rightCol);
+                
+                cardBody.appendChild(row);
+                card.appendChild(cardBody);
+                container.appendChild(card);
+            });
+        }
+        
+        function updateTransactionsUI(filter = 'all') {
+            const transactions = generateMockTransactions();
+            const container = document.getElementById('transactions-container');
+            container.innerHTML = '';
+            
+            // フィルタリング
+            let filteredTransactions = transactions;
+            if (filter === 'pending') {
+                filteredTransactions = transactions.filter(tx => 
+                    tx.status === 'Pending' && 
+                    tx.signatures[currentAccount.id]?.status === 'Pending'
+                );
+            } else if (filter === 'signed') {
+                filteredTransactions = transactions.filter(tx => 
+                    tx.signatures[currentAccount.id]?.status === 'Signed'
+                );
+            } else if (filter === 'rejected') {
+                filteredTransactions = transactions.filter(tx => 
+                    tx.status === 'Rejected' || 
+                    tx.signatures[currentAccount.id]?.status === 'Rejected'
+                );
+            }
+            
+            if (filteredTransactions.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">表示するトランザクションがありません。</div>';
+                return;
+            }
+            
+            filteredTransactions.forEach(tx => {
+                const card = document.createElement('div');
+                card.className = `card transaction-card mb-3 transaction-${tx.status.toLowerCase()}`;
+                
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body';
+                
+                const row = document.createElement('div');
+                row.className = 'row';
+                
+                // 左側（トランザクション情報）
+                const leftCol = document.createElement('div');
+                leftCol.className = 'col-md-8';
+                
+                const title = document.createElement('h5');
+                title.className = 'card-title';
+                title.textContent = getOperationTitle(tx.transaction_data.operation);
+                
+                const id = document.createElement('p');
+                id.className = 'card-text small text-muted';
+                id.textContent = `ID: ${tx.id}`;
+                
+                const wallet = document.createElement('p');
+                wallet.className = 'card-text';
+                wallet.innerHTML = `<strong>ウォレット:</strong> ${getWalletName(tx.wallet_id)}`;
+                
+                const creator = document.createElement('p');
+                creator.className = 'card-text';
+                creator.innerHTML = `<strong>作成者:</strong> ${getAccountName(tx.creator_id)}`;
+                
+                const created = document.createElement('p');
+                created.className = 'card-text small text-muted';
+                created.textContent = `作成日時: ${luxon.DateTime.fromISO(tx.created_at).toFormat('yyyy/MM/dd HH:mm')}`;
+                
+                leftCol.appendChild(title);
+                leftCol.appendChild(id);
+                leftCol.appendChild(wallet);
+                leftCol.appendChild(creator);
+                leftCol.appendChild(created);
+                
+                // 右側（署名状況と操作）
+                const rightCol = document.createElement('div');
+                rightCol.className = 'col-md-4';
+                
+                const status = document.createElement('div');
+                status.className = 'mb-2';
+                status.innerHTML = `<strong>状態:</strong> ${getStatusBadge(tx.status)}`;
+                
+                const signatureCount = document.createElement('div');
+                signatureCount.className = 'mb-2';
+                const signedCount = Object.values(tx.signatures).filter(sig => sig.status === 'Signed').length;
+                signatureCount.innerHTML = `<strong>署名:</strong> ${signedCount}/${tx.required_signatures}`;
+                
+                const progress = document.createElement('div');
+                progress.className = 'progress progress-multisig mb-3';
+                progress.style.height = '8px';
+                
+                const progressBar = document.createElement('div');
+                progressBar.className = 'progress-bar bg-success';
+                progressBar.style.width = `${(signedCount / tx.required_signatures) * 100}%`;
+                
+                progress.appendChild(progressBar);
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'btn btn-primary btn-sm';
+                viewBtn.textContent = '詳細';
+                viewBtn.dataset.txId = tx.id;
+                viewBtn.addEventListener('click', () => showTransactionDetails(tx.id));
+                
+                rightCol.appendChild(status);
+                rightCol.appendChild(signatureCount);
+                rightCol.appendChild(progress);
+                rightCol.appendChild(viewBtn);
+                
+                row.appendChild(leftCol);
+                row.appendChild(rightCol);
+                
+                cardBody.appendChild(row);
+                card.appendChild(cardBody);
+                container.appendChild(card);
+            });
+        }
+        
+        function showWalletDetails(walletId) {
+            const wallets = generateMockWallets();
+            const wallet = wallets.find(w => w.id === walletId);
+            
+            if (!wallet) {
+                alert('ウォレットが見つかりません。');
+                return;
+            }
+            
+            // 基本情報を表示
+            document.getElementById('detail-wallet-id').textContent = wallet.id;
+            document.getElementById('detail-wallet-name').textContent = wallet.name;
+            document.getElementById('detail-owner').textContent = getAccountName(wallet.owner_id);
+            document.getElementById('detail-required-signatures').textContent = `${wallet.required_signatures}/${wallet.signers.length}`;
+            document.getElementById('detail-created-at').textContent = luxon.DateTime.fromISO(wallet.created_at).toFormat('yyyy/MM/dd HH:mm');
+            
+            // 残高を表示
+            document.getElementById('detail-balance').textContent = `${wallet.balance.toLocaleString()} SHDX`;
+            
+            const tokenBalancesContainer = document.getElementById('detail-token-balances');
+            tokenBalancesContainer.innerHTML = '';
+            
+            if (Object.keys(wallet.token_balances).length === 0) {
+                tokenBalancesContainer.innerHTML = '<div class="text-muted">トークン残高はありません</div>';
+            } else {
+                for (const [token, amount] of Object.entries(wallet.token_balances)) {
+                    const tokenBalance = document.createElement('div');
+                    tokenBalance.className = 'wallet-token-balance';
+                    tokenBalance.textContent = `${amount} ${token}`;
+                    tokenBalancesContainer.appendChild(tokenBalance);
+                }
+            }
+            
+            // 署名者を表示
+            const signersContainer = document.getElementById('detail-signers');
+            signersContainer.innerHTML = '';
+            
+            wallet.signers.forEach(signerId => {
+                const badge = document.createElement('span');
+                badge.className = `signer-badge ${signerId === wallet.owner_id ? 'owner' : ''}`;
+                badge.textContent = getAccountName(signerId);
+                signersContainer.appendChild(badge);
+            });
+            
+            // トランザクション履歴を表示
+            const transactions = generateMockTransactions().filter(tx => tx.wallet_id === walletId);
+            const txTableBody = document.getElementById('detail-transactions');
+            txTableBody.innerHTML = '';
+            
+            if (transactions.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 5;
+                cell.textContent = 'トランザクション履歴はありません';
+                cell.className = 'text-center text-muted';
+                row.appendChild(cell);
+                txTableBody.appendChild(row);
+            } else {
+                transactions.forEach(tx => {
+                    const row = document.createElement('tr');
+                    
+                    const idCell = document.createElement('td');
+                    idCell.textContent = tx.id.substring(0, 8) + '...';
+                    
+                    const operationCell = document.createElement('td');
+                    operationCell.textContent = getOperationTitle(tx.transaction_data.operation);
+                    
+                    const statusCell = document.createElement('td');
+                    statusCell.innerHTML = getStatusBadge(tx.status);
+                    
+                    const createdCell = document.createElement('td');
+                    createdCell.textContent = luxon.DateTime.fromISO(tx.created_at).toFormat('yyyy/MM/dd HH:mm');
+                    
+                    const signaturesCell = document.createElement('td');
+                    const signedCount = Object.values(tx.signatures).filter(sig => sig.status === 'Signed').length;
+                    signaturesCell.textContent = `${signedCount}/${tx.required_signatures}`;
+                    
+                    row.appendChild(idCell);
+                    row.appendChild(operationCell);
+                    row.appendChild(statusCell);
+                    row.appendChild(createdCell);
+                    row.appendChild(signaturesCell);
+                    
+                    row.style.cursor = 'pointer';
+                    row.addEventListener('click', () => showTransactionDetails(tx.id));
+                    
+                    txTableBody.appendChild(row);
+                });
+            }
+            
+            // 新規トランザクションボタンの設定
+            document.getElementById('create-tx-btn').dataset.walletId = wallet.id;
+            
+            // モーダルを表示
+            const modal = new bootstrap.Modal(document.getElementById('wallet-detail-modal'));
+            modal.show();
+        }
+        
+        function showTransactionDetails(txId) {
+            const transactions = generateMockTransactions();
+            const tx = transactions.find(t => t.id === txId);
+            
+            if (!tx) {
+                alert('トランザクションが見つかりません。');
+                return;
+            }
+            
+            // 基本情報を表示
+            document.getElementById('tx-detail-id').textContent = tx.id;
+            document.getElementById('tx-detail-wallet').textContent = getWalletName(tx.wallet_id);
+            document.getElementById('tx-detail-creator').textContent = getAccountName(tx.creator_id);
+            document.getElementById('tx-detail-status').innerHTML = getStatusBadge(tx.status);
+            document.getElementById('tx-detail-created-at').textContent = luxon.DateTime.fromISO(tx.created_at).toFormat('yyyy/MM/dd HH:mm');
+            document.getElementById('tx-detail-executed-at').textContent = tx.executed_at ? 
+                luxon.DateTime.fromISO(tx.executed_at).toFormat('yyyy/MM/dd HH:mm') : 
+                '未実行';
+            
+            // トランザクションデータを表示
+            document.getElementById('tx-detail-data').textContent = JSON.stringify(tx.transaction_data, null, 2);
+            
+            // 署名状況を表示
+            const signedCount = Object.values(tx.signatures).filter(sig => sig.status === 'Signed').length;
+            const progressPercent = (signedCount / tx.required_signatures) * 100;
+            
+            document.getElementById('tx-detail-progress').style.width = `${progressPercent}%`;
+            document.getElementById('tx-detail-signatures-count').textContent = `${signedCount}/${tx.required_signatures} 署名`;
+            
+            const signaturesTableBody = document.getElementById('tx-detail-signatures');
+            signaturesTableBody.innerHTML = '';
+            
+            Object.entries(tx.signatures).forEach(([signerId, signature]) => {
+                const row = document.createElement('tr');
+                
+                const signerCell = document.createElement('td');
+                signerCell.textContent = getAccountName(signerId);
+                
+                const statusCell = document.createElement('td');
+                let statusHtml = '';
+                
+                switch (signature.status) {
+                    case 'Pending':
+                        statusHtml = '<span class="signature-status signature-pending"></span>署名待ち';
+                        break;
+                    case 'Signed':
+                        statusHtml = '<span class="signature-status signature-signed"></span>署名済み';
+                        break;
+                    case 'Rejected':
+                        statusHtml = '<span class="signature-status signature-rejected"></span>拒否';
+                        break;
+                }
+                
+                statusCell.innerHTML = statusHtml;
+                
+                const timestampCell = document.createElement('td');
+                timestampCell.textContent = signature.timestamp ? 
+                    luxon.DateTime.fromISO(signature.timestamp).toFormat('yyyy/MM/dd HH:mm') : 
+                    '-';
+                
+                const actionCell = document.createElement('td');
+                
+                // 現在のユーザーが署名者で、かつ署名待ちの場合のみボタンを表示
+                if (signerId === currentAccount.id && signature.status === 'Pending' && tx.status === 'Pending') {
+                    const signBtn = document.createElement('button');
+                    signBtn.className = 'btn btn-sm btn-success me-2';
+                    signBtn.textContent = '署名';
+                    signBtn.addEventListener('click', () => signTransaction(tx.id));
+                    
+                    const rejectBtn = document.createElement('button');
+                    rejectBtn.className = 'btn btn-sm btn-danger';
+                    rejectBtn.textContent = '拒否';
+                    rejectBtn.addEventListener('click', () => rejectTransaction(tx.id));
+                    
+                    actionCell.appendChild(signBtn);
+                    actionCell.appendChild(rejectBtn);
+                } else {
+                    actionCell.textContent = '-';
+                }
+                
+                row.appendChild(signerCell);
+                row.appendChild(statusCell);
+                row.appendChild(timestampCell);
+                row.appendChild(actionCell);
+                
+                signaturesTableBody.appendChild(row);
+            });
+            
+            // 署名/拒否ボタンの状態を設定
+            const canSign = tx.status === 'Pending' && 
+                            tx.signatures[currentAccount.id]?.status === 'Pending';
+            
+            document.getElementById('sign-tx-btn').disabled = !canSign;
+            document.getElementById('reject-tx-btn').disabled = !canSign;
+            
+            // ボタンのイベントハンドラを設定
+            document.getElementById('sign-tx-btn').onclick = () => signTransaction(tx.id);
+            document.getElementById('reject-tx-btn').onclick = () => rejectTransaction(tx.id);
+            
+            // モーダルを表示
+            const modal = new bootstrap.Modal(document.getElementById('tx-detail-modal'));
+            modal.show();
+        }
+        
+        // ヘルパー関数
+        function getAccountName(accountId) {
+            const accounts = generateMockAccounts();
+            const account = accounts.find(a => a.id === accountId);
+            return account ? account.name : accountId;
+        }
+        
+        function getWalletName(walletId) {
+            const wallets = generateMockWallets();
+            const wallet = wallets.find(w => w.id === walletId);
+            return wallet ? wallet.name : walletId;
+        }
+        
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'Pending':
+                    return '<span class="badge bg-warning">署名待ち</span>';
+                case 'Confirmed':
+                    return '<span class="badge bg-success">確認済み</span>';
+                case 'Rejected':
+                    return '<span class="badge bg-danger">拒否</span>';
+                default:
+                    return `<span class="badge bg-secondary">${status}</span>`;
+            }
+        }
+        
+        function getOperationTitle(operation) {
+            switch (operation.type) {
+                case 'Transfer':
+                    return operation.token_id ? 
+                        `${operation.amount} ${operation.token_id}の送金` : 
+                        `${operation.amount} SHDXの送金`;
+                case 'AddSigner':
+                    return `署名者の追加: ${getAccountName(operation.signer_id)}`;
+                case 'RemoveSigner':
+                    return `署名者の削除: ${getAccountName(operation.signer_id)}`;
+                case 'ChangeRequiredSignatures':
+                    return `必要署名数の変更: ${operation.required}`;
+                default:
+                    return '不明な操作';
+            }
+        }
+        
+        // アクション関数
+        function createWallet(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('wallet-name').value;
+            const ownerId = document.getElementById('owner-account').value;
+            
+            // 署名者の選択値を取得
+            const signersSelect = document.getElementById('signers');
+            const signers = Array.from(signersSelect.selectedOptions).map(option => option.value);
+            
+            // 所有者が署名者に含まれていない場合は追加
+            if (!signers.includes(ownerId)) {
+                signers.push(ownerId);
+            }
+            
+            const requiredSignatures = parseInt(document.getElementById('required-signatures').value);
+            
+            // バリデーション
+            if (!name) {
+                alert('ウォレット名を入力してください。');
+                return;
+            }
+            
+            if (!ownerId) {
+                alert('所有者アカウントを選択してください。');
+                return;
+            }
+            
+            if (signers.length === 0) {
+                alert('少なくとも1人の署名者を選択してください。');
+                return;
+            }
+            
+            if (requiredSignatures > signers.length) {
+                alert(`必要署名数は署名者数（${signers.length}）以下にしてください。`);
+                return;
+            }
+            
+            if (requiredSignatures < 1) {
+                alert('必要署名数は1以上にしてください。');
+                return;
+            }
+            
+            // 実際の実装ではAPIリクエストを送信
+            // ここではモックデータを使用
+            
+            alert(`ウォレット「${name}」が作成されました！`);
+            
+            // フォームをリセット
+            document.getElementById('create-wallet-form').reset();
+            
+            // UIを更新
+            updateWalletsUI();
+        }
+        
+        function createTransaction() {
+            const walletId = document.getElementById('tx-wallet-id').value;
+            const operation = document.getElementById('tx-operation').value;
+            const memo = document.getElementById('tx-memo').value;
+            
+            let operationData;
+            
+            switch (operation) {
+                case 'transfer':
+                    const to = document.getElementById('tx-to').value;
+                    const amount = parseFloat(document.getElementById('tx-amount').value);
+                    const token = document.getElementById('tx-token').value;
+                    
+                    if (!to) {
+                        alert('送信先を選択してください。');
+                        return;
+                    }
+                    
+                    if (isNaN(amount) || amount <= 0) {
+                        alert('有効な金額を入力してください。');
+                        return;
+                    }
+                    
+                    operationData = {
+                        type: 'Transfer',
+                        to,
+                        amount,
+                        token_id: token || null
+                    };
+                    break;
+                    
+                case 'add_signer':
+                    const newSigner = document.getElementById('tx-new-signer').value;
+                    
+                    if (!newSigner) {
+                        alert('追加する署名者を選択してください。');
+                        return;
+                    }
+                    
+                    operationData = {
+                        type: 'AddSigner',
+                        signer_id: newSigner
+                    };
+                    break;
+                    
+                case 'remove_signer':
+                    const removeSigner = document.getElementById('tx-remove-signer').value;
+                    
+                    if (!removeSigner) {
+                        alert('削除する署名者を選択してください。');
+                        return;
+                    }
+                    
+                    operationData = {
+                        type: 'RemoveSigner',
+                        signer_id: removeSigner
+                    };
+                    break;
+                    
+                case 'change_required':
+                    const newRequired = parseInt(document.getElementById('tx-new-required').value);
+                    
+                    if (isNaN(newRequired) || newRequired < 1) {
+                        alert('有効な必要署名数を入力してください。');
+                        return;
+                    }
+                    
+                    operationData = {
+                        type: 'ChangeRequiredSignatures',
+                        required: newRequired
+                    };
+                    break;
+                    
+                default:
+                    alert('無効な操作タイプです。');
+                    return;
+            }
+            
+            // 実際の実装ではAPIリクエストを送信
+            // ここではモックデータを使用
+            
+            alert('トランザクションが作成されました！');
+            
+            // モーダルを閉じる
+            const modal = bootstrap.Modal.getInstance(document.getElementById('create-tx-modal'));
+            modal.hide();
+            
+            // UIを更新
+            updateTransactionsUI();
+        }
+        
+        function signTransaction(txId) {
+            // 実際の実装ではAPIリクエストを送信
+            // ここではモックデータを使用
+            
+            alert(`トランザクション ${txId} に署名しました！`);
+            
+            // モーダルを閉じる
+            const modal = bootstrap.Modal.getInstance(document.getElementById('tx-detail-modal'));
+            modal.hide();
+            
+            // UIを更新
+            updateTransactionsUI();
+        }
+        
+        function rejectTransaction(txId) {
+            // 実際の実装ではAPIリクエストを送信
+            // ここではモックデータを使用
+            
+            alert(`トランザクション ${txId} を拒否しました！`);
+            
+            // モーダルを閉じる
+            const modal = bootstrap.Modal.getInstance(document.getElementById('tx-detail-modal'));
+            modal.hide();
+            
+            // UIを更新
+            updateTransactionsUI();
+        }
+        
+        // ダークモード切り替え機能
+        function initThemeToggle() {
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const body = document.body;
+            const icon = themeToggleBtn.querySelector('i');
+            
+            // ローカルストレージからテーマ設定を取得
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            
+            // 初期状態を設定
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+                icon.classList.remove('bi-moon-stars');
+                icon.classList.add('bi-sun');
+                themeToggleBtn.setAttribute('aria-label', 'ライトモード切替');
+            } else {
+                body.classList.remove('dark-mode');
+                icon.classList.remove('bi-sun');
+                icon.classList.add('bi-moon-stars');
+                themeToggleBtn.setAttribute('aria-label', 'ダークモード切替');
+            }
+            
+            // クリックイベントを追加
+            themeToggleBtn.addEventListener('click', function() {
+                body.classList.toggle('dark-mode');
+                
+                if (body.classList.contains('dark-mode')) {
+                    icon.classList.remove('bi-moon-stars');
+                    icon.classList.add('bi-sun');
+                    themeToggleBtn.setAttribute('aria-label', 'ライトモード切替');
+                    localStorage.setItem('darkMode', 'true');
+                } else {
+                    icon.classList.remove('bi-sun');
+                    icon.classList.add('bi-moon-stars');
+                    themeToggleBtn.setAttribute('aria-label', 'ダークモード切替');
+                    localStorage.setItem('darkMode', 'false');
+                }
+            });
+        }
+        
+        // イベントリスナー
+        document.addEventListener('DOMContentLoaded', function() {
+            // ダークモード切り替え機能を初期化
+            initThemeToggle();
+            
+            // アカウントドロップダウンを初期化
+            updateAccountsDropdown();
+            
+            // ウォレット一覧を初期化
+            updateWalletsUI();
+            
+            // トランザクション一覧を初期化
+            updateTransactionsUI();
+            
+            // ウォレット作成フォームのイベントリスナー
+            document.getElementById('create-wallet-form').addEventListener('submit', createWallet);
+            
+            // ウォレットフィルターのイベントリスナー
+            document.querySelectorAll('#walletFilterDropdown + .dropdown-menu .dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // アクティブクラスを更新
+                    document.querySelector('#walletFilterDropdown + .dropdown-menu .dropdown-item.active').classList.remove('active');
+                    this.classList.add('active');
+                    
+                    // ウォレット一覧を更新
+                    updateWalletsUI(this.dataset.filter);
+                });
+            });
+            
+            // トランザクションフィルターのイベントリスナー
+            document.querySelectorAll('#txFilterDropdown + .dropdown-menu .dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // アクティブクラスを更新
+                    document.querySelector('#txFilterDropdown + .dropdown-menu .dropdown-item.active').classList.remove('active');
+                    this.classList.add('active');
+                    
+                    // トランザクション一覧を更新
+                    updateTransactionsUI(this.dataset.filter);
+                });
+            });
+            
+            // 操作タイプ変更時のイベントリスナー
+            document.getElementById('tx-operation').addEventListener('change', function() {
+                // すべてのフィールドを非表示
+                document.getElementById('transfer-fields').style.display = 'none';
+                document.getElementById('add-signer-fields').style.display = 'none';
+                document.getElementById('remove-signer-fields').style.display = 'none';
+                document.getElementById('change-required-fields').style.display = 'none';
+                
+                // 選択された操作タイプに応じたフィールドを表示
+                switch (this.value) {
+                    case 'transfer':
+                        document.getElementById('transfer-fields').style.display = 'block';
+                        break;
+                    case 'add_signer':
+                        document.getElementById('add-signer-fields').style.display = 'block';
+                        break;
+                    case 'remove_signer':
+                        document.getElementById('remove-signer-fields').style.display = 'block';
+                        break;
+                    case 'change_required':
+                        document.getElementById('change-required-fields').style.display = 'block';
+                        break;
+                }
+            });
+            
+            // 新規トランザクションボタンのイベントリスナー
+            document.getElementById('create-tx-btn').addEventListener('click', function() {
+                const walletId = this.dataset.walletId;
+                document.getElementById('tx-wallet-id').value = walletId;
+                
+                // 削除可能な署名者のドロップダウンを更新
+                const wallets = generateMockWallets();
+                const wallet = wallets.find(w => w.id === walletId);
+                
+                if (wallet) {
+                    const removeSignerSelect = document.getElementById('tx-remove-signer');
+                    removeSignerSelect.innerHTML = '<option value="">選択してください</option>';
+                    
+                    wallet.signers.forEach(signerId => {
+                        // 所有者は削除できない
+                        if (signerId !== wallet.owner_id) {
+                            const option = document.createElement('option');
+                            option.value = signerId;
+                            option.textContent = getAccountName(signerId);
+                            removeSignerSelect.appendChild(option);
+                        }
+                    });
+                    
+                    // 必要署名数の初期値を設定
+                    document.getElementById('tx-new-required').value = wallet.required_signatures;
+                    document.getElementById('tx-new-required').max = wallet.signers.length;
+                }
+                
+                // 操作タイプを初期化
+                document.getElementById('tx-operation').value = 'transfer';
+                document.getElementById('transfer-fields').style.display = 'block';
+                document.getElementById('add-signer-fields').style.display = 'none';
+                document.getElementById('remove-signer-fields').style.display = 'none';
+                document.getElementById('change-required-fields').style.display = 'none';
+                
+                // モーダルを表示
+                const modal = new bootstrap.Modal(document.getElementById('create-tx-modal'));
+                modal.show();
+            });
+            
+            // トランザクション作成ボタンのイベントリスナー
+            document.getElementById('submit-tx-btn').addEventListener('click', createTransaction);
+            
+            // 署名者管理ボタンのイベントリスナー
+            document.getElementById('add-signer-btn').addEventListener('click', function() {
+                const walletId = document.getElementById('detail-wallet-id').textContent;
+                document.getElementById('tx-wallet-id').value = walletId;
+                document.getElementById('tx-operation').value = 'add_signer';
+                
+                // フィールドの表示/非表示を切り替え
+                document.getElementById('transfer-fields').style.display = 'none';
+                document.getElementById('add-signer-fields').style.display = 'block';
+                document.getElementById('remove-signer-fields').style.display = 'none';
+                document.getElementById('change-required-fields').style.display = 'none';
+                
+                // ウォレット詳細モーダルを閉じる
+                const detailModal = bootstrap.Modal.getInstance(document.getElementById('wallet-detail-modal'));
+                detailModal.hide();
+                
+                // トランザクション作成モーダルを表示
+                const createModal = new bootstrap.Modal(document.getElementById('create-tx-modal'));
+                createModal.show();
+            });
+            
+            document.getElementById('remove-signer-btn').addEventListener('click', function() {
+                const walletId = document.getElementById('detail-wallet-id').textContent;
+                document.getElementById('tx-wallet-id').value = walletId;
+                document.getElementById('tx-operation').value = 'remove_signer';
+                
+                // フィールドの表示/非表示を切り替え
+                document.getElementById('transfer-fields').style.display = 'none';
+                document.getElementById('add-signer-fields').style.display = 'none';
+                document.getElementById('remove-signer-fields').style.display = 'block';
+                document.getElementById('change-required-fields').style.display = 'none';
+                
+                // 削除可能な署名者のドロップダウンを更新
+                const wallets = generateMockWallets();
+                const wallet = wallets.find(w => w.id === walletId);
+                
+                if (wallet) {
+                    const removeSignerSelect = document.getElementById('tx-remove-signer');
+                    removeSignerSelect.innerHTML = '<option value="">選択してください</option>';
+                    
+                    wallet.signers.forEach(signerId => {
+                        // 所有者は削除できない
+                        if (signerId !== wallet.owner_id) {
+                            const option = document.createElement('option');
+                            option.value = signerId;
+                            option.textContent = getAccountName(signerId);
+                            removeSignerSelect.appendChild(option);
+                        }
+                    });
+                }
+                
+                // ウォレット詳細モーダルを閉じる
+                const detailModal = bootstrap.Modal.getInstance(document.getElementById('wallet-detail-modal'));
+                detailModal.hide();
+                
+                // トランザクション作成モーダルを表示
+                const createModal = new bootstrap.Modal(document.getElementById('create-tx-modal'));
+                createModal.show();
+            });
+            
+            document.getElementById('change-required-btn').addEventListener('click', function() {
+                const walletId = document.getElementById('detail-wallet-id').textContent;
+                document.getElementById('tx-wallet-id').value = walletId;
+                document.getElementById('tx-operation').value = 'change_required';
+                
+                // フィールドの表示/非表示を切り替え
+                document.getElementById('transfer-fields').style.display = 'none';
+                document.getElementById('add-signer-fields').style.display = 'none';
+                document.getElementById('remove-signer-fields').style.display = 'none';
+                document.getElementById('change-required-fields').style.display = 'block';
+                
+                // 必要署名数の初期値と最大値を設定
+                const wallets = generateMockWallets();
+                const wallet = wallets.find(w => w.id === walletId);
+                
+                if (wallet) {
+                    document.getElementById('tx-new-required').value = wallet.required_signatures;
+                    document.getElementById('tx-new-required').max = wallet.signers.length;
+                }
+                
+                // ウォレット詳細モーダルを閉じる
+                const detailModal = bootstrap.Modal.getInstance(document.getElementById('wallet-detail-modal'));
+                detailModal.hide();
+                
+                // トランザクション作成モーダルを表示
+                const createModal = new bootstrap.Modal(document.getElementById('create-tx-modal'));
+                createModal.show();
+            });
+        });
+    </script>
+</body>
+</html>

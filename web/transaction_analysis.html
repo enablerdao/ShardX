@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardX - トランザクション分析</title>
+    <meta name="description" content="ShardX - トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。詳細なトランザクション分析機能。">
+    <meta name="keywords" content="blockchain, cryptocurrency, transaction analysis, patterns, visualization">
+    
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #f1f8ff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .transaction-item {
+            border-left: 3px solid #6a11cb;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .transaction-item:hover {
+            background-color: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .transaction-id {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .pattern-card {
+            border-left: 5px solid #6a11cb;
+        }
+        
+        .graph-container {
+            height: 500px;
+            width: 100%;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .search-result {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .relationship-diagram {
+            height: 400px;
+            width: 100%;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="assets/logo.svg" alt="ShardX Logo" height="80" class="me-3" />
+                        <h1 class="display-4 mb-0">ShardX</h1>
+                    </div>
+                    <p class="lead">詳細なトランザクション分析</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <div class="me-3">
+                            <div class="stats-label">ノード状態</div>
+                            <div id="node-status" class="badge bg-success">Running</div>
+                        </div>
+                        <div>
+                            <div class="stats-label">ノードID</div>
+                            <div id="node-id" class="small text-truncate" style="max-width: 150px;">loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="index.html">
+                    <i class="bi bi-hdd-network"></i> ブロックチェーン
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="wallet_dex.html">
+                    <i class="bi bi-wallet2"></i> ウォレット & DEX
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="advanced_charts.html">
+                    <i class="bi bi-graph-up"></i> 高度なチャート
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="transaction_analysis.html">
+                    <i class="bi bi-search"></i> トランザクション分析
+                </a>
+            </li>
+        </ul>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>トランザクション検索</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="search-form">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="tx-id" placeholder="トランザクションID">
+                                        <button class="btn btn-primary" type="submit">検索</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <select class="form-select" id="search-type">
+                                            <option value="id">トランザクションID</option>
+                                            <option value="address">アドレス</option>
+                                            <option value="pattern">パターン</option>
+                                        </select>
+                                        <button class="btn btn-outline-secondary" type="button" id="advanced-search-btn">
+                                            <i class="bi bi-sliders"></i> 詳細検索
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="advanced-search" class="mt-3" style="display: none;">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="date-from" class="form-label">開始日時</label>
+                                        <input type="datetime-local" class="form-control" id="date-from">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="date-to" class="form-label">終了日時</label>
+                                        <input type="datetime-local" class="form-control" id="date-to">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="tx-type" class="form-label">トランザクションタイプ</label>
+                                        <select class="form-select" id="tx-type">
+                                            <option value="">すべて</option>
+                                            <option value="transfer">送金</option>
+                                            <option value="token_transfer">トークン送金</option>
+                                            <option value="swap">スワップ</option>
+                                            <option value="liquidity">流動性提供</option>
+                                            <option value="contract">スマートコントラクト</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>トランザクション分析概要</span>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary active" data-period="day">24時間</button>
+                            <button type="button" class="btn btn-outline-primary" data-period="week">1週間</button>
+                            <button type="button" class="btn btn-outline-primary" data-period="month">1ヶ月</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <div class="metric-value" id="total-tx">0</div>
+                                <div class="metric-label">総トランザクション数</div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="metric-value" id="confirmed-tx">0</div>
+                                <div class="metric-label">確認済みトランザクション</div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="metric-value" id="avg-confirm-time">0s</div>
+                                <div class="metric-label">平均確認時間</div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="metric-value" id="active-addresses">0</div>
+                                <div class="metric-label">アクティブアドレス数</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h5>時間帯別トランザクション数</h5>
+                                <div class="chart-container">
+                                    <canvas id="hourly-volume-chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>トランザクションタイプ分布</h5>
+                                <div class="chart-container">
+                                    <canvas id="tx-type-distribution-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <span>検出されたトランザクションパターン</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="patterns-container">
+                            <!-- パターンはJSで動的に追加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <span>最もアクティブなアドレス</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>アドレス</th>
+                                        <th>トランザクション数</th>
+                                        <th>最終アクティビティ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-addresses-table">
+                                    <!-- アクティブアドレスはJSで動的に追加 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <span>トランザクショングラフ分析</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="graph-container" id="transaction-graph">
+                                    <!-- グラフはJSで動的に生成 -->
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>グラフメトリクス</h5>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <tbody>
+                                            <tr>
+                                                <th>平均次数</th>
+                                                <td id="avg-degree">0</td>
+                                            </tr>
+                                            <tr>
+                                                <th>最大次数</th>
+                                                <td id="max-degree">0</td>
+                                            </tr>
+                                            <tr>
+                                                <th>クラスタリング係数</th>
+                                                <td id="clustering-coefficient">0</td>
+                                            </tr>
+                                            <tr>
+                                                <th>最長パス</th>
+                                                <td id="longest-path">0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h5>グラフの解釈</h5>
+                                    <p class="small">
+                                        トランザクショングラフは、トランザクション間の関係を視覚化したものです。
+                                        ノードはトランザクションを、エッジは親子関係を表しています。
+                                        クラスタはパターンや関連するトランザクションのグループを示しています。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- トランザクション詳細モーダル -->
+        <div class="modal fade" id="tx-detail-modal" tabindex="-1" aria-labelledby="tx-detail-modal-label" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tx-detail-modal-label">トランザクション詳細</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>基本情報</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>トランザクションID</th>
+                                            <td id="detail-tx-id"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>ステータス</th>
+                                            <td id="detail-status"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>作成日時</th>
+                                            <td id="detail-created-at"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>確認日時</th>
+                                            <td id="detail-confirmed-at"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>データ</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>ペイロードサイズ</th>
+                                            <td id="detail-payload-size"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>トランザクションタイプ</th>
+                                            <td id="detail-tx-type"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>送信元</th>
+                                            <td id="detail-from"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>送信先</th>
+                                            <td id="detail-to"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6>関連トランザクション</h6>
+                                <div class="relationship-diagram" id="relationship-diagram">
+                                    <!-- 関係図はJSで動的に生成 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6>ペイロード</h6>
+                                <pre id="detail-payload" class="p-3 bg-light rounded" style="max-height: 200px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-primary" id="analyze-btn">詳細分析</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2024 ShardX - 高性能ブロックチェーン</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <a href="https://github.com/enablerdao/ShardX" target="_blank" class="text-decoration-none text-muted">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/force-graph@1.43.3/dist/force-graph.min.js"></script>
+    <script>
+        // APIエンドポイントの設定
+        const API_ENDPOINTS = {
+            analysis: '/api/analysis',
+            patterns: '/api/analysis/patterns',
+            transaction: '/api/transaction',
+            relationships: '/api/transaction/relationships',
+            search: '/api/search'
+        };
+        
+        // モックデータ生成関数
+        function generateMockAnalysisData(period) {
+            return {
+                period: period,
+                total_transactions: Math.floor(Math.random() * 50000) + 10000,
+                confirmed_transactions: Math.floor(Math.random() * 40000) + 10000,
+                rejected_transactions: Math.floor(Math.random() * 1000),
+                pending_transactions: Math.floor(Math.random() * 5000),
+                avg_confirmation_time: Math.random() * 60 + 10,
+                volume_by_hour: Array.from({length: 24}, (_, i) => ({
+                    hour: i,
+                    count: Math.floor(Math.random() * 2000) + 500
+                })),
+                transaction_types: {
+                    transfer: Math.floor(Math.random() * 20000) + 5000,
+                    token_transfer: Math.floor(Math.random() * 15000) + 3000,
+                    swap: Math.floor(Math.random() * 10000) + 2000,
+                    liquidity: Math.floor(Math.random() * 5000) + 1000,
+                    contract: Math.floor(Math.random() * 3000) + 500
+                },
+                top_active_addresses: Array.from({length: 10}, (_, i) => ({
+                    address: `0x${generateRandomHex(40)}`,
+                    count: Math.floor(Math.random() * 1000) + 100,
+                    last_activity: luxon.DateTime.now().minus({minutes: Math.floor(Math.random() * 1440)}).toISO()
+                })),
+                graph_metrics: {
+                    avg_degree: Math.random() * 5 + 1,
+                    max_degree: Math.floor(Math.random() * 20) + 5,
+                    clustering_coefficient: Math.random() * 0.5,
+                    longest_path: Math.floor(Math.random() * 10) + 3
+                }
+            };
+        }
+        
+        function generateMockPatterns() {
+            return [
+                {
+                    id: "pattern_small_transfers",
+                    name: "高頻度の小額送金",
+                    description: "短時間に多数の小額送金が行われるパターン",
+                    occurrences: Math.floor(Math.random() * 100) + 10,
+                    related_transactions: Array.from({length: 5}, () => generateRandomHex(32))
+                },
+                {
+                    id: "pattern_token_swaps",
+                    name: "トークンスワップチェーン",
+                    description: "複数のトークンスワップが連続して行われるパターン",
+                    occurrences: Math.floor(Math.random() * 50) + 5,
+                    related_transactions: Array.from({length: 3}, () => generateRandomHex(32))
+                },
+                {
+                    id: "pattern_liquidity",
+                    name: "流動性提供操作",
+                    description: "DEXの流動性プールに対する操作パターン",
+                    occurrences: Math.floor(Math.random() * 30) + 3,
+                    related_transactions: Array.from({length: 2}, () => generateRandomHex(32))
+                }
+            ];
+        }
+        
+        function generateMockTransaction(id) {
+            const now = luxon.DateTime.now();
+            const createdAt = now.minus({minutes: Math.floor(Math.random() * 60)});
+            const confirmedAt = createdAt.plus({seconds: Math.floor(Math.random() * 30) + 5});
+            
+            return {
+                id: id || generateRandomHex(32),
+                status: "Confirmed",
+                created_at: createdAt.toISO(),
+                confirmed_at: confirmedAt.toISO(),
+                payload_size: Math.floor(Math.random() * 1000) + 100,
+                tx_type: ["transfer", "token_transfer", "swap", "liquidity", "contract"][Math.floor(Math.random() * 5)],
+                from: `0x${generateRandomHex(40)}`,
+                to: `0x${generateRandomHex(40)}`,
+                payload: JSON.stringify({
+                    amount: Math.random() * 100,
+                    fee: Math.random() * 0.1,
+                    nonce: Math.floor(Math.random() * 1000),
+                    data: generateRandomHex(100)
+                }, null, 2)
+            };
+        }
+        
+        function generateMockRelationships(txId) {
+            return {
+                transaction: generateMockTransaction(txId),
+                parents: Array.from({length: Math.floor(Math.random() * 3) + 1}, () => generateMockTransaction()),
+                children: Array.from({length: Math.floor(Math.random() * 4)}, () => generateMockTransaction()),
+                siblings: Array.from({length: Math.floor(Math.random() * 3)}, () => generateMockTransaction())
+            };
+        }
+        
+        function generateRandomHex(length) {
+            const chars = '0123456789abcdef';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        }
+        
+        // UI更新関数
+        function updateAnalysisUI(data) {
+            // 基本メトリクス
+            document.getElementById('total-tx').textContent = data.total_transactions.toLocaleString();
+            document.getElementById('confirmed-tx').textContent = data.confirmed_transactions.toLocaleString();
+            document.getElementById('avg-confirm-time').textContent = `${data.avg_confirmation_time.toFixed(1)}s`;
+            document.getElementById('active-addresses').textContent = data.top_active_addresses.length.toLocaleString();
+            
+            // グラフメトリクス
+            document.getElementById('avg-degree').textContent = data.graph_metrics.avg_degree.toFixed(2);
+            document.getElementById('max-degree').textContent = data.graph_metrics.max_degree;
+            document.getElementById('clustering-coefficient').textContent = data.graph_metrics.clustering_coefficient.toFixed(3);
+            document.getElementById('longest-path').textContent = data.graph_metrics.longest_path;
+            
+            // 時間帯別チャート
+            updateHourlyVolumeChart(data.volume_by_hour);
+            
+            // トランザクションタイプ分布チャート
+            updateTxTypeDistributionChart(data.transaction_types);
+            
+            // アクティブアドレステーブル
+            updateActiveAddressesTable(data.top_active_addresses);
+        }
+        
+        function updateHourlyVolumeChart(hourlyData) {
+            const ctx = document.getElementById('hourly-volume-chart').getContext('2d');
+            
+            // データを時間順にソート
+            const sortedData = [...Array(24).keys()].map(hour => {
+                const entry = hourlyData.find(d => d.hour === hour);
+                return entry ? entry.count : 0;
+            });
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [...Array(24).keys()].map(h => `${h}:00`),
+                    datasets: [{
+                        label: 'トランザクション数',
+                        data: sortedData,
+                        backgroundColor: 'rgba(106, 17, 203, 0.7)',
+                        borderColor: 'rgba(106, 17, 203, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'トランザクション数'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateTxTypeDistributionChart(txTypes) {
+            const ctx = document.getElementById('tx-type-distribution-chart').getContext('2d');
+            
+            const labels = {
+                transfer: '送金',
+                token_transfer: 'トークン送金',
+                swap: 'スワップ',
+                liquidity: '流動性提供',
+                contract: 'スマートコントラクト'
+            };
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(txTypes).map(key => labels[key] || key),
+                    datasets: [{
+                        data: Object.values(txTypes),
+                        backgroundColor: [
+                            'rgba(106, 17, 203, 0.7)',
+                            'rgba(37, 117, 252, 0.7)',
+                            'rgba(40, 167, 69, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(220, 53, 69, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(106, 17, 203, 1)',
+                            'rgba(37, 117, 252, 1)',
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.raw / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.raw.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateActiveAddressesTable(addresses) {
+            const tableBody = document.getElementById('active-addresses-table');
+            tableBody.innerHTML = '';
+            
+            addresses.forEach(addr => {
+                const row = document.createElement('tr');
+                
+                const addressCell = document.createElement('td');
+                addressCell.innerHTML = `<a href="#" class="address-link" data-address="${addr.address}">${addr.address.substring(0, 10)}...${addr.address.substring(addr.address.length - 8)}</a>`;
+                
+                const countCell = document.createElement('td');
+                countCell.textContent = addr.count.toLocaleString();
+                
+                const lastActivityCell = document.createElement('td');
+                const lastActivity = luxon.DateTime.fromISO(addr.last_activity);
+                lastActivityCell.textContent = lastActivity.toRelative();
+                
+                row.appendChild(addressCell);
+                row.appendChild(countCell);
+                row.appendChild(lastActivityCell);
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function updatePatternsUI(patterns) {
+            const container = document.getElementById('patterns-container');
+            container.innerHTML = '';
+            
+            patterns.forEach(pattern => {
+                const card = document.createElement('div');
+                card.className = 'card pattern-card mb-3';
+                
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body';
+                
+                const title = document.createElement('h5');
+                title.className = 'card-title';
+                title.textContent = pattern.name;
+                
+                const description = document.createElement('p');
+                description.className = 'card-text';
+                description.textContent = pattern.description;
+                
+                const occurrences = document.createElement('p');
+                occurrences.className = 'card-text';
+                occurrences.innerHTML = `<strong>検出回数:</strong> ${pattern.occurrences}`;
+                
+                const relatedTx = document.createElement('div');
+                relatedTx.className = 'small text-muted mt-2';
+                relatedTx.innerHTML = `<strong>関連トランザクション:</strong> `;
+                
+                const txList = document.createElement('div');
+                txList.className = 'mt-1';
+                
+                pattern.related_transactions.forEach(tx => {
+                    const txLink = document.createElement('a');
+                    txLink.href = '#';
+                    txLink.className = 'tx-link me-2';
+                    txLink.dataset.txId = tx;
+                    txLink.textContent = `${tx.substring(0, 8)}...`;
+                    txList.appendChild(txLink);
+                });
+                
+                relatedTx.appendChild(txList);
+                
+                cardBody.appendChild(title);
+                cardBody.appendChild(description);
+                cardBody.appendChild(occurrences);
+                cardBody.appendChild(relatedTx);
+                
+                card.appendChild(cardBody);
+                container.appendChild(card);
+            });
+        }
+        
+        function initTransactionGraph(data) {
+            // グラフデータの準備
+            const nodes = [];
+            const links = [];
+            
+            // ノードの作成（トランザクション）
+            for (let i = 0; i < 50; i++) {
+                const txId = generateRandomHex(8);
+                nodes.push({
+                    id: txId,
+                    name: `TX-${txId}`,
+                    val: Math.random() * 3 + 1,
+                    color: ['#6a11cb', '#2575fc', '#28a745', '#ffc107', '#dc3545'][Math.floor(Math.random() * 5)]
+                });
+            }
+            
+            // リンクの作成（親子関係）
+            for (let i = 1; i < nodes.length; i++) {
+                // 各ノードは1〜3個の親を持つ
+                const numParents = Math.floor(Math.random() * 3) + 1;
+                for (let j = 0; j < numParents; j++) {
+                    // 親は自分より前のノードからランダムに選択
+                    const parentIndex = Math.floor(Math.random() * i);
+                    links.push({
+                        source: nodes[parentIndex].id,
+                        target: nodes[i].id
+                    });
+                }
+            }
+            
+            // グラフの初期化
+            const graphElem = document.getElementById('transaction-graph');
+            const Graph = ForceGraph()
+                (graphElem)
+                .graphData({nodes, links})
+                .nodeLabel('name')
+                .nodeColor('color')
+                .nodeVal('val')
+                .linkDirectionalArrowLength(3)
+                .linkDirectionalArrowRelPos(1)
+                .linkCurvature(0.25)
+                .onNodeClick(node => {
+                    // ノードクリック時の処理
+                    showTransactionDetails(node.id);
+                });
+        }
+        
+        function initRelationshipDiagram(relationships) {
+            const container = document.getElementById('relationship-diagram');
+            container.innerHTML = '';
+            
+            // グラフデータの準備
+            const nodes = [];
+            const links = [];
+            
+            // 中心ノード（対象トランザクション）
+            nodes.push({
+                id: relationships.transaction.id,
+                name: `TX-${relationships.transaction.id.substring(0, 8)}`,
+                val: 2,
+                color: '#6a11cb'
+            });
+            
+            // 親ノード
+            relationships.parents.forEach(parent => {
+                nodes.push({
+                    id: parent.id,
+                    name: `Parent-${parent.id.substring(0, 8)}`,
+                    val: 1.5,
+                    color: '#2575fc'
+                });
+                
+                links.push({
+                    source: parent.id,
+                    target: relationships.transaction.id
+                });
+            });
+            
+            // 子ノード
+            relationships.children.forEach(child => {
+                nodes.push({
+                    id: child.id,
+                    name: `Child-${child.id.substring(0, 8)}`,
+                    val: 1.5,
+                    color: '#28a745'
+                });
+                
+                links.push({
+                    source: relationships.transaction.id,
+                    target: child.id
+                });
+            });
+            
+            // 兄弟ノード
+            relationships.siblings.forEach(sibling => {
+                nodes.push({
+                    id: sibling.id,
+                    name: `Sibling-${sibling.id.substring(0, 8)}`,
+                    val: 1.5,
+                    color: '#ffc107'
+                });
+                
+                // 兄弟は親と接続
+                relationships.parents.forEach(parent => {
+                    links.push({
+                        source: parent.id,
+                        target: sibling.id
+                    });
+                });
+            });
+            
+            // グラフの初期化
+            const Graph = ForceGraph()
+                (container)
+                .graphData({nodes, links})
+                .nodeLabel('name')
+                .nodeColor('color')
+                .nodeVal('val')
+                .linkDirectionalArrowLength(3)
+                .linkDirectionalArrowRelPos(1)
+                .linkCurvature(0.25)
+                .onNodeClick(node => {
+                    // ノードクリック時の処理
+                    if (node.id !== relationships.transaction.id) {
+                        showTransactionDetails(node.id);
+                    }
+                });
+        }
+        
+        function showTransactionDetails(txId) {
+            // トランザクション詳細を取得
+            const tx = generateMockTransaction(txId);
+            
+            // モーダルに詳細を表示
+            document.getElementById('detail-tx-id').textContent = tx.id;
+            document.getElementById('detail-status').textContent = tx.status;
+            document.getElementById('detail-created-at').textContent = luxon.DateTime.fromISO(tx.created_at).toFormat('yyyy/MM/dd HH:mm:ss');
+            document.getElementById('detail-confirmed-at').textContent = luxon.DateTime.fromISO(tx.confirmed_at).toFormat('yyyy/MM/dd HH:mm:ss');
+            document.getElementById('detail-payload-size').textContent = `${tx.payload_size} bytes`;
+            document.getElementById('detail-tx-type').textContent = tx.tx_type;
+            document.getElementById('detail-from').textContent = tx.from;
+            document.getElementById('detail-to').textContent = tx.to;
+            document.getElementById('detail-payload').textContent = tx.payload;
+            
+            // 関連トランザクションを取得
+            const relationships = generateMockRelationships(txId);
+            
+            // 関係図を初期化
+            initRelationshipDiagram(relationships);
+            
+            // モーダルを表示
+            const modal = new bootstrap.Modal(document.getElementById('tx-detail-modal'));
+            modal.show();
+        }
+        
+        // イベントリスナー
+        document.addEventListener('DOMContentLoaded', function() {
+            // 詳細検索ボタン
+            document.getElementById('advanced-search-btn').addEventListener('click', function() {
+                const advancedSearch = document.getElementById('advanced-search');
+                if (advancedSearch.style.display === 'none') {
+                    advancedSearch.style.display = 'block';
+                    this.innerHTML = '<i class="bi bi-x-lg"></i> 詳細検索を閉じる';
+                } else {
+                    advancedSearch.style.display = 'none';
+                    this.innerHTML = '<i class="bi bi-sliders"></i> 詳細検索';
+                }
+            });
+            
+            // 検索フォーム
+            document.getElementById('search-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const txId = document.getElementById('tx-id').value;
+                if (txId) {
+                    showTransactionDetails(txId);
+                }
+            });
+            
+            // 期間切り替え
+            document.querySelectorAll('[data-period]').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('[data-period]').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // 分析データを更新
+                    const period = this.getAttribute('data-period');
+                    const analysisData = generateMockAnalysisData(period);
+                    updateAnalysisUI(analysisData);
+                });
+            });
+            
+            // トランザクションリンク
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('tx-link')) {
+                    e.preventDefault();
+                    const txId = e.target.dataset.txId;
+                    showTransactionDetails(txId);
+                }
+            });
+            
+            // アドレスリンク
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('address-link')) {
+                    e.preventDefault();
+                    const address = e.target.dataset.address;
+                    alert(`アドレス ${address} の詳細分析は準備中です。`);
+                }
+            });
+            
+            // 初期データ読み込み
+            const analysisData = generateMockAnalysisData('day');
+            updateAnalysisUI(analysisData);
+            
+            const patterns = generateMockPatterns();
+            updatePatternsUI(patterns);
+            
+            // トランザクショングラフの初期化
+            initTransactionGraph();
+        });
+    </script>
+</body>
+</html>

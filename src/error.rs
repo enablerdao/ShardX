@@ -9,8 +9,8 @@ pub enum Error {
     InvalidInput(String),
     
     /// 無効な署名
-    #[error("Invalid signature")]
-    InvalidSignature,
+    #[error("Invalid signature: {0}")]
+    InvalidSignature(String),
     
     /// 無効なトランザクション
     #[error("Invalid transaction: {0}")]
@@ -68,6 +68,10 @@ pub enum Error {
     #[error("Duplicate: {0}")]
     Duplicate(String),
     
+    /// 重複トランザクション
+    #[error("Duplicate transaction: {0}")]
+    DuplicateTransaction(String),
+    
     /// 未実装
     #[error("Not implemented: {0}")]
     NotImplemented(String),
@@ -79,6 +83,46 @@ pub enum Error {
     /// リソース不足
     #[error("Resource exhausted: {0}")]
     ResourceExhausted(String),
+    
+    /// レート制限
+    #[error("Rate limit exceeded: {0}")]
+    RateLimitExceeded(String),
+    
+    /// 検証エラー
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+    
+    /// 無効な操作
+    #[error("Invalid operation: {0}")]
+    InvalidOperation(String),
+    
+    /// トランザクションが見つからない
+    #[error("Transaction not found: {0}")]
+    TransactionNotFound(String),
+    
+    /// ウォレットが見つからない
+    #[error("Wallet not found: {0}")]
+    WalletNotFound(String),
+    
+    /// アカウントが見つからない
+    #[error("Account not found: {0}")]
+    AccountNotFound(String),
+    
+    /// 無効なトランザクション状態
+    #[error("Invalid transaction status: {0}")]
+    InvalidTransactionStatus(String),
+    
+    /// 権限のない署名者
+    #[error("Unauthorized signer: {0}")]
+    UnauthorizedSigner(String),
+    
+    /// 既に署名済み
+    #[error("Already signed: {0}")]
+    AlreadySigned(String),
+    
+    /// セキュリティ違反
+    #[error("Security violation: {0}")]
+    SecurityViolation(String),
     
     /// 不明なエラー
     #[error("Unknown error: {0}")]

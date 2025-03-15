@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardX - 高度なチャート分析</title>
+    <meta name="description" content="ShardX - トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。高度なチャート分析機能。">
+    <meta name="keywords" content="blockchain, cryptocurrency, charts, analysis, visualization">
+    
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #f1f8ff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .chart-controls {
+            margin-bottom: 1rem;
+        }
+        
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 1rem;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+        }
+        
+        .tooltip-custom {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="assets/logo.svg" alt="ShardX Logo" height="80" class="me-3" />
+                        <h1 class="display-4 mb-0">ShardX</h1>
+                    </div>
+                    <p class="lead">高度なチャート分析</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <div class="me-3">
+                            <div class="stats-label">ノード状態</div>
+                            <div id="node-status" class="badge bg-success">Running</div>
+                        </div>
+                        <div>
+                            <div class="stats-label">ノードID</div>
+                            <div id="node-id" class="small text-truncate" style="max-width: 150px;">loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="index.html">
+                    <i class="bi bi-hdd-network"></i> ブロックチェーン
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="wallet_dex.html">
+                    <i class="bi bi-wallet2"></i> ウォレット & DEX
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="advanced_charts.html">
+                    <i class="bi bi-graph-up"></i> 高度なチャート
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="transaction_analysis.html">
+                    <i class="bi bi-search"></i> トランザクション分析
+                </a>
+            </li>
+        </ul>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>パフォーマンスメトリクス</span>
+                        <div class="chart-controls">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary active" data-period="hour">1時間</button>
+                                <button type="button" class="btn btn-outline-primary" data-period="day">24時間</button>
+                                <button type="button" class="btn btn-outline-primary" data-period="week">1週間</button>
+                                <button type="button" class="btn btn-outline-primary" data-period="month">1ヶ月</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="performance-chart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="performance-legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: rgba(106, 17, 203, 0.8);"></div>
+                                <span>TPS</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: rgba(37, 117, 252, 0.8);"></div>
+                                <span>レイテンシ (ms)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: rgba(40, 167, 69, 0.8);"></div>
+                                <span>確認済みトランザクション</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        トランザクションボリューム
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="volume-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        シャード負荷分布
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="shard-load-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>テクニカル分析</span>
+                        <div class="chart-controls">
+                            <select class="form-select form-select-sm" id="indicator-select">
+                                <option value="ma">移動平均 (MA)</option>
+                                <option value="ema">指数移動平均 (EMA)</option>
+                                <option value="bollinger">ボリンジャーバンド</option>
+                                <option value="rsi">相対力指数 (RSI)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="technical-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        トランザクションタイプ分布
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="tx-type-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        ネットワーク健全性
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="network-health-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        AI予測モデル
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="ai-prediction-chart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> AI予測モデルは過去のトランザクションデータに基づいて将来のトレンドを予測します。予測は参考情報であり、実際の結果と異なる場合があります。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2024 ShardX - 高性能ブロックチェーン</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <a href="https://github.com/enablerdao/ShardX" target="_blank" class="text-decoration-none text-muted">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script>
+        // Chart.jsの設定
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = '#495057';
+        Chart.defaults.scale.grid.color = 'rgba(0, 0, 0, 0.05)';
+        
+        // APIエンドポイントの設定
+        const API_ENDPOINTS = {
+            performance: '/api/metrics/performance',
+            volume: '/api/metrics/volume',
+            shardLoad: '/api/metrics/shard-load',
+            txTypes: '/api/metrics/tx-types',
+            networkHealth: '/api/metrics/network-health',
+            aiPrediction: '/api/ai/prediction'
+        };
+        
+        // モックデータ生成関数
+        function generateMockPerformanceData(period) {
+            const now = luxon.DateTime.now();
+            const data = {
+                labels: [],
+                tps: [],
+                latency: [],
+                confirmedTx: []
+            };
+            
+            let points;
+            let interval;
+            
+            switch (period) {
+                case 'hour':
+                    points = 60;
+                    interval = { minutes: 1 };
+                    break;
+                case 'day':
+                    points = 24;
+                    interval = { hours: 1 };
+                    break;
+                case 'week':
+                    points = 7;
+                    interval = { days: 1 };
+                    break;
+                case 'month':
+                    points = 30;
+                    interval = { days: 1 };
+                    break;
+                default:
+                    points = 60;
+                    interval = { minutes: 1 };
+            }
+            
+            let time = now.minus({ [Object.keys(interval)[0]]: points });
+            let cumulativeTx = 0;
+            
+            for (let i = 0; i < points; i++) {
+                time = time.plus(interval);
+                data.labels.push(time);
+                
+                // TPSは5000〜50000の範囲でランダム
+                const baseTps = 5000 + Math.random() * 45000;
+                // 時間帯による変動を追加
+                const hourFactor = 1 + 0.5 * Math.sin(time.hour / 24 * 2 * Math.PI);
+                const tps = baseTps * hourFactor;
+                data.tps.push(tps);
+                
+                // レイテンシは10〜100msの範囲でランダム
+                const latency = 10 + Math.random() * 90;
+                data.latency.push(latency);
+                
+                // 確認済みトランザクションは累積
+                const newTx = tps * (period === 'hour' ? 60 : period === 'day' ? 3600 : 86400) / points;
+                cumulativeTx += newTx;
+                data.confirmedTx.push(cumulativeTx);
+            }
+            
+            return data;
+        }
+        
+        function generateMockVolumeData() {
+            const data = {
+                labels: [],
+                values: []
+            };
+            
+            const now = luxon.DateTime.now();
+            let time = now.minus({ hours: 24 });
+            
+            for (let i = 0; i < 24; i++) {
+                time = time.plus({ hours: 1 });
+                data.labels.push(time);
+                
+                // ボリュームは時間帯によって変動
+                const hourFactor = 1 + 0.8 * Math.sin((time.hour - 12) / 24 * 2 * Math.PI);
+                const volume = 10000 + Math.random() * 40000 * hourFactor;
+                data.values.push(volume);
+            }
+            
+            return data;
+        }
+        
+        function generateMockShardLoadData() {
+            const data = {
+                labels: [],
+                values: []
+            };
+            
+            // 10シャードのデータを生成
+            for (let i = 1; i <= 10; i++) {
+                data.labels.push(`シャード ${i}`);
+                // 負荷は0.1〜0.9の範囲でランダム
+                const load = 0.1 + Math.random() * 0.8;
+                data.values.push(load);
+            }
+            
+            return data;
+        }
+        
+        function generateMockTxTypeData() {
+            return {
+                labels: ['送金', 'トークン送金', 'スワップ', '流動性提供', 'スマートコントラクト'],
+                values: [
+                    Math.floor(Math.random() * 1000),
+                    Math.floor(Math.random() * 800),
+                    Math.floor(Math.random() * 600),
+                    Math.floor(Math.random() * 400),
+                    Math.floor(Math.random() * 200)
+                ]
+            };
+        }
+        
+        function generateMockNetworkHealthData() {
+            const data = {
+                labels: [],
+                uptime: [],
+                responseTime: [],
+                errorRate: []
+            };
+            
+            const now = luxon.DateTime.now();
+            let time = now.minus({ days: 7 });
+            
+            for (let i = 0; i < 7; i++) {
+                time = time.plus({ days: 1 });
+                data.labels.push(time);
+                
+                // アップタイム（95%〜100%）
+                data.uptime.push(95 + Math.random() * 5);
+                
+                // レスポンスタイム（50ms〜200ms）
+                data.responseTime.push(50 + Math.random() * 150);
+                
+                // エラー率（0%〜5%）
+                data.errorRate.push(Math.random() * 5);
+            }
+            
+            return data;
+        }
+        
+        function generateMockAIPredictionData() {
+            const data = {
+                labels: [],
+                actual: [],
+                predicted: [],
+                lowerBound: [],
+                upperBound: []
+            };
+            
+            const now = luxon.DateTime.now();
+            let time = now.minus({ days: 30 });
+            
+            // 過去のデータ（実測値）
+            for (let i = 0; i < 30; i++) {
+                time = time.plus({ days: 1 });
+                data.labels.push(time);
+                
+                // 実測値（10000〜50000の範囲でランダム、トレンドあり）
+                const trend = 30000 + 10000 * Math.sin(i / 30 * 2 * Math.PI);
+                const noise = (Math.random() - 0.5) * 10000;
+                const actual = trend + noise;
+                data.actual.push(actual);
+                
+                // 予測値は過去データでは未定義
+                if (i < 20) {
+                    data.predicted.push(null);
+                    data.lowerBound.push(null);
+                    data.upperBound.push(null);
+                } else {
+                    // 過去10日間は予測値も表示（実測値に近い値）
+                    const predicted = actual * (0.9 + Math.random() * 0.2);
+                    data.predicted.push(predicted);
+                    data.lowerBound.push(predicted * 0.8);
+                    data.upperBound.push(predicted * 1.2);
+                }
+            }
+            
+            // 将来の予測データ
+            time = now;
+            for (let i = 0; i < 10; i++) {
+                time = time.plus({ days: 1 });
+                data.labels.push(time);
+                
+                // 実測値は将来データでは未定義
+                data.actual.push(null);
+                
+                // 予測値（トレンドの延長線上）
+                const trend = 30000 + 10000 * Math.sin((30 + i) / 30 * 2 * Math.PI);
+                const noise = (Math.random() - 0.5) * 5000;
+                const predicted = trend + noise;
+                data.predicted.push(predicted);
+                
+                // 予測の信頼区間
+                data.lowerBound.push(predicted * 0.8);
+                data.upperBound.push(predicted * 1.2);
+            }
+            
+            return data;
+        }
+        
+        // パフォーマンスチャートの初期化
+        let performanceChart;
+        function initPerformanceChart(period = 'hour') {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            // 既存のチャートを破棄
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            // モックデータを取得
+            const data = generateMockPerformanceData(period);
+            
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'TPS',
+                            data: data.tps,
+                            borderColor: 'rgba(106, 17, 203, 0.8)',
+                            backgroundColor: 'rgba(106, 17, 203, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'レイテンシ (ms)',
+                            data: data.latency,
+                            borderColor: 'rgba(37, 117, 252, 0.8)',
+                            backgroundColor: 'rgba(37, 117, 252, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: '確認済みトランザクション',
+                            data: data.confirmedTx,
+                            borderColor: 'rgba(40, 167, 69, 0.8)',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: period === 'hour' ? 'minute' : period === 'day' ? 'hour' : 'day'
+                            },
+                            title: {
+                                display: true,
+                                text: '時間'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'TPS'
+                            },
+                            min: 0
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'レイテンシ (ms)'
+                            },
+                            min: 0,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '確認済みTX'
+                            },
+                            min: 0,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ボリュームチャートの初期化
+        function initVolumeChart() {
+            const ctx = document.getElementById('volume-chart').getContext('2d');
+            const data = generateMockVolumeData();
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'トランザクション数',
+                        data: data.values,
+                        backgroundColor: 'rgba(106, 17, 203, 0.7)',
+                        borderColor: 'rgba(106, 17, 203, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'hour'
+                            },
+                            title: {
+                                display: true,
+                                text: '時間'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'トランザクション数'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // シャード負荷チャートの初期化
+        function initShardLoadChart() {
+            const ctx = document.getElementById('shard-load-chart').getContext('2d');
+            const data = generateMockShardLoadData();
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '負荷率',
+                        data: data.values,
+                        backgroundColor: data.values.map(value => {
+                            if (value < 0.3) return 'rgba(40, 167, 69, 0.7)'; // 低負荷
+                            if (value < 0.7) return 'rgba(255, 193, 7, 0.7)'; // 中負荷
+                            return 'rgba(220, 53, 69, 0.7)'; // 高負荷
+                        }),
+                        borderColor: data.values.map(value => {
+                            if (value < 0.3) return 'rgba(40, 167, 69, 1)';
+                            if (value < 0.7) return 'rgba(255, 193, 7, 1)';
+                            return 'rgba(220, 53, 69, 1)';
+                        }),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            title: {
+                                display: true,
+                                text: '負荷率'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `負荷率: ${(context.raw * 100).toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // トランザクションタイプチャートの初期化
+        function initTxTypeChart() {
+            const ctx = document.getElementById('tx-type-chart').getContext('2d');
+            const data = generateMockTxTypeData();
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.values,
+                        backgroundColor: [
+                            'rgba(106, 17, 203, 0.7)',
+                            'rgba(37, 117, 252, 0.7)',
+                            'rgba(40, 167, 69, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(220, 53, 69, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(106, 17, 203, 1)',
+                            'rgba(37, 117, 252, 1)',
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.raw / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.raw} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ネットワーク健全性チャートの初期化
+        function initNetworkHealthChart() {
+            const ctx = document.getElementById('network-health-chart').getContext('2d');
+            const data = generateMockNetworkHealthData();
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'アップタイム (%)',
+                            data: data.uptime,
+                            borderColor: 'rgba(40, 167, 69, 0.8)',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'レスポンスタイム (ms)',
+                            data: data.responseTime,
+                            borderColor: 'rgba(37, 117, 252, 0.8)',
+                            backgroundColor: 'rgba(37, 117, 252, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'エラー率 (%)',
+                            data: data.errorRate,
+                            borderColor: 'rgba(220, 53, 69, 0.8)',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'アップタイム (%)'
+                            },
+                            min: 90,
+                            max: 100
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'レスポンスタイム (ms)'
+                            },
+                            min: 0,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'エラー率 (%)'
+                            },
+                            min: 0,
+                            max: 10,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // AI予測チャートの初期化
+        function initAIPredictionChart() {
+            const ctx = document.getElementById('ai-prediction-chart').getContext('2d');
+            const data = generateMockAIPredictionData();
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '実測値',
+                            data: data.actual,
+                            borderColor: 'rgba(37, 117, 252, 1)',
+                            backgroundColor: 'rgba(37, 117, 252, 0)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            tension: 0.4
+                        },
+                        {
+                            label: '予測値',
+                            data: data.predicted,
+                            borderColor: 'rgba(106, 17, 203, 1)',
+                            backgroundColor: 'rgba(106, 17, 203, 0)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 3,
+                            tension: 0.4
+                        },
+                        {
+                            label: '予測下限',
+                            data: data.lowerBound,
+                            borderColor: 'rgba(106, 17, 203, 0)',
+                            backgroundColor: 'rgba(106, 17, 203, 0)',
+                            fill: false,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '予測上限',
+                            data: data.upperBound,
+                            borderColor: 'rgba(106, 17, 203, 0)',
+                            backgroundColor: 'rgba(106, 17, 203, 0.2)',
+                            fill: '-1',
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            },
+                            title: {
+                                display: true,
+                                text: '日付'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'TPS'
+                            }
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: data.labels[29],
+                                    xMax: data.labels[29],
+                                    borderColor: 'rgba(0, 0, 0, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: '予測開始',
+                                        display: true,
+                                        position: 'start'
+                                    }
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    if (label === '予測下限' || label === '予測上限') {
+                                        return null;
+                                    }
+                                    return `${label}: ${context.raw !== null ? context.raw.toFixed(0) : ''}`;
+                                },
+                                footer: function(tooltipItems) {
+                                    const dataIndex = tooltipItems[0].dataIndex;
+                                    const predictedValue = data.predicted[dataIndex];
+                                    
+                                    if (predictedValue !== null && data.actual[dataIndex] === null) {
+                                        const lowerBound = data.lowerBound[dataIndex].toFixed(0);
+                                        const upperBound = data.upperBound[dataIndex].toFixed(0);
+                                        return `予測範囲: ${lowerBound} - ${upperBound}`;
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // テクニカル分析チャートの初期化
+        let technicalChart;
+        function initTechnicalChart(indicator = 'ma') {
+            const ctx = document.getElementById('technical-chart').getContext('2d');
+            
+            // 既存のチャートを破棄
+            if (technicalChart) {
+                technicalChart.destroy();
+            }
+            
+            // 基本データ（TPSの時系列データ）
+            const now = luxon.DateTime.now();
+            const labels = [];
+            const values = [];
+            
+            let time = now.minus({ days: 30 });
+            for (let i = 0; i < 30; i++) {
+                time = time.plus({ days: 1 });
+                labels.push(time);
+                
+                // 基本値（トレンドあり）
+                const trend = 30000 + 10000 * Math.sin(i / 30 * 2 * Math.PI);
+                const noise = (Math.random() - 0.5) * 5000;
+                values.push(trend + noise);
+            }
+            
+            // インジケーター計算
+            const datasets = [
+                {
+                    label: 'TPS',
+                    data: values,
+                    borderColor: 'rgba(37, 117, 252, 1)',
+                    backgroundColor: 'rgba(37, 117, 252, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }
+            ];
+            
+            // 移動平均
+            if (indicator === 'ma' || indicator === 'ema') {
+                const shortPeriod = 5;
+                const longPeriod = 20;
+                
+                const shortMA = [];
+                const longMA = [];
+                
+                for (let i = 0; i < values.length; i++) {
+                    if (i < shortPeriod - 1) {
+                        shortMA.push(null);
+                    } else {
+                        let sum = 0;
+                        for (let j = 0; j < shortPeriod; j++) {
+                            sum += values[i - j];
+                        }
+                        shortMA.push(sum / shortPeriod);
+                    }
+                    
+                    if (i < longPeriod - 1) {
+                        longMA.push(null);
+                    } else {
+                        let sum = 0;
+                        for (let j = 0; j < longPeriod; j++) {
+                            sum += values[i - j];
+                        }
+                        longMA.push(sum / longPeriod);
+                    }
+                }
+                
+                datasets.push({
+                    label: `${indicator === 'ma' ? '移動平均' : '指数移動平均'} (${shortPeriod}日)`,
+                    data: shortMA,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0
+                });
+                
+                datasets.push({
+                    label: `${indicator === 'ma' ? '移動平均' : '指数移動平均'} (${longPeriod}日)`,
+                    data: longMA,
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    backgroundColor: 'rgba(255, 159, 64, 0)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0
+                });
+            }
+            
+            // ボリンジャーバンド
+            if (indicator === 'bollinger') {
+                const period = 20;
+                const multiplier = 2;
+                const middle = [];
+                const upper = [];
+                const lower = [];
+                
+                for (let i = 0; i < values.length; i++) {
+                    if (i < period - 1) {
+                        middle.push(null);
+                        upper.push(null);
+                        lower.push(null);
+                    } else {
+                        let sum = 0;
+                        let sumSquares = 0;
+                        
+                        for (let j = 0; j < period; j++) {
+                            sum += values[i - j];
+                            sumSquares += values[i - j] * values[i - j];
+                        }
+                        
+                        const mean = sum / period;
+                        const variance = sumSquares / period - mean * mean;
+                        const stdDev = Math.sqrt(variance);
+                        
+                        middle.push(mean);
+                        upper.push(mean + multiplier * stdDev);
+                        lower.push(mean - multiplier * stdDev);
+                    }
+                }
+                
+                datasets.push({
+                    label: 'ボリンジャー中央線',
+                    data: middle,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0
+                });
+                
+                datasets.push({
+                    label: 'ボリンジャー上限',
+                    data: upper,
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    backgroundColor: 'rgba(255, 159, 64, 0)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0
+                });
+                
+                datasets.push({
+                    label: 'ボリンジャー下限',
+                    data: lower,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    fill: {
+                        target: '+1',
+                        above: 'rgba(75, 192, 192, 0.2)'
+                    }
+                });
+            }
+            
+            // RSI
+            if (indicator === 'rsi') {
+                const period = 14;
+                const rsi = [];
+                
+                for (let i = 0; i < values.length; i++) {
+                    if (i < period) {
+                        rsi.push(null);
+                    } else {
+                        let gains = 0;
+                        let losses = 0;
+                        
+                        for (let j = 0; j < period; j++) {
+                            const diff = values[i - j] - values[i - j - 1];
+                            if (diff >= 0) {
+                                gains += diff;
+                            } else {
+                                losses -= diff;
+                            }
+                        }
+                        
+                        const avgGain = gains / period;
+                        const avgLoss = losses / period;
+                        
+                        if (avgLoss === 0) {
+                            rsi.push(100);
+                        } else {
+                            const rs = avgGain / avgLoss;
+                            rsi.push(100 - (100 / (1 + rs)));
+                        }
+                    }
+                }
+                
+                // RSIは別のY軸で表示
+                datasets.push({
+                    label: 'RSI',
+                    data: rsi,
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    yAxisID: 'y1',
+                    fill: true
+                });
+            }
+            
+            technicalChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            },
+                            title: {
+                                display: true,
+                                text: '日付'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'TPS'
+                            }
+                        },
+                        y1: indicator === 'rsi' ? {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'RSI'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        } : undefined
+                    },
+                    plugins: {
+                        annotation: indicator === 'rsi' ? {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    yMin: 70,
+                                    yMax: 70,
+                                    borderColor: 'rgba(255, 99, 132, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    yScaleID: 'y1'
+                                },
+                                line2: {
+                                    type: 'line',
+                                    yMin: 30,
+                                    yMax: 30,
+                                    borderColor: 'rgba(75, 192, 192, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    yScaleID: 'y1'
+                                }
+                            }
+                        } : undefined
+                    }
+                }
+            });
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // パフォーマンスチャートの期間切り替え
+            document.querySelectorAll('[data-period]').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('[data-period]').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    initPerformanceChart(this.getAttribute('data-period'));
+                });
+            });
+            
+            // テクニカル分析のインジケーター切り替え
+            document.getElementById('indicator-select').addEventListener('change', function() {
+                initTechnicalChart(this.value);
+            });
+            
+            // 各チャートを初期化
+            initPerformanceChart('hour');
+            initVolumeChart();
+            initShardLoadChart();
+            initTxTypeChart();
+            initNetworkHealthChart();
+            initAIPredictionChart();
+            initTechnicalChart('ma');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardX - AI取引予測</title>
+    <meta name="description" content="ShardX - トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。AIによる取引予測機能。">
+    <meta name="keywords" content="blockchain, cryptocurrency, AI, prediction, trading">
+    
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #f1f8ff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .prediction-card {
+            border-left: 5px solid #6a11cb;
+        }
+        
+        .prediction-up {
+            border-left-color: var(--success-color);
+        }
+        
+        .prediction-down {
+            border-left-color: var(--danger-color);
+        }
+        
+        .prediction-neutral {
+            border-left-color: var(--warning-color);
+        }
+        
+        .prediction-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .prediction-up .prediction-value {
+            color: var(--success-color);
+        }
+        
+        .prediction-down .prediction-value {
+            color: var(--danger-color);
+        }
+        
+        .prediction-neutral .prediction-value {
+            color: var(--warning-color);
+        }
+        
+        .prediction-range {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .prediction-accuracy {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 50px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .accuracy-high {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: var(--success-color);
+        }
+        
+        .accuracy-medium {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .accuracy-low {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .feature-importance {
+            height: 10px;
+            border-radius: 5px;
+            background-color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="assets/logo.svg" alt="ShardX Logo" height="80" class="me-3" />
+                        <h1 class="display-4 mb-0">ShardX</h1>
+                    </div>
+                    <p class="lead">AIによる取引予測</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <div class="me-3">
+                            <div class="stats-label">ノード状態</div>
+                            <div id="node-status" class="badge bg-success">Running</div>
+                        </div>
+                        <div>
+                            <div class="stats-label">ノードID</div>
+                            <div id="node-id" class="small text-truncate" style="max-width: 150px;">loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="index.html">
+                    <i class="bi bi-hdd-network"></i> ブロックチェーン
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="wallet_dex.html">
+                    <i class="bi bi-wallet2"></i> ウォレット & DEX
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="multisig_wallet.html">
+                    <i class="bi bi-shield-lock"></i> マルチシグウォレット
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="advanced_charts.html">
+                    <i class="bi bi-graph-up"></i> 高度なチャート
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="transaction_analysis.html">
+                    <i class="bi bi-search"></i> トランザクション分析
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="ai_prediction.html">
+                    <i class="bi bi-robot"></i> AI予測
+                </a>
+            </li>
+        </ul>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> AI予測機能は、過去のトランザクションデータと市場動向に基づいて将来の価格や取引量を予測します。予測は参考情報であり、実際の結果と異なる場合があります。
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>価格予測チャート</span>
+                        <div class="d-flex">
+                            <select class="form-select form-select-sm me-2" id="trading-pair-select">
+                                <option value="BTC/USD">BTC/USD</option>
+                                <option value="ETH/USD">ETH/USD</option>
+                                <option value="BTC/ETH">BTC/ETH</option>
+                            </select>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary active" data-period="hour">1時間</button>
+                                <button type="button" class="btn btn-outline-primary" data-period="day">24時間</button>
+                                <button type="button" class="btn btn-outline-primary" data-period="week">1週間</button>
+                                <button type="button" class="btn btn-outline-primary" data-period="month">1ヶ月</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="prediction-chart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-primary me-2">実際の価格</span>
+                                    <span class="badge bg-secondary me-2">予測価格</span>
+                                    <span class="badge" style="background-color: rgba(106, 17, 203, 0.2);">予測範囲</span>
+                                </div>
+                                <div>
+                                    <span class="small text-muted">最終更新: <span id="last-update-time">-</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h5 class="mb-3">主要取引ペアの予測</h5>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card prediction-card prediction-up">
+                    <div class="card-body">
+                        <h5 class="card-title">BTC/USD</h5>
+                        <div class="prediction-accuracy accuracy-high">精度: 85%</div>
+                        <div class="prediction-value">$42,850.25</div>
+                        <div class="prediction-range">予測範囲: $41,200 - $44,500</div>
+                        <div class="mt-2">
+                            <span class="badge bg-success">+5.2%</span>
+                            <span class="small text-muted ms-2">1日後</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card prediction-card prediction-down">
+                    <div class="card-body">
+                        <h5 class="card-title">ETH/USD</h5>
+                        <div class="prediction-accuracy accuracy-medium">精度: 72%</div>
+                        <div class="prediction-value">$2,780.50</div>
+                        <div class="prediction-range">予測範囲: $2,650 - $2,900</div>
+                        <div class="mt-2">
+                            <span class="badge bg-danger">-2.8%</span>
+                            <span class="small text-muted ms-2">1日後</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card prediction-card prediction-neutral">
+                    <div class="card-body">
+                        <h5 class="card-title">BTC/ETH</h5>
+                        <div class="prediction-accuracy accuracy-medium">精度: 68%</div>
+                        <div class="prediction-value">15.42</div>
+                        <div class="prediction-range">予測範囲: 15.1 - 15.7</div>
+                        <div class="mt-2">
+                            <span class="badge bg-warning">+0.5%</span>
+                            <span class="small text-muted ms-2">1日後</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <span>予測モデルの特徴重要度</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>過去24時間の価格変動</span>
+                                <span>85%</span>
+                            </div>
+                            <div class="feature-importance" style="width: 85%;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>取引量</span>
+                                <span>78%</span>
+                            </div>
+                            <div class="feature-importance" style="width: 78%;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>市場センチメント</span>
+                                <span>65%</span>
+                            </div>
+                            <div class="feature-importance" style="width: 65%;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>テクニカル指標</span>
+                                <span>60%</span>
+                            </div>
+                            <div class="feature-importance" style="width: 60%;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>時間帯要因</span>
+                                <span>45%</span>
+                            </div>
+                            <div class="feature-importance" style="width: 45%;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>ネットワーク活動</span>
+                                <span>40%</span>
+                            </div>
+                            <div class="feature-importance" style="width: 40%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <span>予測精度の履歴</span>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 300px;">
+                            <canvas id="accuracy-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <span>AIによる市場分析</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>市場概況</h5>
+                                <p>
+                                    現在の市場は<strong>やや強気</strong>の傾向を示しています。過去24時間の取引データによると、
+                                    買い圧力が売り圧力をわずかに上回っており、短期的には上昇トレンドが続く可能性があります。
+                                </p>
+                                <p>
+                                    ただし、テクニカル指標はやや過熱気味であり、一時的な調整が入る可能性もあります。
+                                    特にBTC/USDペアでは、RSIが70を超えており、短期的な利益確定売りに注意が必要です。
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>リスク評価</h5>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>ボラティリティリスク</span>
+                                        <span class="badge bg-warning">中</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 65%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>流動性リスク</span>
+                                        <span class="badge bg-success">低</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 25%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>トレンド反転リスク</span>
+                                        <span class="badge bg-danger">高</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 80%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h5>取引推奨</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>取引ペア</th>
+                                            <th>推奨アクション</th>
+                                            <th>目標価格</th>
+                                            <th>ストップロス</th>
+                                            <th>信頼度</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>BTC/USD</td>
+                                            <td><span class="badge bg-success">買い</span></td>
+                                            <td>$45,000</td>
+                                            <td>$40,500</td>
+                                            <td>
+                                                <div class="progress" style="height: 5px; width: 100px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 85%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>ETH/USD</td>
+                                            <td><span class="badge bg-danger">売り</span></td>
+                                            <td>$2,600</td>
+                                            <td>$2,900</td>
+                                            <td>
+                                                <div class="progress" style="height: 5px; width: 100px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 65%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>BTC/ETH</td>
+                                            <td><span class="badge bg-secondary">様子見</span></td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>
+                                                <div class="progress" style="height: 5px; width: 100px;">
+                                                    <div class="progress-bar bg-secondary" role="progressbar" style="width: 50%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>カスタム予測</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="custom-prediction-form">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="custom-pair" class="form-label">取引ペア</label>
+                                        <select class="form-select" id="custom-pair" required>
+                                            <option value="BTC/USD">BTC/USD</option>
+                                            <option value="ETH/USD">ETH/USD</option>
+                                            <option value="BTC/ETH">BTC/ETH</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="custom-period" class="form-label">予測期間</label>
+                                        <select class="form-select" id="custom-period" required>
+                                            <option value="hour">1時間</option>
+                                            <option value="day" selected>1日</option>
+                                            <option value="week">1週間</option>
+                                            <option value="month">1ヶ月</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="custom-model" class="form-label">予測モデル</label>
+                                        <select class="form-select" id="custom-model" required>
+                                            <option value="standard">標準モデル</option>
+                                            <option value="advanced">高度モデル</option>
+                                            <option value="ensemble">アンサンブルモデル</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="custom-confidence" class="form-label">信頼度閾値</label>
+                                        <select class="form-select" id="custom-confidence" required>
+                                            <option value="0.5">50%以上</option>
+                                            <option value="0.7" selected>70%以上</option>
+                                            <option value="0.9">90%以上</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-robot"></i> 予測を実行
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div id="custom-prediction-result" class="mt-4" style="display: none;">
+                            <h5>予測結果</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card prediction-card" id="custom-result-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title" id="custom-result-pair">-</h5>
+                                            <div class="prediction-accuracy" id="custom-result-accuracy">精度: -</div>
+                                            <div class="prediction-value" id="custom-result-value">-</div>
+                                            <div class="prediction-range" id="custom-result-range">予測範囲: -</div>
+                                            <div class="mt-2">
+                                                <span class="badge" id="custom-result-change">-</span>
+                                                <span class="small text-muted ms-2" id="custom-result-period">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5>予測の根拠</h5>
+                                            <ul id="custom-result-reasons">
+                                                <!-- 予測の根拠はJSで動的に追加 -->
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2024 ShardX - 高性能ブロックチェーン</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <a href="https://github.com/enablerdao/ShardX" target="_blank" class="text-decoration-none text-muted">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+    <script>
+        // APIエンドポイントの設定
+        const API_ENDPOINTS = {
+            predictions: '/api/ai/predictions',
+            accuracy: '/api/ai/accuracy',
+            custom: '/api/ai/custom-prediction'
+        };
+        
+        // モックデータ生成関数
+        function generateMockPredictionData(pair, period) {
+            const now = luxon.DateTime.now();
+            const data = {
+                labels: [],
+                actual: [],
+                predicted: [],
+                lowerBound: [],
+                upperBound: []
+            };
+            
+            let points;
+            let interval;
+            let futurePoints;
+            
+            switch (period) {
+                case 'hour':
+                    points = 60;
+                    interval = { minutes: 1 };
+                    futurePoints = 10;
+                    break;
+                case 'day':
+                    points = 24;
+                    interval = { hours: 1 };
+                    futurePoints = 6;
+                    break;
+                case 'week':
+                    points = 7;
+                    interval = { days: 1 };
+                    futurePoints = 3;
+                    break;
+                case 'month':
+                    points = 30;
+                    interval = { days: 1 };
+                    futurePoints = 7;
+                    break;
+                default:
+                    points = 60;
+                    interval = { minutes: 1 };
+                    futurePoints = 10;
+            }
+            
+            // 基本価格を設定
+            let basePrice;
+            switch (pair) {
+                case 'BTC/USD':
+                    basePrice = 42000;
+                    break;
+                case 'ETH/USD':
+                    basePrice = 2800;
+                    break;
+                case 'BTC/ETH':
+                    basePrice = 15;
+                    break;
+                default:
+                    basePrice = 1000;
+            }
+            
+            // 過去データ
+            let time = now.minus({ [Object.keys(interval)[0]]: points });
+            
+            for (let i = 0; i < points; i++) {
+                time = time.plus(interval);
+                data.labels.push(time);
+                
+                // 実際の価格（ランダムな変動を加える）
+                const noise = (Math.random() - 0.5) * 0.02; // ±1%
+                const trend = Math.sin(i / points * Math.PI) * 0.05; // 周期的なトレンド
+                const actualPrice = basePrice * (1 + noise + trend);
+                data.actual.push(actualPrice);
+                
+                // 過去の予測値（実際の値に近い値）
+                if (i < points - futurePoints) {
+                    const predictionNoise = (Math.random() - 0.5) * 0.015;
+                    const predictedPrice = actualPrice * (1 + predictionNoise);
+                    data.predicted.push(predictedPrice);
+                    data.lowerBound.push(predictedPrice * 0.98);
+                    data.upperBound.push(predictedPrice * 1.02);
+                } else {
+                    data.predicted.push(null);
+                    data.lowerBound.push(null);
+                    data.upperBound.push(null);
+                }
+            }
+            
+            // 将来データ
+            for (let i = 0; i < futurePoints; i++) {
+                time = time.plus(interval);
+                data.labels.push(time);
+                
+                // 将来の実際の価格はnull
+                data.actual.push(null);
+                
+                // 予測値
+                const lastActual = data.actual[data.actual.length - futurePoints - 1 + i];
+                const predictionNoise = (Math.random() - 0.5) * 0.03;
+                const trend = Math.sin((points + i) / points * Math.PI) * 0.08;
+                const predictedPrice = lastActual * (1 + predictionNoise + trend);
+                
+                data.predicted.push(predictedPrice);
+                data.lowerBound.push(predictedPrice * 0.97);
+                data.upperBound.push(predictedPrice * 1.03);
+            }
+            
+            return data;
+        }
+        
+        function generateMockAccuracyData() {
+            const data = {
+                labels: [],
+                btcAccuracy: [],
+                ethAccuracy: []
+            };
+            
+            const now = luxon.DateTime.now();
+            let time = now.minus({ days: 30 });
+            
+            for (let i = 0; i < 30; i++) {
+                time = time.plus({ days: 1 });
+                data.labels.push(time);
+                
+                // BTC/USDの予測精度（70%〜90%）
+                const btcAccuracy = 70 + Math.random() * 20;
+                data.btcAccuracy.push(btcAccuracy);
+                
+                // ETH/USDの予測精度（60%〜85%）
+                const ethAccuracy = 60 + Math.random() * 25;
+                data.ethAccuracy.push(ethAccuracy);
+            }
+            
+            return data;
+        }
+        
+        // チャート初期化関数
+        let predictionChart;
+        function initPredictionChart(pair, period) {
+            const ctx = document.getElementById('prediction-chart').getContext('2d');
+            
+            // 既存のチャートを破棄
+            if (predictionChart) {
+                predictionChart.destroy();
+            }
+            
+            // データを取得
+            const data = generateMockPredictionData(pair, period);
+            
+            // 最終更新時間を表示
+            document.getElementById('last-update-time').textContent = luxon.DateTime.now().toFormat('yyyy/MM/dd HH:mm:ss');
+            
+            predictionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '実際の価格',
+                            data: data.actual,
+                            borderColor: 'rgba(37, 117, 252, 1)',
+                            backgroundColor: 'rgba(37, 117, 252, 0)',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: '予測価格',
+                            data: data.predicted,
+                            borderColor: 'rgba(106, 17, 203, 1)',
+                            backgroundColor: 'rgba(106, 17, 203, 0)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: '予測下限',
+                            data: data.lowerBound,
+                            borderColor: 'rgba(106, 17, 203, 0)',
+                            backgroundColor: 'rgba(106, 17, 203, 0)',
+                            fill: false,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '予測上限',
+                            data: data.upperBound,
+                            borderColor: 'rgba(106, 17, 203, 0)',
+                            backgroundColor: 'rgba(106, 17, 203, 0.2)',
+                            fill: '-1',
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: period === 'hour' ? 'minute' : period === 'day' ? 'hour' : 'day'
+                            },
+                            title: {
+                                display: true,
+                                text: '時間'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: pair
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: data.labels[data.labels.length - futurePoints - 1],
+                                    xMax: data.labels[data.labels.length - futurePoints - 1],
+                                    borderColor: 'rgba(0, 0, 0, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: '予測開始',
+                                        display: true,
+                                        position: 'start'
+                                    }
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    if (label === '予測下限' || label === '予測上限') {
+                                        return null;
+                                    }
+                                    return `${label}: ${context.raw !== null ? context.raw.toFixed(2) : ''}`;
+                                },
+                                footer: function(tooltipItems) {
+                                    const dataIndex = tooltipItems[0].dataIndex;
+                                    const predictedValue = data.predicted[dataIndex];
+                                    
+                                    if (predictedValue !== null && data.actual[dataIndex] === null) {
+                                        const lowerBound = data.lowerBound[dataIndex].toFixed(2);
+                                        const upperBound = data.upperBound[dataIndex].toFixed(2);
+                                        return `予測範囲: ${lowerBound} - ${upperBound}`;
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function initAccuracyChart() {
+            const ctx = document.getElementById('accuracy-chart').getContext('2d');
+            const data = generateMockAccuracyData();
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'BTC/USD',
+                            data: data.btcAccuracy,
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'ETH/USD',
+                            data: data.ethAccuracy,
+                            borderColor: 'rgba(106, 17, 203, 1)',
+                            backgroundColor: 'rgba(106, 17, 203, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            },
+                            title: {
+                                display: true,
+                                text: '日付'
+                            }
+                        },
+                        y: {
+                            min: 50,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '予測精度 (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // カスタム予測を実行
+        function executeCustomPrediction(event) {
+            event.preventDefault();
+            
+            const pair = document.getElementById('custom-pair').value;
+            const period = document.getElementById('custom-period').value;
+            const model = document.getElementById('custom-model').value;
+            const confidence = parseFloat(document.getElementById('custom-confidence').value);
+            
+            // モックデータを生成
+            const periodText = {
+                'hour': '1時間後',
+                'day': '1日後',
+                'week': '1週間後',
+                'month': '1ヶ月後'
+            }[period];
+            
+            let basePrice, predictedPrice, change, accuracy;
+            
+            switch (pair) {
+                case 'BTC/USD':
+                    basePrice = 42000 + Math.random() * 1000;
+                    change = (Math.random() * 10) - 3; // -3%〜+7%
+                    accuracy = 0.7 + Math.random() * 0.2;
+                    break;
+                case 'ETH/USD':
+                    basePrice = 2800 + Math.random() * 100;
+                    change = (Math.random() * 8) - 4; // -4%〜+4%
+                    accuracy = 0.65 + Math.random() * 0.2;
+                    break;
+                case 'BTC/ETH':
+                    basePrice = 15 + Math.random();
+                    change = (Math.random() * 6) - 3; // -3%〜+3%
+                    accuracy = 0.6 + Math.random() * 0.25;
+                    break;
+                default:
+                    basePrice = 1000;
+                    change = 0;
+                    accuracy = 0.5;
+            }
+            
+            // モデルによって精度を調整
+            if (model === 'advanced') {
+                accuracy += 0.05;
+            } else if (model === 'ensemble') {
+                accuracy += 0.1;
+            }
+            
+            // 信頼度閾値を下回る場合は調整
+            if (accuracy < confidence) {
+                accuracy = confidence + Math.random() * 0.1;
+            }
+            
+            // 予測価格を計算
+            predictedPrice = basePrice * (1 + change / 100);
+            
+            // 結果を表示
+            document.getElementById('custom-result-pair').textContent = pair;
+            document.getElementById('custom-result-accuracy').textContent = `精度: ${Math.round(accuracy * 100)}%`;
+            document.getElementById('custom-result-accuracy').className = `prediction-accuracy ${accuracy > 0.8 ? 'accuracy-high' : accuracy > 0.65 ? 'accuracy-medium' : 'accuracy-low'}`;
+            
+            // 価格表示を調整
+            let priceDisplay, rangeDisplay;
+            if (pair === 'BTC/USD' || pair === 'ETH/USD') {
+                priceDisplay = `$${predictedPrice.toFixed(2)}`;
+                rangeDisplay = `予測範囲: $${(predictedPrice * 0.97).toFixed(2)} - $${(predictedPrice * 1.03).toFixed(2)}`;
+            } else {
+                priceDisplay = predictedPrice.toFixed(2);
+                rangeDisplay = `予測範囲: ${(predictedPrice * 0.97).toFixed(2)} - ${(predictedPrice * 1.03).toFixed(2)}`;
+            }
+            
+            document.getElementById('custom-result-value').textContent = priceDisplay;
+            document.getElementById('custom-result-range').textContent = rangeDisplay;
+            
+            // 変化率を表示
+            const changeElement = document.getElementById('custom-result-change');
+            changeElement.textContent = `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+            changeElement.className = `badge ${change > 1 ? 'bg-success' : change < -1 ? 'bg-danger' : 'bg-warning'}`;
+            
+            document.getElementById('custom-result-period').textContent = periodText;
+            
+            // カードの色を変更
+            const card = document.getElementById('custom-result-card');
+            card.className = `card prediction-card ${change > 1 ? 'prediction-up' : change < -1 ? 'prediction-down' : 'prediction-neutral'}`;
+            
+            // 予測の根拠を表示
+            const reasonsContainer = document.getElementById('custom-result-reasons');
+            reasonsContainer.innerHTML = '';
+            
+            const reasons = [
+                `過去${period === 'hour' ? '60分' : period === 'day' ? '24時間' : period === 'week' ? '7日間' : '30日間'}の価格トレンドは${change > 0 ? '上昇' : '下降'}傾向を示しています。`,
+                `テクニカル分析では、${change > 0 ? 'RSIが上昇中で買われ過ぎの兆候はまだ見られません。' : 'RSIが下降中で売られ過ぎの兆候が見られます。'}`,
+                `取引量は${Math.random() > 0.5 ? '増加' : '安定'}しており、${change > 0 ? '買い圧力が高まっています。' : '大きな売り圧力は見られません。'}`,
+                `市場センチメントは${change > 0 ? '楽観的' : '慎重'}な傾向にあります。`,
+                `${model === 'ensemble' ? 'アンサンブルモデルによる複数の予測結果が一致しており、予測の信頼性が高まっています。' : ''}`
+            ];
+            
+            reasons.forEach(reason => {
+                if (reason) {
+                    const li = document.createElement('li');
+                    li.textContent = reason;
+                    reasonsContainer.appendChild(li);
+                }
+            });
+            
+            // 結果を表示
+            document.getElementById('custom-prediction-result').style.display = 'block';
+        }
+        
+        // イベントリスナー
+        document.addEventListener('DOMContentLoaded', function() {
+            // 取引ペア選択のイベントリスナー
+            document.getElementById('trading-pair-select').addEventListener('change', function() {
+                const pair = this.value;
+                const period = document.querySelector('[data-period].active').getAttribute('data-period');
+                initPredictionChart(pair, period);
+            });
+            
+            // 期間選択のイベントリスナー
+            document.querySelectorAll('[data-period]').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('[data-period]').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    const pair = document.getElementById('trading-pair-select').value;
+                    const period = this.getAttribute('data-period');
+                    initPredictionChart(pair, period);
+                });
+            });
+            
+            // カスタム予測フォームのイベントリスナー
+            document.getElementById('custom-prediction-form').addEventListener('submit', executeCustomPrediction);
+            
+            // 初期化
+            initPredictionChart('BTC/USD', 'hour');
+            initAccuracyChart();
+        });
+    </script>
+</body>
+</html>
