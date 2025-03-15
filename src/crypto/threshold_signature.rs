@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use num_bigint::{BigUint, RandBigInt};
-use num_traits::{One, Zero};
+use num_bigint::BigUint;
+use num_traits::{One, Zero, ToPrimitive, FromPrimitive};
 use num_integer::Integer;
+use rand::Rng;
 use rand::thread_rng;
 use crate::error::Error;
 
@@ -61,7 +62,10 @@ impl ThresholdSignature {
         coefficients.push(secret.clone());
         
         for _ in 1..self.threshold {
-            let coef = rng.gen_biguint_below(&self.prime);
+            // Generate random bytes and convert to BigUint
+            let mut bytes = vec![0u8; 256]; // 2048 bits
+            rng.fill(&mut bytes[..]);
+            let coef = BigUint::from_bytes_be(&bytes) % &self.prime;
             coefficients.push(coef);
         }
         
@@ -187,8 +191,8 @@ fn mod_inverse(a: &BigUint, m: &BigUint) -> Option<BigUint> {
     }
     
     // x が負の場合は正の値に変換
-    let x_int = x.to_i64().unwrap();
-    let m_int = m.to_i64().unwrap();
+    let x_int = x.to_i64().unwrap_or(0);
+    let m_int = m.to_i64().unwrap_or(0);
     
     let result = if x_int < 0 {
         BigUint::from((x_int + m_int) as u64)
@@ -205,8 +209,8 @@ fn extended_gcd(a: &BigUint, b: &BigUint) -> (BigUint, i64, i64) {
         return (a.clone(), 1, 0);
     }
     
-    let a_int = a.to_i64().unwrap();
-    let b_int = b.to_i64().unwrap();
+    let a_int = a.to_i64().unwrap_or(0);
+    let b_int = b.to_i64().unwrap_or(0);
     
     let (g, s, t) = extended_gcd_i64(a_int, b_int);
     
