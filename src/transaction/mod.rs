@@ -1,9 +1,13 @@
 mod cross_shard_manager;
+mod cross_shard_optimizer;
+mod benchmarks;
 
 use std::fmt;
 use serde::{Serialize, Deserialize};
 
 pub use cross_shard_manager::{CrossShardManager, CrossShardTransaction, CrossShardTransactionState};
+pub use cross_shard_optimizer::{CrossShardOptimizer, OptimizerConfig};
+pub use benchmarks::{CrossShardBenchmarker, BenchmarkResult};
 
 /// トランザクションの状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
