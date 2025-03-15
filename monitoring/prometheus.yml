@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'shardx-nodes'
+    static_configs:
+      - targets: ['main-node:8080', 'shard-node-1:8080', 'shard-node-2:8080', 'shard-node-3:8080', 'shard-node-4:8080', 'shard-node-5:8080']
+        labels:
+          group: 'shardx'
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+        labels:
+          group: 'redis'
