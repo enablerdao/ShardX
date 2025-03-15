@@ -7,7 +7,21 @@ use log::{debug, error, info, warn};
 use crate::error::Error;
 use crate::transaction::{Transaction, TransactionStatus};
 use crate::shard::{ShardId, ShardManager};
-use crate::network::NetworkMessage;
+// use crate::network::NetworkMessage;
+
+// Temporary NetworkMessage definition until network module is properly implemented
+#[derive(Debug, Clone)]
+pub enum NetworkMessage {
+    PrepareCrossShardTransaction {
+        transaction: crate::transaction::Transaction,
+    },
+    CommitCrossShardTransaction {
+        transaction: crate::transaction::Transaction,
+    },
+    AbortCrossShardTransaction {
+        transaction_id: String,
+    },
+}
 
 /// クロスシャードトランザクションマネージャー
 ///
@@ -141,6 +155,8 @@ impl CrossShardManager {
                     block_hash: None,
                     block_height: None,
                     parent_id: Some(parent.id.clone()),
+                    payload: Vec::new(), // Empty payload for child transactions
+                    parent_ids: Vec::new(), // No additional parent IDs
                 };
                 
                 children.push(child);
@@ -226,7 +242,7 @@ impl CrossShardManager {
         if let Some(tx) = pending.get_mut(&tx_id) {
             if tx.state == CrossShardTransactionState::Preparing {
                 // 準備完了したシャードを記録
-                tx.prepared_shards.insert(shard_id);
+                tx.prepared_shards.insert(shard_id.clone());
                 tx.updated_at = chrono::Utc::now().timestamp() as u64;
                 
                 debug!(
@@ -352,7 +368,7 @@ impl CrossShardManager {
                 warn!(
                     "Received abort for transaction {} from shard {}. Aborting transaction.",
                     tx_id,
-                    shard_id
+                    shard_id.clone()
                 );
                 
                 tx.state = CrossShardTransactionState::Aborted;
