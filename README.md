@@ -65,14 +65,25 @@ shardx
   </a>
 </div>
 
-各プラットフォームの特徴:
-- **Render**: 無料プランあり、簡単なセットアップ、開発・テスト向け
-- **Railway**: 高速デプロイ、直感的なUI、開発・テスト向け
-- **Heroku**: 安定性と拡張性、PostgreSQL・Redis連携、本番環境向け
-- **Fly.io**: グローバル分散デプロイ、低レイテンシー、本番環境向け
+### プラットフォームの特徴と推奨用途
+
+#### 開発・テスト環境向け
+- **Render**: 無料プランあり、簡単なセットアップ、GitHubと連携した自動デプロイ
+- **Railway**: 高速デプロイ、直感的なUI、開発者体験に優れたダッシュボード
+
+#### 本番環境向け
+- **Heroku**: 安定性と拡張性、PostgreSQL・Redis連携、監視ツール充実
+- **Fly.io**: グローバル分散デプロイ、低レイテンシー、エッジでの実行に最適
+- **Google Cloud Run**: サーバーレス、自動スケーリング、従量課金制で費用対効果が高い
+
+#### フロントエンドのみ（バックエンドは別途デプロイが必要）
 - **Vercel**: 高速CDN、自動HTTPS、フロントエンド特化（Webインターフェースのみ）
 - **Netlify**: 継続的デプロイ、エッジネットワーク、フロントエンド特化（Webインターフェースのみ）
-- **Google Cloud Run**: サーバーレス、自動スケーリング、本番環境向け
+
+#### 推奨構成
+- **小規模プロジェクト**: Render（無料プラン）またはRailway
+- **中規模プロジェクト**: Heroku（Standard-1X以上）またはFly.io
+- **大規模/本番環境**: Google Cloud Run + Cloud SQL または AWS/Azure/GCP（[エンタープライズデプロイガイド](docs/deployment/enterprise-deployment.md)参照）
 
 詳細は[デプロイガイド](docs/deployment/multi-platform-deployment.md)を参照してください。
 
