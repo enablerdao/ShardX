@@ -1,0 +1,621 @@
+.App {
+  text-align: center;
+}
+
+main {
+  padding: 2rem 0;
+}
+
+.card-dashboard {
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.card-dashboard:hover {
+  transform: translateY(-5px);
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  border: none;
+  color: white;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #5a0db6 0%, #1a65e6 100%);
+  color: white;
+}
+
+.wallet-card {
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-header {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+}
+
+.wallet-body {
+  padding: 1.5rem;
+}
+
+.token-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.token-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.token-icon {
+  width: 36px;
+  height: 36px;
+  margin-right: 1rem;
+  border-radius: 50%;
+}
+
+.token-details {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.token-balance {
+  font-weight: bold;
+}
+
+.chart-container {
+  height: 300px;
+  margin-bottom: 2rem;
+}
+
+.stats-card {
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.stats-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.stats-title {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.stats-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.form-swap {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.swap-arrow {
+  font-size: 1.5rem;
+  margin: 1rem 0;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.swap-arrow:hover {
+  transform: rotate(180deg);
+}
+
+.currency-input {
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.currency-input input {
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  width: 100%;
+  outline: none;
+}
+
+.currency-select {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  margin-left: 1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.currency-select img {
+  width: 24px;
+  height: 24px;
+  margin-right: 0.5rem;
+}
+
+.transaction-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.3s ease;
+}
+
+.transaction-item:hover {
+  background-color: #f8f9fa;
+}
+
+.transaction-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-right: 1rem;
+}
+
+.transaction-details {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.transaction-title {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.transaction-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.transaction-amount {
+  font-weight: bold;
+}
+
+.pool-card {
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  transition: transform 0.3s ease;
+}
+
+.pool-card:hover {
+  transform: translateY(-5px);
+}
+
+.pool-icons {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.pool-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  margin-right: -10px;
+  border: 2px solid white;
+}
+
+.pool-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.pool-stat {
+  text-align: left;
+}
+
+.pool-stat-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.pool-stat-value {
+  font-weight: bold;
+}
+
+.staking-card {
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.staking-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.staking-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 1rem;
+}
+
+.staking-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.staking-apy {
+  margin-left: auto;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #28a745;
+}
+
+.staking-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.staking-stat {
+  text-align: left;
+}
+
+.staking-stat-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.staking-stat-value {
+  font-weight: bold;
+}
+
+.staking-progress {
+  margin-bottom: 1.5rem;
+}
+
+.staking-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.lending-card {
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.lending-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.lending-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 1rem;
+}
+
+.lending-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.lending-rate {
+  margin-left: auto;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.lending-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.lending-stat {
+  text-align: left;
+}
+
+.lending-stat-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.lending-stat-value {
+  font-weight: bold;
+}
+
+.lending-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.multisig-card {
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.multisig-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.multisig-icon {
+  font-size: 2rem;
+  margin-right: 1rem;
+  color: #6a11cb;
+}
+
+.multisig-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.multisig-details {
+  margin-bottom: 1.5rem;
+}
+
+.multisig-signers {
+  margin-bottom: 1.5rem;
+}
+
+.multisig-signer {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.multisig-signer-icon {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+  color: #6a11cb;
+}
+
+.multisig-signer-address {
+  flex-grow: 1;
+  text-align: left;
+  font-family: monospace;
+}
+
+.multisig-transactions {
+  margin-bottom: 1.5rem;
+}
+
+.multisig-transaction {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.multisig-transaction-icon {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+  color: #6a11cb;
+}
+
+.multisig-transaction-details {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.multisig-transaction-title {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.multisig-transaction-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.multisig-transaction-status {
+  margin-left: auto;
+}
+
+.analytics-card {
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.analytics-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.analytics-period {
+  display: flex;
+  align-items: center;
+}
+
+.analytics-period-button {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.analytics-period-button.active {
+  background-color: #6a11cb;
+  color: white;
+}
+
+.analytics-chart {
+  height: 300px;
+  margin-bottom: 1.5rem;
+}
+
+.settings-card {
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.settings-icon {
+  font-size: 2rem;
+  margin-right: 1rem;
+  color: #6a11cb;
+}
+
+.settings-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.settings-section {
+  margin-bottom: 1.5rem;
+}
+
+.settings-section-title {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.settings-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.settings-option-label {
+  text-align: left;
+}
+
+.settings-option-description {
+  font-size: 0.8rem;
+  color: #6c757d;
+  text-align: left;
+}
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.not-found-icon {
+  font-size: 5rem;
+  margin-bottom: 2rem;
+  color: #6a11cb;
+}
+
+.not-found-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.not-found-message {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .wallet-header {
+    padding: 1rem;
+  }
+  
+  .wallet-body {
+    padding: 1rem;
+  }
+  
+  .stats-card {
+    padding: 1rem;
+  }
+  
+  .pool-card {
+    padding: 1rem;
+  }
+  
+  .staking-card {
+    padding: 1rem;
+  }
+  
+  .lending-card {
+    padding: 1rem;
+  }
+  
+  .multisig-card {
+    padding: 1rem;
+  }
+  
+  .analytics-card {
+    padding: 1rem;
+  }
+  
+  .settings-card {
+    padding: 1rem;
+  }
+}
