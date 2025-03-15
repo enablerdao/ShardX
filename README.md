@@ -63,6 +63,9 @@ shardx
   <a href="https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/enablerdao/ShardX">
     <img src="https://storage.googleapis.com/gweb-cloudblog-publish/images/run_on_google_cloud.max-300x300.png" alt="Run on Google Cloud" height="44px" />
   </a>
+  <a href="https://replit.com/github/enablerdao/ShardX">
+    <img src="https://replit.com/badge/github/enablerdao/ShardX" alt="Run on Replit" height="44px" />
+  </a>
 </div>
 
 ### プラットフォームの特徴と推奨用途
@@ -70,6 +73,7 @@ shardx
 #### 開発・テスト環境向け
 - **Render**: 無料プランあり、簡単なセットアップ、GitHubと連携した自動デプロイ
 - **Railway**: 高速デプロイ、直感的なUI、開発者体験に優れたダッシュボード
+- **Replit**: ブラウザ内開発環境、即時デプロイ、コラボレーション機能、教育・学習に最適
 
 #### 本番環境向け
 - **Heroku**: 安定性と拡張性、PostgreSQL・Redis連携、監視ツール充実

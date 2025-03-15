@@ -1,0 +1,29 @@
+run = "cargo run --release"
+hidden = [".git", "target"]
+entrypoint = "src/main.rs"
+
+[nix]
+channel = "stable-22_11"
+
+[env]
+RUST_LOG = "info"
+INITIAL_SHARDS = "32"
+PORT = "54868"
+WEB_PORT = "54867"
+NODE_ID = "replit_node"
+
+[packager]
+language = "rust"
+
+[packager.features]
+packageSearch = true
+
+[languages.rust]
+pattern = "**/*.rs"
+
+[languages.rust.languageServer]
+start = ["rust-analyzer"]
+
+[deployment]
+run = ["sh", "-c", "cargo run --release"]
+deploymentTarget = "cloudrun"

@@ -7,6 +7,7 @@
 - [Heroku](#heroku)
 - [Fly.io](#flyio)
 - [Google Cloud Run](#google-cloud-run)
+- [Replit](#replit)
 - [統合デプロイスクリプト](#統合デプロイスクリプト)
 - [トラブルシューティング](#トラブルシューティング)
 
@@ -230,6 +231,53 @@ Fly.ioでデプロイする際に「launch manifest was created for a app, but t
 - Google Cloud Runでは、コンテナが一定時間アイドル状態になると自動的にシャットダウンされます。これにより、コストを削減できますが、長時間実行が必要なプロセスには適さない場合があります。
 - 永続的なデータストレージには、Cloud Storage、Firestore、Cloud SQLなどのマネージドサービスを使用することをお勧めします。
 
+## Replit
+
+[Replit](https://replit.com/)は、ブラウザ内で開発、実行、デプロイができるクラウド開発環境です。特に教育目的や素早いプロトタイピングに適しています。
+
+### 特徴
+
+- ブラウザベースの統合開発環境（IDE）
+- 即時デプロイ機能
+- リアルタイムコラボレーション
+- 無料プランあり
+- 多言語サポート（Rust含む）
+
+### デプロイ手順
+
+1. **ワンクリックデプロイ**:
+   
+   [![Run on Replit](https://replit.com/badge/github/enablerdao/ShardX)](https://replit.com/github/enablerdao/ShardX)
+   
+   このボタンをクリックすると、GitHubリポジトリからReplitにプロジェクトがインポートされます。
+
+2. **手動デプロイ**:
+   
+   1. [Replit](https://replit.com/)にサインアップまたはログインします
+   2. 「+ Create Repl」をクリックします
+   3. 「Import from GitHub」を選択します
+   4. ShardXリポジトリのURLを入力します: `https://github.com/enablerdao/ShardX`
+   5. 言語として「Rust」を選択します
+   6. 「Import from GitHub」をクリックします
+
+3. **実行**:
+   
+   Replitが自動的に`.replit`ファイルを検出し、「Run」ボタンをクリックするだけでアプリケーションが起動します。
+
+### 設定ファイル
+
+ShardXリポジトリには、Replitで実行するための設定ファイルが含まれています：
+
+- `.replit`: Replitの実行コマンドと環境設定
+- `replit.nix`: 必要な依存関係の定義
+
+### 注意事項
+
+- Replitの無料プランでは、一定時間アイドル状態が続くとアプリケーションがスリープ状態になります
+- 永続的なデータストレージには制限があります
+- リソース（CPU、メモリ）に制限があるため、大規模な本番環境には適していません
+- 教育目的や開発・テスト環境として最適です
+
 ## 統合デプロイスクリプト
 
 複数のクラウドプラットフォームへのデプロイを簡単に行うために、統合デプロイスクリプト`deploy-all.sh`を用意しています。
@@ -244,7 +292,7 @@ Fly.ioでデプロイする際に「launch manifest was created for a app, but t
 
 ### 機能
 
-- Render、Railway、Heroku、Fly.io、Google Cloud Runへのデプロイをサポート
+- Render、Railway、Heroku、Fly.io、Google Cloud Run、Replitへのデプロイをサポート
 - 各プラットフォームの特性に合わせた最適な設定を自動適用
 - デプロイ中の問題に対するガイダンスを提供
 
@@ -304,6 +352,14 @@ Fly.ioでデプロイする際に「launch manifest was created for a app, but t
 
 - **問題**: 「Permission denied」エラー
   **解決策**: サービスアカウントに適切な権限が付与されているか確認してください。
+
+### Replit
+
+- **問題**: ビルドが遅い、またはタイムアウトする
+  **解決策**: `.replit`ファイルで`run`コマンドを`"cargo run --release --bin shardx"`に変更し、事前にビルドされたバイナリを使用します。
+
+- **問題**: メモリ不足エラー
+  **解決策**: Replitの有料プランにアップグレードするか、`INITIAL_SHARDS`環境変数を小さい値（例：16）に設定します。
 
 ## パフォーマンスの最適化
 
