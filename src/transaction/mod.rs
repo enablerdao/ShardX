@@ -1,6 +1,8 @@
 mod cross_shard_manager;
 mod cross_shard_optimizer;
 mod benchmarks;
+mod parallel_processor;
+mod high_throughput_engine;
 
 use std::fmt;
 use serde::{Serialize, Deserialize};
@@ -8,6 +10,8 @@ use serde::{Serialize, Deserialize};
 pub use cross_shard_manager::{CrossShardManager, CrossShardTransaction, CrossShardTransactionState};
 pub use cross_shard_optimizer::{CrossShardOptimizer, OptimizerConfig};
 pub use benchmarks::{CrossShardBenchmarker, BenchmarkResult};
+pub use parallel_processor::{ParallelProcessor, ProcessorConfig, ProcessorStats};
+pub use high_throughput_engine::{HighThroughputEngine, EngineConfig, EngineStats, BenchmarkResult as EngineResult};
 
 /// トランザクションの状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
