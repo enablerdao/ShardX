@@ -1,21 +1,33 @@
 #!/bin/bash
-
-# ShardX インストールスクリプト
-# このスクリプトは、ShardXノードとWebインターフェースをインストールして起動します。
-# 注意: このスクリプトは対話的な入力を必要とします。
-# 対話的な入力なしでインストールするには、auto_install.sh を使用してください。
-
 set -e
 
-# 自動インストールスクリプトにリダイレクト
-echo "対話的な入力を必要とするインストールスクリプトは問題が発生する場合があります。"
-echo "代わりに自動インストールスクリプトを使用します..."
-echo ""
+echo "=== ShardX 簡易インストールスクリプト ==="
+echo "このスクリプトはDockerを使用してShardXを起動します"
+echo
 
-# auto_install.shをダウンロードして実行
-curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/auto_install.sh -o /tmp/auto_install.sh
-chmod +x /tmp/auto_install.sh
-/tmp/auto_install.sh
+# Dockerがインストールされているか確認
+if ! command -v docker &> /dev/null; then
+    echo "Dockerがインストールされていません。インストールしてください:"
+    echo "Linux: https://docs.docker.com/engine/install/"
+    echo "macOS: https://docs.docker.com/desktop/mac/install/"
+    echo "Windows: https://docs.docker.com/desktop/windows/install/"
+    exit 1
+fi
 
-# 一時ファイルを削除
-rm /tmp/auto_install.sh
+echo "ShardXイメージをダウンロードしています..."
+docker pull enablerdao/shardx:latest
+
+echo "ShardXを起動しています..."
+docker run -d -p 54867:54867 -p 54868:54868 --name shardx enablerdao/shardx:latest
+
+echo
+echo "=== ShardXが正常に起動しました！ ==="
+echo "ブラウザで以下のURLにアクセスできます:"
+echo "- ウェブインターフェース: http://localhost:54867"
+echo "- API: http://localhost:54868/api/v1/info"
+echo
+echo "コンテナを停止するには次のコマンドを実行してください:"
+echo "docker stop shardx"
+echo
+echo "コンテナを再起動するには次のコマンドを実行してください:"
+echo "docker start shardx"
