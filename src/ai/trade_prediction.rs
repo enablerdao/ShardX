@@ -252,9 +252,9 @@ impl PricePredictionModel {
         
         // 時間情報を追加
         let now = chrono::Utc::now();
-        features.push(now.hour() as f32 / 24.0);
-        features.push(now.weekday().num_days_from_monday() as f32 / 7.0);
-        features.push(now.day() as f32 / 31.0);
+        features.push(now.time().hour() as f32 / 24.0);
+        features.push(now.date_naive().weekday().num_days_from_monday() as f32 / 7.0);
+        features.push(now.date_naive().day() as f32 / 31.0);
         
         // 特徴ベクトルを20次元に固定（不足分は0で埋める）
         while features.len() < 20 {
