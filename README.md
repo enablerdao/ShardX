@@ -8,6 +8,8 @@
 
 ## 🚀 すぐに始める！
 
+**ShardXの開発ポリシー**: まず動くものを作り、実際に動かして検証し、そこから改善していく。理論より実践を重視します。
+
 ### ワンコマンドで起動（どのOSでも動作）
 
 ```bash
@@ -127,7 +129,6 @@ ShardXは「川の流れ」のようにトランザクションを処理する�
 すべての機能は「動作する実装」を優先しています：
 
 ### ✅ 詳細なトランザクション分析
-
 ```bash
 # トランザクションパターンを分析
 curl https://your-app-url.onrender.com/api/v1/analysis/patterns
@@ -172,7 +173,6 @@ curl -X POST https://your-app-url.onrender.com/api/v1/transactions/cross-chain \
 # クロスチェーントランザクションのステータスを確認
 curl https://your-app-url.onrender.com/api/v1/transactions/cross-chain/status/tx_12345
 ```
-
 ### ✅ AIによる取引予測
 
 ```bash
