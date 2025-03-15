@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardX - 高度な分析ダッシュボード</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #343a40;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .pattern-card, .anomaly-card {
+            margin-bottom: 15px;
+        }
+        .pattern-title, .anomaly-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .pattern-desc, .anomaly-desc {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        .pattern-meta, .anomaly-meta {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .confidence-badge {
+            float: right;
+        }
+        .feature-bar {
+            height: 20px;
+            margin-bottom: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .feature-fill {
+            height: 100%;
+            background-color: #007bff;
+        }
+        .feature-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .sidebar {
+            background-color: #343a40;
+            color: white;
+            min-height: calc(100vh - 56px);
+            padding-top: 20px;
+        }
+        .sidebar-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            display: block;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-link i {
+            margin-right: 10px;
+        }
+        .tab-content {
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">ShardX</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">ダッシュボード</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">トランザクション</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">シャード</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">ウォレット</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">設定</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 sidebar">
+                <a href="#overview" class="sidebar-link active" data-bs-toggle="tab">
+                    <i class="bi bi-speedometer2"></i> 概要
+                </a>
+                <a href="#predictions" class="sidebar-link" data-bs-toggle="tab">
+                    <i class="bi bi-graph-up"></i> 予測分析
+                </a>
+                <a href="#patterns" class="sidebar-link" data-bs-toggle="tab">
+                    <i class="bi bi-diagram-3"></i> パターン検出
+                </a>
+                <a href="#anomalies" class="sidebar-link" data-bs-toggle="tab">
+                    <i class="bi bi-exclamation-triangle"></i> 異常検出
+                </a>
+                <a href="#cross-shard" class="sidebar-link" data-bs-toggle="tab">
+                    <i class="bi bi-arrow-left-right"></i> クロスシャード
+                </a>
+                <a href="#features" class="sidebar-link" data-bs-toggle="tab">
+                    <i class="bi bi-bar-chart"></i> 特徴量分析
+                </a>
+            </div>
+            <div class="col-md-10">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="overview">
+                        <h2 class="mt-4 mb-4">システム概要</h2>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="stat-value" id="total-transactions">-</div>
+                                    <div class="stat-label">総トランザクション数</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="stat-value" id="total-volume">-</div>
+                                    <div class="stat-label">総取引量</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="stat-value" id="cross-shard-transactions">-</div>
+                                    <div class="stat-label">クロスシャードトランザクション</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="stat-value" id="total-fees">-</div>
+                                    <div class="stat-label">総手数料</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        トランザクション状態
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="transaction-status-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        シャード別トランザクション
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="shard-distribution-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="predictions">
+                        <h2 class="mt-4 mb-4">予測分析</h2>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        トランザクション数予測
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="transaction-count-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        取引量予測
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="transaction-volume-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        手数料予測
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="transaction-fee-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        ネットワーク負荷予測
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="network-load-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="patterns">
+                        <h2 class="mt-4 mb-4">パターン検出</h2>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        検出されたトランザクションパターン
+                                    </div>
+                                    <div class="card-body" id="patterns-container">
+                                        <div class="text-center">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="anomalies">
+                        <h2 class="mt-4 mb-4">異常検出</h2>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        検出された異常
+                                    </div>
+                                    <div class="card-body" id="anomalies-container">
+                                        <div class="text-center">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="cross-shard">
+                        <h2 class="mt-4 mb-4">クロスシャードトランザクション</h2>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        クロスシャードトランザクション状態
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="cross-shard-status-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        シャード間トランザクションフロー
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="cross-shard-flow-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        クロスシャードトランザクション統計
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="stat-card">
+                                                    <div class="stat-value" id="cross-shard-total">-</div>
+                                                    <div class="stat-label">総トランザクション数</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="stat-card">
+                                                    <div class="stat-value" id="cross-shard-completed">-</div>
+                                                    <div class="stat-label">完了数</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="stat-card">
+                                                    <div class="stat-value" id="cross-shard-failed">-</div>
+                                                    <div class="stat-label">失敗数</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="stat-card">
+                                                    <div class="stat-value" id="cross-shard-time">-</div>
+                                                    <div class="stat-label">平均完了時間 (ms)</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="features">
+                        <h2 class="mt-4 mb-4">特徴量分析</h2>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        予測モデルの特徴量重要度
+                                    </div>
+                                    <div class="card-body" id="features-container">
+                                        <div class="text-center">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ページ読み込み時にデータを取得
+        document.addEventListener('DOMContentLoaded', function() {
+            // トランザクション統計を取得
+            fetch('/api/transactions/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-transactions').textContent = data.total_transactions.toLocaleString();
+                    document.getElementById('total-volume').textContent = data.total_volume.toLocaleString();
+                    document.getElementById('cross-shard-transactions').textContent = data.cross_shard_transactions.toLocaleString();
+                    document.getElementById('total-fees').textContent = data.total_fees.toLocaleString();
+                    
+                    // トランザクション状態チャート
+                    new Chart(document.getElementById('transaction-status-chart'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['成功', '失敗', '保留中'],
+                            datasets: [{
+                                data: [data.successful_transactions, data.failed_transactions, data.pending_transactions],
+                                backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                    
+                    // シャード分布チャート（サンプルデータ）
+                    new Chart(document.getElementById('shard-distribution-chart'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['シャード1', 'シャード2', 'シャード3', 'シャード4'],
+                            datasets: [{
+                                label: 'トランザクション数',
+                                data: [
+                                    data.total_transactions * 0.3,
+                                    data.total_transactions * 0.25,
+                                    data.total_transactions * 0.2,
+                                    data.total_transactions * 0.25
+                                ],
+                                backgroundColor: '#007bff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching transaction stats:', error));
+            
+            // 予測データを取得
+            const predictionTargets = ['transaction_count', 'transaction_volume', 'transaction_fee', 'network_load'];
+            const chartIds = ['transaction-count-chart', 'transaction-volume-chart', 'transaction-fee-chart', 'network-load-chart'];
+            const chartTitles = ['トランザクション数', '取引量', '手数料', 'ネットワーク負荷 (%)'];
+            
+            predictionTargets.forEach((target, index) => {
+                fetch(`/api/predictions/${target}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const timestamps = data.map(d => d.timestamp);
+                        const values = data.map(d => d.value);
+                        const lowerBounds = data.map(d => d.lower);
+                        const upperBounds = data.map(d => d.upper);
+                        
+                        new Chart(document.getElementById(chartIds[index]), {
+                            type: 'line',
+                            data: {
+                                labels: timestamps,
+                                datasets: [
+                                    {
+                                        label: chartTitles[index],
+                                        data: values,
+                                        borderColor: '#007bff',
+                                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                        borderWidth: 2,
+                                        fill: false,
+                                        tension: 0.1
+                                    },
+                                    {
+                                        label: '信頼区間下限',
+                                        data: lowerBounds,
+                                        borderColor: 'rgba(0, 123, 255, 0.3)',
+                                        backgroundColor: 'transparent',
+                                        borderWidth: 1,
+                                        borderDash: [5, 5],
+                                        fill: false,
+                                        tension: 0.1
+                                    },
+                                    {
+                                        label: '信頼区間上限',
+                                        data: upperBounds,
+                                        borderColor: 'rgba(0, 123, 255, 0.3)',
+                                        backgroundColor: 'transparent',
+                                        borderWidth: 1,
+                                        borderDash: [5, 5],
+                                        fill: '-1',
+                                        tension: 0.1
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    },
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        ticks: {
+                                            maxTicksLimit: 8
+                                        }
+                                    },
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    })
+                    .catch(error => console.error(`Error fetching ${target} predictions:`, error));
+            });
+            
+            // パターン検出データを取得
+            fetch('/api/transactions/patterns')
+                .then(response => response.json())
+                .then(patterns => {
+                    const container = document.getElementById('patterns-container');
+                    container.innerHTML = '';
+                    
+                    patterns.forEach(pattern => {
+                        const confidenceClass = pattern.confidence >= 0.8 ? 'bg-success' : 
+                                              pattern.confidence >= 0.6 ? 'bg-warning' : 'bg-danger';
+                        
+                        const patternHtml = `
+                            <div class="card pattern-card">
+                                <div class="card-body">
+                                    <div class="pattern-title">
+                                        ${pattern.name}
+                                        <span class="badge ${confidenceClass} confidence-badge">信頼度: ${(pattern.confidence * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div class="pattern-desc">${pattern.description}</div>
+                                    <div class="pattern-meta">
+                                        <strong>発生回数:</strong> ${pattern.occurrences} |
+                                        <strong>初回検出:</strong> ${pattern.first_seen} |
+                                        <strong>最終検出:</strong> ${pattern.last_seen} |
+                                        <strong>総取引量:</strong> ${pattern.total_volume.toLocaleString()} |
+                                        <strong>平均取引量:</strong> ${pattern.average_volume.toLocaleString()}
+                                    </div>
+                                    <div class="pattern-meta mt-2">
+                                        <strong>関連アドレス:</strong> ${pattern.addresses.join(', ')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.innerHTML += patternHtml;
+                    });
+                })
+                .catch(error => console.error('Error fetching patterns:', error));
+            
+            // 異常検出データを取得
+            fetch('/api/transactions/anomalies')
+                .then(response => response.json())
+                .then(anomalies => {
+                    const container = document.getElementById('anomalies-container');
+                    container.innerHTML = '';
+                    
+                    anomalies.forEach(anomaly => {
+                        const severityClass = anomaly.severity >= 0.8 ? 'bg-danger' : 
+                                            anomaly.severity >= 0.5 ? 'bg-warning' : 'bg-info';
+                        
+                        const anomalyHtml = `
+                            <div class="card anomaly-card">
+                                <div class="card-body">
+                                    <div class="anomaly-title">
+                                        ${anomaly.anomaly_type}
+                                        <span class="badge ${severityClass} confidence-badge">重大度: ${(anomaly.severity * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div class="anomaly-desc">${anomaly.description}</div>
+                                    <div class="anomaly-meta">
+                                        <strong>検出時刻:</strong> ${anomaly.detection_time} |
+                                        <strong>発生時刻:</strong> ${anomaly.occurrence_time} |
+                                        <strong>信頼度:</strong> ${(anomaly.confidence * 100).toFixed(0)}%
+                                    </div>
+                                    <div class="anomaly-meta mt-2">
+                                        <strong>関連アドレス:</strong> ${anomaly.addresses.join(', ')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.innerHTML += anomalyHtml;
+                    });
+                })
+                .catch(error => console.error('Error fetching anomalies:', error));
+            
+            // クロスシャードトランザクション統計を取得
+            fetch('/api/cross-shard/stats')
+                .then(response => response.json())
+                .then(stats => {
+                    document.getElementById('cross-shard-total').textContent = stats.total.toLocaleString();
+                    document.getElementById('cross-shard-completed').textContent = stats.completed.toLocaleString();
+                    document.getElementById('cross-shard-failed').textContent = (stats.failed + stats.timed_out).toLocaleString();
+                    document.getElementById('cross-shard-time').textContent = stats.avg_completion_time.toLocaleString();
+                    
+                    // クロスシャードトランザクション状態チャート
+                    new Chart(document.getElementById('cross-shard-status-chart'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['完了', '失敗', 'タイムアウト', 'キャンセル', '保留中'],
+                            datasets: [{
+                                data: [stats.completed, stats.failed, stats.timed_out, stats.cancelled, stats.pending],
+                                backgroundColor: ['#28a745', '#dc3545', '#fd7e14', '#6c757d', '#ffc107']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                    
+                    // シャード間フローチャート
+                    const shards = Object.keys(stats.transactions_by_source_shard);
+                    const datasets = [];
+                    
+                    shards.forEach((sourceShard, index) => {
+                        const data = shards.map(destShard => {
+                            if (sourceShard === destShard) {
+                                return 0;
+                            }
+                            // ランダムなデータを生成（実際のAPIからのデータに置き換える）
+                            return Math.floor(stats.total * 0.05 * (index + 1) / shards.length);
+                        });
+                        
+                        datasets.push({
+                            label: sourceShard,
+                            data: data,
+                            backgroundColor: `hsl(${index * 360 / shards.length}, 70%, 60%)`
+                        });
+                    });
+                    
+                    new Chart(document.getElementById('cross-shard-flow-chart'), {
+                        type: 'bar',
+                        data: {
+                            labels: shards,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.dataset.label || '';
+                                            const value = context.raw || 0;
+                                            return `${label} → ${context.label}: ${value}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: '送信先シャード'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'トランザクション数'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching cross-shard stats:', error));
+            
+            // 特徴量重要度を取得
+            fetch('/api/feature-importance')
+                .then(response => response.json())
+                .then(features => {
+                    const container = document.getElementById('features-container');
+                    container.innerHTML = '';
+                    
+                    features.sort((a, b) => b.importance - a.importance);
+                    
+                    features.forEach(feature => {
+                        const featureHtml = `
+                            <div class="mb-3">
+                                <div class="feature-label">
+                                    <span>${feature.name}</span>
+                                    <span>${(feature.importance * 100).toFixed(1)}%</span>
+                                </div>
+                                <div class="feature-bar">
+                                    <div class="feature-fill" style="width: ${feature.importance * 100}%"></div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.innerHTML += featureHtml;
+                    });
+                    
+                    // 特徴量重要度チャート
+                    container.innerHTML += '<canvas id="feature-importance-chart" class="mt-4"></canvas>';
+                    
+                    new Chart(document.getElementById('feature-importance-chart'), {
+                        type: 'bar',
+                        data: {
+                            labels: features.map(f => f.name),
+                            datasets: [{
+                                label: '重要度',
+                                data: features.map(f => f.importance),
+                                backgroundColor: '#007bff'
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    max: 1,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return (value * 100) + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching feature importance:', error));
+        });
+        
+        // サイドバーのアクティブ状態を切り替え
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

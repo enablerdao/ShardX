@@ -19,23 +19,18 @@ services:
       - key: DATA_DIR
         value: /tmp/shardx-data # 一時ディレクトリを使用
 
-  # Webインターフェース（静的サイト）
+  # Webインターフェース（Pythonサーバー）
   - type: web
     name: shardx-web
-    env: static
-    buildCommand: echo "Static site ready" # ビルド不要の軽量設定
-    staticPublishPath: ./web/dist # 公開ディレクトリ
+    env: python
+    buildCommand: cd web && pip install -r requirements.txt
+    startCommand: cd web && python server.py
     headers:
       - path: /*
         name: Access-Control-Allow-Origin
         value: "*"
-    routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://shardx-node.onrender.com/*
-      - type: rewrite
-        source: /*
-        destination: /index.html
     envVars:
+      - key: PORT
+        value: 52153
       - key: API_URL
         value: https://shardx-node.onrender.com
