@@ -1,0 +1,33 @@
+# .fly/launch.toml
+app = "shardx"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  release_command = "echo 'Starting ShardX deployment...'"
+  strategy = "immediate"
+
+[env]
+  NODE_ID = "fly_node"
+  RUST_LOG = "info"
+  INITIAL_SHARDS = "64"
+  DATA_DIR = "/app/data"
+  REDIS_ENABLED = "true"
+  WEB_ENABLED = "true"
+  PORT = "54868"
+  P2P_PORT = "54867"
+
+[http_service]
+  internal_port = 54868
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

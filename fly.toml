@@ -1,9 +1,14 @@
 # fly.toml - Fly.io設定ファイル
 app = "shardx"
 primary_region = "nrt"
+kill_signal = "SIGINT"
+kill_timeout = 5
 
 [build]
   dockerfile = "Dockerfile"
+
+[deploy]
+  strategy = "immediate"
 
 [env]
   NODE_ID = "fly_node"
@@ -20,8 +25,9 @@ primary_region = "nrt"
   force_https = true
 
 [[services]]
-  protocol = "tcp"
+  http_checks = []
   internal_port = 54868
+  protocol = "tcp"
   processes = ["app"]
 
   [[services.ports]]
@@ -39,8 +45,9 @@ primary_region = "nrt"
     soft_limit = 500
 
 [[services]]
-  protocol = "tcp"
+  http_checks = []
   internal_port = 54867
+  protocol = "tcp"
   processes = ["app"]
 
   [[services.ports]]
@@ -50,6 +57,10 @@ primary_region = "nrt"
 [mounts]
   source = "shardx_data"
   destination = "/app/data"
+
+[metrics]
+  port = 54868
+  path = "/metrics"
 
 [[vm]]
   memory = "1gb"
