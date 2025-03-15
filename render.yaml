@@ -3,7 +3,7 @@ services:
   - type: web
     name: shardx-node
     env: docker
-    dockerfilePath: ./Dockerfile.simple
+    dockerfilePath: ./Dockerfile.render
     dockerContext: .
     plan: free # 無料プラン
     healthCheckPath: /info
@@ -19,6 +19,8 @@ services:
       - key: DATA_DIR
         value: /tmp/shardx-data # 一時ディレクトリを使用
       - key: REDIS_ENABLED
+        value: "true"
+      - key: CORS_ENABLED
         value: "true"
       - key: REDIS_URL
         fromService:
