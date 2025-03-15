@@ -1,10 +1,13 @@
 mod cross_shard_manager;
+mod transaction_type;
 
 use std::fmt;
 use serde::{Serialize, Deserialize};
 use async_trait::async_trait;
 
 pub use cross_shard_manager::{CrossShardManager, CrossShardTransaction, CrossShardTransactionState};
+pub use transaction_type::TransactionType;
+pub use dag::DAG;
 
 /// トランザクションの状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
