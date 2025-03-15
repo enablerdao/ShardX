@@ -78,6 +78,7 @@ prost-build = "0.11"
 
 [[bench]]
 name = "transaction_benchmark"
+path = "benches/transaction_benchmark.rs"
 harness = false
 
 [profile.release]
