@@ -4,7 +4,6 @@ primary_region = "nrt"
 
 [build]
   dockerfile = "Dockerfile"
-  builder = "dockerfile"
 
 [env]
   NODE_ID = "fly_node"
@@ -16,50 +15,41 @@ primary_region = "nrt"
   PORT = "54868"
   P2P_PORT = "54867"
 
-[http_service]
+[http]
   internal_port = 54868
   force_https = true
-  auto_stop_machines = false
-  auto_start_machines = true
-  min_machines_running = 1
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 54868
   processes = ["app"]
 
-[services]
-  [services.web]
-    protocol = "tcp"
-    internal_port = 54868
-    processes = ["app"]
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
 
-    [[services.web.ports]]
-      port = 80
-      handlers = ["http"]
-      force_https = true
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
 
-    [[services.web.ports]]
-      port = 443
-      handlers = ["tls", "http"]
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 500
 
-    [services.web.concurrency]
-      type = "connections"
-      hard_limit = 1000
-      soft_limit = 500
+[[services]]
+  protocol = "tcp"
+  internal_port = 54867
+  processes = ["app"]
 
-  [services.p2p]
-    protocol = "tcp"
-    internal_port = 54867
-    processes = ["app"]
-
-    [[services.p2p.ports]]
-      port = 54867
-      handlers = ["tcp"]
+  [[services.ports]]
+    port = 54867
+    handlers = ["tcp"]
 
 [mounts]
   source = "shardx_data"
   destination = "/app/data"
-
-[metrics]
-  port = 9091
-  path = "/metrics"
 
 [[vm]]
   memory = "1gb"
