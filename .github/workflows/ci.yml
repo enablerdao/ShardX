@@ -81,7 +81,7 @@ jobs:
           args: --release
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: shardx-binary
           path: target/release/shardx
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: shardx-binary
           path: ./target/release/
@@ -155,7 +155,7 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: shardx-binary
           path: ./
