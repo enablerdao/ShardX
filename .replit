@@ -1,4 +1,4 @@
-run = "cargo run --release"
+run = "cargo run --release --bin shardx"
 hidden = [".git", "target"]
 entrypoint = "src/main.rs"
 
@@ -25,5 +25,5 @@ pattern = "**/*.rs"
 start = ["rust-analyzer"]
 
 [deployment]
-run = ["sh", "-c", "cargo run --release"]
+run = ["sh", "-c", "cargo run --release --bin shardx"]
 deploymentTarget = "cloudrun"
