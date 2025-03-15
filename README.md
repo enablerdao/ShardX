@@ -186,6 +186,8 @@ AIがトランザクションの優先順位を最適化し、ネットワーク
 - [API リファレンス](docs/api/README.md)
 - [開発者ガイド](docs/developers/README.md)
 - [デプロイガイド](docs/deployment/README.md)
+- [クロスチェーン機能](docs/cross_chain/README.md)
+- [パフォーマンステスト結果](docs/benchmarks/performance_results.md)
 - [コントリビューションガイド](CONTRIBUTING.md)
 
 ## 🤝 コントリビューション
