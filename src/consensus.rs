@@ -1,4 +1,5 @@
-use crate::transaction::{DAG, Transaction, TransactionStatus};
+use crate::transaction::{Transaction, TransactionStatus};
+use std::collections::HashMap;
 use async_trait::async_trait;
 use log::{debug, info};
 use std::sync::Arc;
@@ -10,28 +11,29 @@ pub trait Validator: Send + Sync {
     async fn verify_signature(&self, signature: &[u8], payload: &[u8]) -> bool;
     
     /// トランザクションを検証
-    async fn validate_transaction(&self, tx: &Transaction, dag: &DAG) -> bool;
+    async fn validate_transaction(&self, tx: &Transaction, dag: &std::sync::Mutex<HashMap<String, Transaction>>) -> bool;
 }
 
 /// Proof of Flow コンセンサスエンジン
 pub struct ProofOfFlow {
-    /// DAGの参照
-    dag: Arc<DAG>,
+   /// DAGの参照 (一時的なプレースホルダー)
+    dag: Arc<std::sync::Mutex<HashMap<String, Transaction>>>,
     /// バリデータのリスト
     validators: Vec<Arc<dyn Validator>>,
 }
 
 impl ProofOfFlow {
     /// 新しいProof of Flowエンジンを作成
-    pub fn new(dag: Arc<DAG>, validators: Vec<Arc<dyn Validator>>) -> Self {
+    pub fn new(dag: Arc<std::sync::Mutex<HashMap<String, Transaction>>>, validators: Vec<Arc<dyn Validator>>) -> Self {
         Self { dag, validators }
     }
     
     /// トランザクションを検証してDAGに追加
     pub async fn process_transaction(&self, tx: Transaction) -> Result<(), String> {
         // タイムスタンプの順序を確認
+        let dag_lock = self.dag.lock().await;
         for parent_id in &tx.parent_ids {
-            if let Some(parent) = self.dag.get_transaction(parent_id) {
+            if let Some(parent) = dag_lock.get(parent_id) {
                 if parent.timestamp >= tx.timestamp {
                     return Err("Invalid timestamp order".to_string());
                 }
@@ -52,10 +54,13 @@ impl ProofOfFlow {
         let required_votes = (self.validators.len() / 2) + 1;
         if valid_votes >= required_votes {
             // トランザクションをDAGに追加
-            self.dag.add_transaction(tx.clone())?;
+            let mut dag_lock = self.dag.lock().await;
+            dag_lock.insert(tx.id.clone(), tx.clone());
             
             // トランザクションを確認済みに更新
-            self.dag.update_transaction_status(&tx.id, TransactionStatus::Confirmed)?;
+            if let Some(mut stored_tx) = dag_lock.get_mut(&tx.id) {
+                stored_tx.status = TransactionStatus::Confirmed;
+            }
             
             info!("Transaction {} confirmed with {}/{} votes", tx.id, valid_votes, self.validators.len());
             Ok(())
@@ -69,7 +74,7 @@ impl ProofOfFlow {
     pub fn calculate_tps(&self, window_seconds: u64) -> f64 {
         // 実際の実装では、過去window_seconds間に確認されたトランザクション数をカウント
         // 簡略化のため、現在は固定値を返す
-        let confirmed_count = self.dag.confirmed_count() as f64;
+        let confirmed_count = 100.0; // プレースホルダー値
         confirmed_count / window_seconds as f64
     }
 }
@@ -88,10 +93,11 @@ impl Validator for SimpleValidator {
         true
     }
     
-    async fn validate_transaction(&self, tx: &Transaction, dag: &DAG) -> bool {
+    async fn validate_transaction(&self, tx: &Transaction, dag: &std::sync::Mutex<HashMap<String, Transaction>>) -> bool {
         // 親トランザクションが存在し、タイムスタンプの順序が正しいことを確認
+        let dag_lock = dag.lock().await;
         for parent_id in &tx.parent_ids {
-            if let Some(parent) = dag.get_transaction(parent_id) {
+            if let Some(parent) = dag_lock.get(parent_id) {
                 if parent.timestamp >= tx.timestamp {
                     return false;
                 }
