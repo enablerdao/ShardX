@@ -5,7 +5,6 @@
   "logo": "https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/logo.svg",
   "keywords": ["blockchain", "rust", "shardx", "dag", "proof-of-flow"],
   "website": "https://shardx.org",
-  "success_url": "/",
   "env": {
     "NODE_ID": {
       "description": "ノードの一意の識別子",
