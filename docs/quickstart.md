@@ -2,68 +2,25 @@
 
 このガイドでは、ShardXを5分以内に起動する方法を説明します。
 
-## 1. 最速の方法（Docker）
+## 1. 最速の方法（すべてのOS対応）
 
-Dockerがインストールされている場合、以下のコマンドを実行するだけでShardXを起動できます：
+以下のコマンドを実行するだけでShardXを自動的にインストールできます：
 
 ```bash
+# 自動インストールスクリプト（Linux/macOS）
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
 ```
 
-または、手動でDockerコマンドを実行することもできます：
+または、Dockerを使用する場合：
 
 ```bash
+# Dockerを使用（すべてのOS）
 docker run -d -p 54867:54867 -p 54868:54868 --name shardx enablerdao/shardx:latest
 ```
 
-## 2. OS別インストール方法
+詳細なインストール方法については、[インストールガイド](../installation.md)を参照してください。
 
-### Linux (Ubuntu/Debian)
-
-```bash
-# 依存関係をインストール
-sudo apt update && sudo apt install -y git curl build-essential libssl-dev pkg-config
-
-# ShardXをクローンして起動
-git clone https://github.com/enablerdao/ShardX.git
-cd ShardX
-./scripts/linux_install.sh
-./scripts/run.sh
-```
-
-### macOS
-
-```bash
-# Homebrewがない場合はインストール
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# 依存関係をインストール
-brew install git curl rust
-
-# ShardXをクローンして起動
-git clone https://github.com/enablerdao/ShardX.git
-cd ShardX
-./scripts/mac_install.sh
-./scripts/run.sh
-```
-
-### Windows
-
-PowerShellを管理者権限で実行し、以下のコマンドを実行します：
-
-```powershell
-# Rustをインストール
-Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
-.\rustup-init.exe -y
-
-# ShardXをクローンして起動
-git clone https://github.com/enablerdao/ShardX.git
-cd ShardX
-.\scripts\windows_install.ps1
-.\scripts\run.ps1
-```
-
-## 3. クラウドにデプロイ
+## 2. クラウドにデプロイ
 
 以下のボタンをクリックするだけで、ShardXをクラウドにデプロイできます：
 
@@ -71,9 +28,9 @@ cd ShardX
 - [Railwayにデプロイ](https://railway.app/template/ShardX)
 - [Vercelにデプロイ](https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX)
 
-詳細な手順は[Renderデプロイガイド](deployment/render-free.md)を参照してください。
+詳細な手順は[デプロイガイド](deployment/multi-platform-deployment.md)を参照してください。
 
-## 4. 動作確認
+## 3. 動作確認
 
 ShardXが起動したら、以下のURLにアクセスできます：
 
@@ -98,8 +55,8 @@ curl http://localhost:54868/api/v1/transactions
 curl http://localhost:54868/api/v1/shards
 ```
 
-## 5. 次のステップ
+## 4. 次のステップ
 
 - [API リファレンス](api/README.md)を参照して、ShardX APIの使用方法を学びます
 - [開発者ガイド](developers/README.md)を参照して、ShardXの開発方法を学びます
-- [デプロイガイド](deployment/README.md)を参照して、ShardXの本番環境へのデプロイ方法を学びます
+- [デプロイガイド](deployment/multi-platform-deployment.md)を参照して、ShardXの本番環境へのデプロイ方法を学びます
