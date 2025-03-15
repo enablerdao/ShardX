@@ -9,61 +9,34 @@
 ## 🚀 すぐに始める！
 
 **ShardXの開発ポリシー**: まず動くものを作り、実際に動かして検証し、そこから改善していく。理論より実践を重視します。
-### ワンコマンドで起動（どのOSでも動作）
+
+### ワンコマンドでインストール（すべてのOS対応）
 
 ```bash
-# 最も簡単な方法（Dockerが必要）
+# 自動インストールスクリプト（Linux/macOS）
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
 
-# または、手動でコピー＆ペースト
+# または、Dockerを使用（すべてのOS）
 docker run -p 54867:54867 -p 54868:54868 enablerdao/shardx:latest
+```
+
+インストールスクリプトは以下の処理を行います：
+- OSとアーキテクチャの自動検出
+- 必要な依存関係のインストール
+- バイナリのダウンロード（または必要に応じてソースからビルド）
+- 設定ファイルの作成
+- 起動用のシンボリックリンクの設定
+
+インストール後、以下のコマンドで起動できます：
+```bash
+shardx
 ```
 
 起動後、以下のURLにアクセスできます：
 - ウェブインターフェース: http://localhost:54867
 - API: http://localhost:54868/api/v1/info
 
-### OS別インストール方法（Docker不要）
-**Linux (Ubuntu/Debian)**
-```bash
-# 依存関係をインストール
-sudo apt update && sudo apt install -y git curl build-essential libssl-dev pkg-config
-
-# ShardXをクローンして起動
-git clone https://github.com/enablerdao/ShardX.git
-cd ShardX
-./scripts/linux_install.sh
-./scripts/run.sh
-```
-
-**macOS**
-```bash
-# Homebrewがない場合はインストール
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# 依存関係をインストール
-brew install git curl rust
-
-# ShardXをクローンして起動
-git clone https://github.com/enablerdao/ShardX.git
-cd ShardX
-./scripts/mac_install.sh
-./scripts/run.sh
-```
-
-**Windows**
-```powershell
-# PowerShellを管理者権限で実行
-# Rustをインストール
-Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
-.\rustup-init.exe -y
-
-# ShardXをクローンして起動
-git clone https://github.com/enablerdao/ShardX.git
-cd ShardX
-.\scripts\windows_install.ps1
-.\scripts\run.ps1
-```
+詳細なインストール方法については、[インストールガイド](docs/installation.md)を参照してください。
 
 
 ### クラウドにワンクリックデプロイ
@@ -89,10 +62,7 @@ cd ShardX
 - **Heroku**: 安定性と拡張性、PostgreSQL・Redis連携、本番環境向け
 - **Fly.io**: グローバル分散デプロイ、低レイテンシー、本番環境向け
 
-詳細は[マルチプラットフォームデプロイガイド](docs/deployment/multi-platform-deployment.md)を参照してください。
-
-
-詳細な手順は[クイックスタートガイド](docs/quickstart.md)や[Renderデプロイガイド](docs/deployment/render-free.md)を参照してください。
+詳細は[デプロイガイド](docs/deployment/multi-platform-deployment.md)を参照してください。
 
 ## 🚩 ミッション
 「分散型テクノロジーで世界中の人々のつながりを深め、誰もが安心して価値を交換できる未来を実現する。」
@@ -296,9 +266,9 @@ curl https://your-app-url.onrender.com/api/v1/predictions/transaction-count?hori
 
 ## 📚 シンプルなドキュメント
 
-- [クイックスタートガイド](docs/quickstart.md) - 5分で始める方法
+- [インストールガイド](docs/installation.md) - 様々な環境でのインストール方法
 - [API リファレンス](docs/api/README.md) - すべてのエンドポイントの説明
-- [デプロイガイド](docs/deployment/render-free.md) - 無料でのデプロイ方法
+- [デプロイガイド](docs/deployment/multi-platform-deployment.md) - 各クラウドプラットフォームへのデプロイ方法
 - [クロスチェーン機能](docs/cross_chain/README.md) - 異なるブロックチェーンとの連携方法
 - [パフォーマンステスト結果](docs/benchmarks/performance_results.md) - 100,000 TPS達成の詳細
 
