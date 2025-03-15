@@ -1,0 +1,26 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cargo build --release"
+
+[deploy]
+startCommand = "./target/release/shardx"
+healthcheckPath = "/info"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+[nixpacks]
+rust-version = "1.75.0"
+
+[nixpacks.setup]
+cmds = [
+  "apt-get update",
+  "apt-get install -y pkg-config libssl-dev build-essential"
+]
+
+[variables]
+RUST_LOG = "info"
+INITIAL_SHARDS = "16"
+NODE_ID = "railway_node"
+DATA_DIR = "/tmp/shardx-data"
+CORS_ENABLED = "true"
+WORKER_MODE = "true"
