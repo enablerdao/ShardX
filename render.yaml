@@ -32,10 +32,6 @@ services:
     env: node
     buildCommand: cd web && npm install && npm run build
     startCommand: cd web && npm start
-    headers:
-      - path: /*
-        name: Access-Control-Allow-Origin
-        value: "*"
     envVars:
       - key: PORT
         value: 52153
@@ -43,6 +39,8 @@ services:
         value: https://shardx-node.onrender.com
       - key: NODE_ENV
         value: production
+      - key: CORS_ENABLED
+        value: "true"
 
   # Redis（キャッシュとメッセージングに使用）
   - type: redis
