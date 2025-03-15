@@ -6,6 +6,7 @@ pub mod async_runtime;
 pub mod chart;
 pub mod consensus;
 pub mod cross_shard;
+pub mod cross_chain;
 pub mod crypto;
 pub mod dex;
 pub mod error;
@@ -24,3 +25,6 @@ pub mod wallet;
 
 #[cfg(test)]
 mod tests;
+
+// Re-export key types for easier access
+pub use cross_chain::{CrossChainBridge, BridgeConfig, ChainType};
