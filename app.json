@@ -49,16 +49,7 @@
       "size": "basic"
     }
   },
-  "addons": [
-    {
-      "plan": "heroku-postgresql:hobby-dev",
-      "as": "DATABASE"
-    },
-    {
-      "plan": "heroku-redis:hobby-dev",
-      "as": "REDIS"
-    }
-  ],
+
   "buildpacks": [
     {
       "url": "https://github.com/emk/heroku-buildpack-rust"
@@ -69,12 +60,5 @@
   ],
   "scripts": {
     "postdeploy": "cargo run --bin init_db && cd web && npm install && npm run build"
-  },
-  "stack": "heroku-22",
-  "cron": [
-    {
-      "command": "./target/release/shardx --maintenance",
-      "schedule": "0 */6 * * *"
-    }
-  ]
+  }
 }
