@@ -33,7 +33,9 @@ impl OptimizedStorage {
         opts.set_max_background_jobs(4);
         
         // ブルームフィルタでルックアップを高速化
-        opts.set_bloom_filter(10, false);
+        let mut block_opts = rocksdb::BlockBasedOptions::default();
+        block_opts.set_bloom_filter(10.0, false);
+        opts.set_block_based_table_factory(&block_opts);
         
         // カラムファミリーを定義
         let cf_names = vec!["transactions", "state", "metadata"];
@@ -42,7 +44,9 @@ impl OptimizedStorage {
             .map(|name| {
                 let mut cf_opts = Options::default();
                 cf_opts.set_write_buffer_size(32 * 1024 * 1024); // 32MB
-                cf_opts.set_bloom_filter(10, false);
+                let mut cf_block_opts = rocksdb::BlockBasedOptions::default();
+                cf_block_opts.set_bloom_filter(10.0, false);
+                cf_opts.set_block_based_table_factory(&cf_block_opts);
                 ColumnFamilyDescriptor::new(*name, cf_opts)
             })
             .collect();
@@ -54,12 +58,13 @@ impl OptimizedStorage {
                 .map_err(|e| Error::StorageError(format!("Failed to open RocksDB: {}", e)))?
         } else {
             // 新しいDBを作成
-            let db = DB::open(&opts, &path)
+            let mut db = DB::open(&opts, &path)
                 .map_err(|e| Error::StorageError(format!("Failed to create RocksDB: {}", e)))?;
             
             // カラムファミリーを作成
             for name in cf_names {
-                db.create_cf(name, &Options::default())
+                let cf_opts = Options::default();
+                db.create_cf(name, &cf_opts)
                     .map_err(|e| Error::StorageError(format!("Failed to create column family: {}", e)))?;
             }
             
@@ -67,7 +72,7 @@ impl OptimizedStorage {
         };
         
         // LRUキャッシュを作成（90%ヒット率を目標）
-        let cache = Arc::new(Mutex::new(LruCache::new(cache_size)));
+        let cache = Arc::new(Mutex::new(LruCache::new(std::num::NonZeroUsize::new(cache_size).unwrap())));
         
         Ok(Self {
             db,
@@ -199,10 +204,11 @@ impl OptimizedStorage {
             let key_str = String::from_utf8_lossy(&key).to_string();
             
             if key_str.starts_with(prefix) {
+                let key_str_clone = key_str.clone();
                 results.push((key_str, value.to_vec()));
                 
                 // キャッシュを更新
-                let cache_key = format!("{}:{}", cf_name, key_str);
+                let cache_key = format!("{}:{}", cf_name, key_str_clone);
                 let mut cache = self.cache.lock().unwrap();
                 cache.put(cache_key, value.to_vec());
             }
