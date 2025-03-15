@@ -31,6 +31,7 @@ docker run -d -p 54867:54867 -p 54868:54868 --name shardx enablerdao/shardx:late
 - [Vercelにデプロイ](https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX)（Webインターフェースのみ）
 - [Netlifyにデプロイ](https://app.netlify.com/start/deploy?repository=https://github.com/enablerdao/ShardX)（Webインターフェースのみ）
 - [Google Cloud Runにデプロイ](https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/enablerdao/ShardX)
+- [Replitにデプロイ](https://replit.com/github/enablerdao/ShardX)
 
 詳細な手順は[デプロイガイド](deployment/multi-platform-deployment.md)を参照してください。
 
