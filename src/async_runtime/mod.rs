@@ -225,27 +225,31 @@ impl TaskQueue {
             
             if let Some(queue) = self.priority_queues.get_mut(priority) {
                 if let Some(&task_id) = queue.front() {
-                    if let Some(task) = self.tasks.get(&task_id) {
-                        // 依存関係をチェック
-                        let dependencies = task.info.dependencies.clone();
-                        let dependencies_completed = dependencies.iter()
-                            .all(|dep_id| {
+                    // 依存関係をチェック
+                    let dependencies_completed = {
+                        if let Some(task) = self.tasks.get(&task_id) {
+                            let dependencies = &task.info.dependencies;
+                            dependencies.iter().all(|dep_id| {
                                 if let Some(dep_task) = self.tasks.get(dep_id) {
                                     dep_task.info.state == TaskState::Completed
                                 } else {
                                     true // 依存タスクが存在しない場合は完了とみなす
                                 }
-                            });
-                        
-                        if dependencies_completed {
-                            // 依存関係が完了している場合はキューから取り出す
-                            task_id_opt = queue.pop_front();
+                            })
                         } else {
-                            // 依存関係が完了していない場合は後ろに移動
-                            queue.pop_front();
-                            queue.push_back(task_id);
-                            continue;
+                            false
                         }
+                    };
+                    
+                    if dependencies_completed {
+                        // 依存関係が完了している場合はキューから取り出す
+                        task_id_opt = queue.pop_front();
+                    } else {
+                        // 依存関係が完了していない場合は後ろに移動
+                        if let Some(id) = queue.pop_front() {
+                            queue.push_back(id);
+                        }
+                        continue;
                     }
                 }
             }
@@ -272,7 +276,7 @@ impl TaskQueue {
     /// タスクを起こす
     fn wake_task(&mut self, task_id: u64) {
         // タスクの状態と優先度を取得
-        let (task_state, priority_level, dependencies) = {
+        let task_info = {
             if let Some(task) = self.tasks.get_mut(&task_id) {
                 if task.info.state == TaskState::Running {
                     // タスクが実行中の場合は何もしない
@@ -282,32 +286,60 @@ impl TaskQueue {
                 // タスクを待機中に設定
                 task.info.state = TaskState::Pending;
                 
+                // 情報をコピー
                 (
                     task.info.state,
                     task.info.priority.level(),
-                    task.info.dependencies.clone()
+                    task.info.dependencies.len() == 0 // 依存関係がないかどうか
                 )
             } else {
                 return;
             }
         };
         
-        // 依存関係をチェック
-        let dependencies_completed = dependencies.iter()
-            .all(|dep_id| {
-                if let Some(dep_task) = self.tasks.get(dep_id) {
-                    dep_task.info.state == TaskState::Completed
-                } else {
-                    true // 依存タスクが存在しない場合は完了とみなす
+        let (task_state, priority_level, no_dependencies) = task_info;
+        
+        // 依存関係がない場合はすぐにキューに追加
+        if no_dependencies && task_state == TaskState::Pending {
+            // キューに追加
+            if priority_level < self.priority_queues.len() {
+                if let Some(queue) = self.priority_queues.get_mut(priority_level) {
+                    queue.push_back(task_id);
                 }
-            });
+            } else if !self.priority_queues.is_empty() {
+                if let Some(queue) = self.priority_queues.get_mut(0) {
+                    queue.push_back(task_id);
+                }
+            }
+            return;
+        }
+        
+        // 依存関係がある場合は依存関係をチェック
+        let dependencies_completed = {
+            let mut completed = true;
+            if let Some(task) = self.tasks.get(&task_id) {
+                for dep_id in &task.info.dependencies {
+                    if let Some(dep_task) = self.tasks.get(dep_id) {
+                        if dep_task.info.state != TaskState::Completed {
+                            completed = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            completed
+        };
         
         if dependencies_completed && task_state == TaskState::Pending {
             // 依存関係が完了している場合はキューに追加
             if priority_level < self.priority_queues.len() {
-                self.priority_queues[priority_level].push_back(task_id);
+                if let Some(queue) = self.priority_queues.get_mut(priority_level) {
+                    queue.push_back(task_id);
+                }
             } else if !self.priority_queues.is_empty() {
-                self.priority_queues[0].push_back(task_id);
+                if let Some(queue) = self.priority_queues.get_mut(0) {
+                    queue.push_back(task_id);
+                }
             }
         }
     }
