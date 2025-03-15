@@ -75,10 +75,21 @@ cd ShardX
   <a href="https://railway.app/template/ShardX">
     <img src="https://railway.app/button.svg" alt="Deploy on Railway" height="44px" />
   </a>
-  <a href="https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX">
-    <img src="https://vercel.com/button" alt="Deploy to Vercel" />
+  <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
+    <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
+  </a>
+  <a href="https://fly.io/launch/github/enablerdao/ShardX">
+    <img src="https://fly.io/static/images/brand/logo-mark-dark.svg" alt="Deploy to Fly.io" height="44px" />
   </a>
 </div>
+
+各プラットフォームの特徴:
+- **Render**: 無料プランあり、簡単なセットアップ、開発・テスト向け
+- **Railway**: 高速デプロイ、直感的なUI、開発・テスト向け
+- **Heroku**: 安定性と拡張性、PostgreSQL・Redis連携、本番環境向け
+- **Fly.io**: グローバル分散デプロイ、低レイテンシー、本番環境向け
+
+詳細は[マルチプラットフォームデプロイガイド](docs/deployment/multi-platform-deployment.md)を参照してください。
 
 
 詳細な手順は[クイックスタートガイド](docs/quickstart.md)や[Renderデプロイガイド](docs/deployment/render-free.md)を参照してください。

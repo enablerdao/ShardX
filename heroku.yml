@@ -1,0 +1,23 @@
+build:
+  docker:
+    web: Dockerfile
+    worker: Dockerfile
+  config:
+    INITIAL_SHARDS: 32
+
+run:
+  web: /app/shardx
+  worker: /app/shardx --worker
+
+setup:
+  addons:
+    - plan: heroku-postgresql:hobby-dev
+      as: DATABASE
+    - plan: heroku-redis:hobby-dev
+      as: REDIS
+  config:
+    NODE_ID: heroku_node
+    RUST_LOG: info
+    DATA_DIR: /app/data
+    REDIS_ENABLED: true
+    WEB_ENABLED: true
