@@ -1,7 +1,7 @@
 # ShardX - 高性能ブロックチェーンプラットフォーム
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/logo.png" alt="ShardX Logo" width="200" />
+  <img src="https://raw.githubusercontent.com/enablerdao/ShardX/main/web/assets/logo.svg" alt="ShardX Logo" width="200" />
   <p>「トランザクションが川の流れのように速く、スムーズに動くブロックチェーン。」</p>
 </div>
 
