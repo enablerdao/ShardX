@@ -1,16 +1,14 @@
 use std::sync::Arc;
 use std::net::SocketAddr;
 use tokio::sync::Mutex;
-use jsonrpc_core::{IoHandler, Value, Params, Error as JsonRpcError};
-use jsonrpc_http_server::{ServerBuilder, Server, AccessControlAllowOrigin, DomainsValidation};
 use log::{debug, error, info, warn};
 use serde::{Serialize, Deserialize};
-use serde_json::json;
+use serde_json::{json, Value};
+use warp::{Filter, Rejection, Reply};
 
 use crate::error::Error;
 use crate::node::Node;
 use crate::transaction::{Transaction, TransactionStatus};
-use crate::wallet::multisig::{MultisigWallet, MultisigTransaction, MultisigTransactionStatus};
 use crate::visualization::{ChartData, ChartMetric, ChartPeriod};
 use crate::ai::advanced_prediction::{Prediction, TradingRecommendation};
 
