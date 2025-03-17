@@ -37,6 +37,7 @@ jobs:
           shared-key: "rust-stable"
       
       - name: Run Clippy
+        timeout-minutes: 30
         run: |
           if [ -f ./tools/static_analysis/run_analysis.sh ]; then
             chmod +x ./tools/static_analysis/run_analysis.sh
