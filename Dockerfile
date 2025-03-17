@@ -13,6 +13,8 @@ RUN apt-get update && \
     clang \
     libclang-dev \
     llvm-dev \
+    cmake \
+    ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
 # libclangのパスを直接設定
