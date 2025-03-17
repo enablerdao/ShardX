@@ -1,7 +1,7 @@
 pub mod ai;
 pub mod api;
 pub mod api_handlers;
-pub mod async;
+pub mod async_utils; // asyncは予約語なので変更
 pub mod async_runtime;
 pub mod chart;
 pub mod consensus;
