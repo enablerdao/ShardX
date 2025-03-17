@@ -21,7 +21,20 @@ env:
 
 jobs:
   pre-check:
-    uses: ./.github/workflows/pre-check.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      
+      - name: Lint with clippy
+        run: cargo clippy -- -D warnings
 
   parallel-test:
     needs: pre-check
