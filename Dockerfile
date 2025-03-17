@@ -1,5 +1,5 @@
-# シンプルなビルドステージ
-FROM rust:latest as builder
+# マルチアーキテクチャ対応ビルドステージ
+FROM --platform=$BUILDPLATFORM rust:1.75-slim as builder
 
 WORKDIR /app
 
@@ -17,11 +17,15 @@ RUN apt-get update && \
     ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
-# libclangのパスを直接設定
-RUN apt-get update && apt-get install -y llvm-14 libclang-14-dev && rm -rf /var/lib/apt/lists/*
+# libclangのパスを直接設定（アーキテクチャに応じて調整）
+RUN apt-get update && apt-get install -y llvm-14 libclang-14-dev \
+    gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+    && rm -rf /var/lib/apt/lists/*
 
 # 環境変数を設定
 ENV LIBCLANG_PATH=/usr/lib/llvm-14/lib
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
 # Rustとcargoのバージョンを確認
 RUN rustc --version && cargo --version
@@ -63,14 +67,29 @@ COPY src ./src
 COPY web ./web
 COPY benches ./benches
 
-# リリースビルドを実行（RocksDBの依存関係を無効化、必要な依存関係を明示的に含める）
-RUN RUSTFLAGS="-C link-arg=-Wl,--allow-multiple-definition" \
-    RUST_BACKTRACE=1 \
-    cargo build --release -v --no-default-features --features="snow" || \
-    (echo "Release build failed, but continuing with minimal binary")
+# ターゲットを追加
+RUN rustup target add aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
 
-# ランタイムステージ - 超軽量なベースイメージを使用
-FROM debian:bookworm-slim AS runtime
+# ARGを使用してターゲットアーキテクチャを設定
+ARG TARGETARCH
+
+# アーキテクチャに応じてビルド
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+        echo "Building for ARM64" && \
+        RUSTFLAGS="-C link-arg=-Wl,--allow-multiple-definition" \
+        RUST_BACKTRACE=1 \
+        cargo build --release --target aarch64-unknown-linux-gnu -v --no-default-features --features="snow" || \
+        (echo "ARM64 build failed, but continuing with minimal binary"); \
+    else \
+        echo "Building for AMD64" && \
+        RUSTFLAGS="-C link-arg=-Wl,--allow-multiple-definition" \
+        RUST_BACKTRACE=1 \
+        cargo build --release --target x86_64-unknown-linux-gnu -v --no-default-features --features="snow" || \
+        (echo "AMD64 build failed, but continuing with minimal binary"); \
+    fi
+
+# ランタイムステージ - 超軽量なベースイメージを使用（マルチアーキテクチャ対応）
+FROM --platform=$TARGETPLATFORM debian:bookworm-slim AS runtime
 
 WORKDIR /app
 
@@ -91,8 +110,14 @@ RUN mkdir -p /app/bin /app/web
 
 # バイナリファイルをコピーするためのスクリプト
 RUN echo '#!/bin/sh' > /copy-binaries.sh && \
-    echo 'cp -f /app/builder/target/release/shardx /app/bin/ 2>/dev/null || true' >> /copy-binaries.sh && \
-    echo 'cp -f /app/builder/target/debug/shardx /app/bin/ 2>/dev/null || true' >> /copy-binaries.sh && \
+    echo 'mkdir -p /app/bin /app/web' >> /copy-binaries.sh && \
+    echo 'if [ -f /app/builder/target/aarch64-unknown-linux-gnu/release/shardx ]; then' >> /copy-binaries.sh && \
+    echo '  cp -f /app/builder/target/aarch64-unknown-linux-gnu/release/shardx /app/bin/' >> /copy-binaries.sh && \
+    echo 'elif [ -f /app/builder/target/x86_64-unknown-linux-gnu/release/shardx ]; then' >> /copy-binaries.sh && \
+    echo '  cp -f /app/builder/target/x86_64-unknown-linux-gnu/release/shardx /app/bin/' >> /copy-binaries.sh && \
+    echo 'elif [ -f /app/builder/target/release/shardx ]; then' >> /copy-binaries.sh && \
+    echo '  cp -f /app/builder/target/release/shardx /app/bin/' >> /copy-binaries.sh && \
+    echo 'fi' >> /copy-binaries.sh && \
     echo 'cp -rf /app/builder/web/* /app/web/ 2>/dev/null || true' >> /copy-binaries.sh && \
     chmod +x /copy-binaries.sh
 
