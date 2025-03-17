@@ -61,10 +61,10 @@ COPY src ./src
 COPY web ./web
 COPY benches ./benches
 
-# リリースビルドを実行（RocksDBの依存関係を無効化）
+# リリースビルドを実行（RocksDBの依存関係を無効化、必要な依存関係を明示的に含める）
 RUN RUSTFLAGS="-C link-arg=-Wl,--allow-multiple-definition" \
     RUST_BACKTRACE=1 \
-    cargo build --release -v --no-default-features || \
+    cargo build --release -v --no-default-features --features="snow" || \
     (echo "Release build failed, but continuing with minimal binary")
 
 # ランタイムステージ - 超軽量なベースイメージを使用
@@ -84,14 +84,21 @@ RUN apt-get update && \
 RUN mkdir -p /app/data /app/web && chmod 777 /app/data
 
 # ビルダーステージからバイナリとウェブファイルをコピー
-# 注: ファイルが存在しない場合のエラーを回避するためにシェルスクリプトを使用
-RUN mkdir -p /app/tmp
-COPY --from=builder /app/target/release/shardx* /app/tmp/ 2>/dev/null || true
-COPY --from=builder /app/target/debug/shardx* /app/tmp/ 2>/dev/null || true
-RUN if [ -d "/app/tmp" ]; then mv /app/tmp/* /app/ 2>/dev/null || true; rm -rf /app/tmp; fi
+# 注: ファイルが存在しない場合に備えて、各ステップを分離
+RUN mkdir -p /app/bin /app/web
 
-# ウェブファイルをコピー
-COPY --from=builder /app/web /app/web 2>/dev/null || true
+# バイナリファイルをコピーするためのスクリプト
+RUN echo '#!/bin/sh' > /copy-binaries.sh && \
+    echo 'cp -f /app/builder/target/release/shardx /app/bin/ 2>/dev/null || true' >> /copy-binaries.sh && \
+    echo 'cp -f /app/builder/target/debug/shardx /app/bin/ 2>/dev/null || true' >> /copy-binaries.sh && \
+    echo 'cp -rf /app/builder/web/* /app/web/ 2>/dev/null || true' >> /copy-binaries.sh && \
+    chmod +x /copy-binaries.sh
+
+# ビルダーステージのファイルをコピー
+COPY --from=builder /app /app/builder/
+RUN /copy-binaries.sh && \
+    cp -f /app/bin/shardx /app/ 2>/dev/null || true && \
+    rm -rf /app/builder /copy-binaries.sh
 
 # デバッグ用のダミーバイナリを作成（ビルドが失敗した場合）
 RUN if [ ! -f /app/shardx ]; then \
