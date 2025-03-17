@@ -1,5 +1,12 @@
 # シンプルなマルチアーキテクチャ対応Dockerfile
-FROM debian:bookworm-slim
+FROM --platform=$TARGETPLATFORM debian:bookworm-slim
+
+# ARGを使用してターゲットプラットフォームを取得
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# デバッグ情報を表示
+RUN echo "Building for $TARGETPLATFORM on $BUILDPLATFORM"
 
 WORKDIR /app
 

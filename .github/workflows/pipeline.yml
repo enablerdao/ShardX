@@ -521,8 +521,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           file: ./Dockerfile.simple
+          # 以下の設定を変更
           provenance: false
-          # 以下の設定を追加
+          outputs: type=registry
           no-cache: false
           pull: true
           allow: security.insecure
