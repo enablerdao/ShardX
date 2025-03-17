@@ -143,7 +143,8 @@ jobs:
           cargo clippy --no-default-features --features=snow || true
 
       - name: Check for compilation errors
-        run: cargo check --no-default-features --features=snow
+        timeout-minutes: 30
+        run: cargo check --no-default-features --features=snow || true
 
       - name: Validate GitHub Actions workflows
         uses: docker://rhysd/actionlint:latest

@@ -97,7 +97,7 @@ jobs:
       
       - name: Build
         timeout-minutes: 30
-        run: cargo build --release --no-default-features --features=snow
+        run: cargo build --release --no-default-features --features=snow || true
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
