@@ -11,9 +11,17 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
   workflow_dispatch:
 
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_NET_RETRY: 10
+  RUSTFLAGS: "-C codegen-units=1"
+  RUST_TOOLCHAIN: "1.75.0"
+
 jobs:
   pre-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,19 +40,20 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt, clippy
 
-      - name: Set LIBCLANG_PATH
+      - name: Set environment variables
         run: |
-          # 直接パスを指定する方法に変更
           echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
           echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-14/include\"" >> $GITHUB_ENV
-          echo "Using libclang at: /usr/lib/llvm-14/lib"
+          echo "CARGO_BUILD_JOBS=2" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: "rust-cache"
+          shared-key: "rust-${{ env.RUST_TOOLCHAIN }}"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Check for duplicate module files
         run: |
@@ -136,15 +145,25 @@ jobs:
       - name: Run clippy
         timeout-minutes: 30
         run: |
-          # 初回実行時はエラーを無視して依存関係をビルドする
+          # First run to build dependencies, ignore errors
           cargo clippy --no-default-features --features=snow || true
-          # 2回目の実行でエラーをチェック（警告はエラーとして扱わない）
-          # 一時的にエラーを無視する
+          # Second run to check for errors, temporarily ignore errors
           cargo clippy --no-default-features --features=snow || true
 
       - name: Check for compilation errors
         timeout-minutes: 30
-        run: cargo check --no-default-features --features=snow || true
+        run: |
+          # Retry compilation check up to 3 times
+          for i in {1..3}; do
+            cargo check --no-default-features --features=snow && break || {
+              if [ $i -lt 3 ]; then
+                echo "Compilation check attempt $i failed, retrying in 10 seconds..."
+                sleep 10
+              else
+                echo "Compilation check failed after 3 attempts, but continuing"
+              fi
+            }
+          done || true
 
       - name: Validate GitHub Actions workflows
         run: |
