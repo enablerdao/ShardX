@@ -41,6 +41,7 @@ jobs:
         run: |
           # 直接パスを指定する方法に変更
           echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-14/include\"" >> $GITHUB_ENV
           echo "Using libclang at: /usr/lib/llvm-14/lib"
       
       - name: Cache dependencies
