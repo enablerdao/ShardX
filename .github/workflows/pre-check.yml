@@ -15,7 +15,6 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   CARGO_NET_RETRY: 10
-  RUSTFLAGS: "-C codegen-units=1"
   RUST_TOOLCHAIN: "1.75.0"
 
 jobs:

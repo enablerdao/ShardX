@@ -16,7 +16,6 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   CARGO_NET_RETRY: 10
-  RUSTFLAGS: "-C codegen-units=1"
   RUST_TOOLCHAIN: "1.75.0"
 
 jobs:
@@ -38,6 +37,12 @@ jobs:
           # Create symbolic links if needed
           sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
           sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
+      
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt, clippy
           
       - name: Set environment variables
         run: |
@@ -45,23 +50,11 @@ jobs:
           echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-14/include\"" >> $GITHUB_ENV
           echo "CARGO_BUILD_JOBS=2" >> $GITHUB_ENV
       
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
-          components: rustfmt, clippy
-      
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: "rust-${{ env.RUST_TOOLCHAIN }}"
           save-if: ${{ github.ref == 'refs/heads/main' }}
-          cache-directories: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-            target/debug/deps
-            target/debug/build
       
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -110,28 +103,12 @@ jobs:
           echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
           echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-14/include\"" >> $GITHUB_ENV
           echo "CARGO_BUILD_JOBS=2" >> $GITHUB_ENV
-          # 高速化のための環境変数
-          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-      
-      - name: Install sccache
-        run: |
-          curl -L https://github.com/mozilla/sccache/releases/download/v0.7.7/sccache-v0.7.7-x86_64-unknown-linux-musl.tar.gz | tar xz
-          sudo mv sccache-v0.7.7-x86_64-unknown-linux-musl/sccache /usr/local/bin/sccache
-          sudo chmod +x /usr/local/bin/sccache
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: "rust-${{ env.RUST_TOOLCHAIN }}"
           save-if: ${{ github.ref == 'refs/heads/main' }}
-          cache-directories: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-            target/release/deps
-            target/release/build
-            ~/.cache/sccache
       
       - name: Build
         timeout-minutes: 40
@@ -144,7 +121,6 @@ jobs:
           
           # 並列ビルドを最適化
           RUSTFLAGS="-C codegen-units=16 -C opt-level=3 -C target-cpu=native" \
-          CARGO_INCREMENTAL=0 \
           cargo build --release --no-default-features --features=snow -j2 || true
       
       - name: Check binary existence
@@ -154,7 +130,7 @@ jobs:
             echo "Binary exists, proceeding with upload"
             echo "binary_exists=true" >> $GITHUB_OUTPUT
           else
-            echo "Binary does not exist, skipping upload"
+            echo "Binary does not exist, creating dummy file"
             echo "binary_exists=false" >> $GITHUB_OUTPUT
             # Create a dummy file for artifact upload to prevent workflow failure
             mkdir -p target/release
@@ -257,46 +233,3 @@ jobs:
           tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-  
-  deploy:
-    name: Deploy to staging
-    needs: docker
-    if: false # Disabled until we have proper credentials
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to staging environment
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USERNAME }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          script: |
-            cd /opt/shardx
-            docker-compose pull
-            docker-compose up -d
-            
-  release:
-    name: Create release
-    needs: docker
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: shardx-binary
-          path: ./
-        continue-on-error: true
-          
-      - name: Create release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            shardx
-            LICENSE
-            README.md
-          draft: false
-          prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
