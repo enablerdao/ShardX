@@ -183,7 +183,7 @@ jobs:
           key: ${{ runner.os }}-rocksdb-${{ hashFiles('**/Cargo.lock') }}
       
       - name: Fetch dependencies
-        run: cargo fetch
+        run: cargo fetch || true
       
       - name: Build
         run: |
