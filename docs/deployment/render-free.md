@@ -1,84 +1,67 @@
-# Renderでの無料デプロイガイド
+# Renderの無料プランでのデプロイ方法
 
-このガイドでは、ShardXをRenderの無料プランを使用してデプロイする方法を説明します。
-
-## 前提条件
-
-- GitHubアカウント
-- Renderアカウント（無料）
-
-## 手順
-
-### 1. Renderアカウントの作成
-
-1. [Render](https://render.com/)にアクセスし、「Sign Up」をクリックします
-2. GitHubアカウントでサインアップすることをお勧めします（連携が簡単になります）
-
-### 2. ワンクリックデプロイ
-
-最も簡単な方法は、以下のボタンをクリックすることです：
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/enablerdao/ShardX)
-
-### 3. 手動デプロイ（ワンクリックデプロイがうまくいかない場合）
-
-1. Renderダッシュボードで「New +」→「Web Service」をクリックします
-2. GitHubリポジトリを連携し、「enablerdao/ShardX」を選択します
-3. 以下の設定を入力します：
-   - **Name**: shardx-node
-   - **Environment**: Docker
-   - **Branch**: main
-   - **Plan**: Free
-
-4. 「Create Web Service」をクリックします
-
-5. 次に、「New +」→「Web Service」をクリックして、ウェブインターフェースをデプロイします
-6. 同じリポジトリを選択し、以下の設定を入力します：
-   - **Name**: shardx-web
-   - **Environment**: Node
-   - **Branch**: main
-   - **Build Command**: `cd web && npm install && npm run build`
-   - **Start Command**: `cd web && npm start`
-   - **Plan**: Free
-   - **Advanced** → **Environment Variables**:
-     - `PORT`: 52153
-     - `API_URL`: https://shardx-node.onrender.com
-
-7. 「Create Web Service」をクリックします
-
-### 4. デプロイの確認
-
-1. デプロイが完了するまで数分待ちます（Renderダッシュボードで進行状況を確認できます）
-2. デプロイが完了したら、以下のURLにアクセスできます：
-   - ウェブインターフェース: https://shardx-web.onrender.com
-   - API: https://shardx-node.onrender.com/api/v1/info
+Renderの無料プランでShardXをデプロイする方法を説明します。
 
 ## 無料プランの制限事項
 
 Renderの無料プランには以下の制限があります：
 
-- 毎月750時間の実行時間（1つのサービスを常時実行可能）
-- 512MB RAM
-- 共有CPU
-- 15分間のアイドル後にスリープ状態になる（次のリクエストで自動的に起動）
+1. **永続ディスクなし**: 無料プランではディスク機能が使用できません
+2. **リソース制限**: CPUとメモリが制限されています
+3. **アイドル時停止**: 15分間アクセスがないとサービスが停止します
+4. **月間稼働時間**: 750時間/月（単一サービスの場合は常時稼働可能）
 
-これらの制限は開発やテスト目的には十分ですが、本番環境では有料プランへのアップグレードを検討してください。
+## 対応策
 
-## トラブルシューティング
+ShardXは以下の対応を行っています：
 
-### デプロイに失敗する場合
+1. **一時ディレクトリの使用**: データを `/tmp/shardx-data` に保存
+2. **軽量設定**: シャード数を10に削減（デフォルトは256）
+3. **最小限のリソース使用**: メモリ使用量を最適化
 
-1. Renderダッシュボードでログを確認します
-2. 一般的な問題：
-   - メモリ不足: 無料プランでは512MBのRAMしか使用できません。設定で`INITIAL_SHARDS`を減らしてみてください。
-   - ビルドタイムアウト: 無料プランではビルド時間が制限されています。Dockerfileを最適化してみてください。
+## デプロイ手順
 
-### サービスがスリープから復帰しない場合
+1. 以下のボタンをクリックしてRenderにデプロイします：
 
-1. Renderダッシュボードでサービスを手動で再起動します
-2. 無料プランでは15分間のアイドル後にスリープ状態になります。定期的なpingを設定して、サービスをアクティブに保つことができます。
+   [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/enablerdao/ShardX)
+   
+   > **注意**: Renderの仕様変更により、デプロイボタンがうまく機能しない場合は、以下の手順で手動デプロイしてください。
 
-## 次のステップ
+### 手動デプロイ手順
 
-- [API リファレンス](../api/README.md)を参照して、ShardX APIの使用方法を学びます
-- [開発者ガイド](../developers/README.md)を参照して、ShardXの開発方法を学びます
+1. [Render](https://render.com)にアカウント登録
+2. ダッシュボードから「New +」→「Blueprint」を選択
+3. GitHubリポジトリ `https://github.com/enablerdao/ShardX` を接続
+4. 「Apply」をクリック
+
+デプロイが完了したら、以下のURLでアクセスできます：
+   - Webインターフェース: `https://shardx-web.onrender.com`
+   - API: `https://shardx-node.onrender.com`
+
+## 注意事項
+
+無料プランでは以下の点に注意してください：
+
+1. **データの永続性なし**: サービスが再起動するとデータは失われます
+2. **テスト用途のみ**: 本番環境での使用は推奨されません
+3. **パフォーマンス制限**: 高負荷のテストには適していません
+
+## 有料プランへのアップグレード
+
+より高いパフォーマンスと永続ディスクが必要な場合は、有料プランにアップグレードしてください。有料プランでは以下の設定が可能です：
+
+```yaml
+services:
+  - type: web
+    name: shardx-node
+    plan: starter # 無料プランから有料プランに変更
+    disk:
+      name: shardx-data
+      mountPath: /app/data
+      sizeGB: 10 # ディスク容量を設定
+    envVars:
+      - key: DATA_DIR
+        value: /app/data # 永続ディスクを使用
+      - key: INITIAL_SHARDS
+        value: "256" # シャード数を増やす
+```
