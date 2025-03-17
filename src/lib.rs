@@ -17,6 +17,7 @@ pub mod parallel;
 pub mod rpc;
 pub mod shard;
 pub mod sharding;
+pub mod smart_contract;
 pub mod storage;
 pub mod transaction;
 pub mod transaction_analysis;
