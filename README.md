@@ -14,6 +14,7 @@
 
 ```bash
 # 方法1: Dockerを使用（すべてのOS）- 最も簡単
+# AMD64(Intel/AMD)とARM64(Apple Silicon M1/M2)の両方に対応
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
 
 # 方法2: Docker Composeを使用（複数ノード構成）
@@ -34,17 +35,23 @@ cargo build --release
 #### Dockerイメージのビルド方法（開発者向け）
 
 ```bash
-# Dockerイメージをビルド
+# Dockerイメージをビルド（マルチアーキテクチャ対応）
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
-docker build -t yukih47/shardx:latest .
+
+# BuildKitを有効化
+export DOCKER_BUILDKIT=1
+
+# マルチアーキテクチャビルド（AMD64とARM64）
+docker buildx create --name multiarch --use
+docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:latest .
 
 # バージョンタグを指定してビルド
-docker build -t yukih47/shardx:v1.0.0 .
+docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:v1.0.0 .
 
 # ビルド後にDockerHubにプッシュ（ログインが必要）
 docker login
-docker push yukih47/shardx:latest
+docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:latest --push .
 ```
 
 ### 動作確認（インストール後）
