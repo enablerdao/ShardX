@@ -11,6 +11,7 @@ pub mod crypto;
 pub mod dex;
 pub mod error;
 pub mod memory;
+pub mod metrics;
 pub mod multisig;
 pub mod node;
 pub mod parallel;
