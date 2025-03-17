@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::error::Error;
 use crate::smart_contract::event::ContractEvent;
@@ -96,18 +96,32 @@ pub enum VMError {
 impl From<VMError> for Error {
     fn from(error: VMError) -> Self {
         match error {
-            VMError::InvalidOpcode(opcode) => Error::InvalidInput(format!("Invalid opcode: {}", opcode)),
+            VMError::InvalidOpcode(opcode) => {
+                Error::InvalidInput(format!("Invalid opcode: {}", opcode))
+            }
             VMError::StackOverflow => Error::InvalidState("Stack overflow".to_string()),
             VMError::StackUnderflow => Error::InvalidState("Stack underflow".to_string()),
             VMError::MemoryOverflow => Error::ResourceExhausted("Memory overflow".to_string()),
             VMError::StorageOverflow => Error::ResourceExhausted("Storage overflow".to_string()),
             VMError::OutOfGas => Error::ResourceExhausted("Out of gas".to_string()),
-            VMError::CallDepthExceeded => Error::ResourceExhausted("Call depth exceeded".to_string()),
-            VMError::StateChangeInStaticCall => Error::InvalidOperation("State change in static call".to_string()),
-            VMError::InvalidJumpDestination => Error::InvalidInput("Invalid jump destination".to_string()),
-            VMError::InvalidAddress(address) => Error::InvalidInput(format!("Invalid address: {}", address)),
-            VMError::InvalidMethod(method) => Error::InvalidInput(format!("Invalid method: {}", method)),
-            VMError::InvalidArguments(args) => Error::InvalidInput(format!("Invalid arguments: {}", args)),
+            VMError::CallDepthExceeded => {
+                Error::ResourceExhausted("Call depth exceeded".to_string())
+            }
+            VMError::StateChangeInStaticCall => {
+                Error::InvalidOperation("State change in static call".to_string())
+            }
+            VMError::InvalidJumpDestination => {
+                Error::InvalidInput("Invalid jump destination".to_string())
+            }
+            VMError::InvalidAddress(address) => {
+                Error::InvalidInput(format!("Invalid address: {}", address))
+            }
+            VMError::InvalidMethod(method) => {
+                Error::InvalidInput(format!("Invalid method: {}", method))
+            }
+            VMError::InvalidArguments(args) => {
+                Error::InvalidInput(format!("Invalid arguments: {}", args))
+            }
             VMError::ExecutionTimeout => Error::Timeout("Execution timeout".to_string()),
             VMError::InternalError(msg) => Error::Internal(msg),
             VMError::Custom(msg) => Error::Custom(msg),
@@ -134,13 +148,27 @@ impl From<Error> for VMError {
 pub trait VirtualMachine {
     /// コントラクトをデプロイ
     fn deploy(&self, code: Vec<u8>, context: ExecutionContext) -> Result<ExecutionResult, VMError>;
-    
+
     /// コントラクトを呼び出し
-    fn call(&self, address: String, method: String, context: ExecutionContext) -> Result<ExecutionResult, VMError>;
-    
+    fn call(
+        &self,
+        address: String,
+        method: String,
+        context: ExecutionContext,
+    ) -> Result<ExecutionResult, VMError>;
+
     /// コントラクトを更新
-    fn update(&self, address: String, code: Vec<u8>, context: ExecutionContext) -> Result<ExecutionResult, VMError>;
-    
+    fn update(
+        &self,
+        address: String,
+        code: Vec<u8>,
+        context: ExecutionContext,
+    ) -> Result<ExecutionResult, VMError>;
+
     /// コントラクトを削除
-    fn delete(&self, address: String, context: ExecutionContext) -> Result<ExecutionResult, VMError>;
+    fn delete(
+        &self,
+        address: String,
+        context: ExecutionContext,
+    ) -> Result<ExecutionResult, VMError>;
 }

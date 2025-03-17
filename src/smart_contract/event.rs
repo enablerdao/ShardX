@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// コントラクトイベント
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -100,25 +100,26 @@ impl EventManager {
             max_logs,
         }
     }
-    
+
     /// イベントログを追加
     pub fn add_log(&mut self, log: EventLog) {
         self.logs.push(log);
-        
+
         // 最大ログ数を超えた場合、古いログを削除
         if self.logs.len() > self.max_logs {
             self.logs.remove(0);
         }
-        
+
         // 購読者に通知
         self.notify_subscribers();
     }
-    
+
     /// イベントログを取得
     pub fn get_logs(&self, filter: Option<&EventFilter>) -> Vec<&EventLog> {
         if let Some(filter) = filter {
             // フィルタを適用
-            self.logs.iter()
+            self.logs
+                .iter()
                 .filter(|log| {
                     // アドレスフィルタ
                     if let Some(addresses) = &filter.addresses {
@@ -126,7 +127,7 @@ impl EventManager {
                             return false;
                         }
                     }
-                    
+
                     // トピックフィルタ
                     if let Some(topics) = &filter.topics {
                         for (i, topic) in topics.iter().enumerate() {
@@ -137,20 +138,20 @@ impl EventManager {
                             }
                         }
                     }
-                    
+
                     // ブロック高さフィルタ
                     if let Some(from_block) = filter.from_block {
                         if log.block_height < from_block {
                             return false;
                         }
                     }
-                    
+
                     if let Some(to_block) = filter.to_block {
                         if log.block_height > to_block {
                             return false;
                         }
                     }
-                    
+
                     // ブロックハッシュフィルタ
                     if let Some(block_hash) = &filter.block_hash {
                         // 実際の実装では、ブロックハッシュを比較する
@@ -166,7 +167,7 @@ impl EventManager {
             self.logs.iter().collect()
         }
     }
-    
+
     /// 購読を追加
     pub fn subscribe(&mut self, filter: EventFilter) -> String {
         let id = format!("subscription_{}", self.subscriptions.len());
@@ -181,22 +182,22 @@ impl EventManager {
             enabled: true,
             metadata: None,
         };
-        
+
         self.subscriptions.insert(id.clone(), subscription);
-        
+
         id
     }
-    
+
     /// 購読を解除
     pub fn unsubscribe(&mut self, id: &str) -> bool {
         self.subscriptions.remove(id).is_some()
     }
-    
+
     /// 購読を取得
     pub fn get_subscription(&self, id: &str) -> Option<&EventSubscription> {
         self.subscriptions.get(id)
     }
-    
+
     /// 購読を更新
     pub fn update_subscription(&mut self, id: &str, filter: EventFilter) -> bool {
         if let Some(subscription) = self.subscriptions.get_mut(id) {
@@ -207,7 +208,7 @@ impl EventManager {
             false
         }
     }
-    
+
     /// 購読を有効化
     pub fn enable_subscription(&mut self, id: &str) -> bool {
         if let Some(subscription) = self.subscriptions.get_mut(id) {
@@ -218,7 +219,7 @@ impl EventManager {
             false
         }
     }
-    
+
     /// 購読を無効化
     pub fn disable_subscription(&mut self, id: &str) -> bool {
         if let Some(subscription) = self.subscriptions.get_mut(id) {
@@ -229,16 +230,16 @@ impl EventManager {
             false
         }
     }
-    
+
     /// 購読者に通知
     fn notify_subscribers(&mut self) {
         let now = Utc::now();
-        
+
         for (id, subscription) in self.subscriptions.iter_mut() {
             if !subscription.enabled {
                 continue;
             }
-            
+
             // 最後の通知以降のログを取得
             let last_block = subscription.last_notification_block.unwrap_or(0);
             let logs = self.get_logs(Some(&EventFilter {
@@ -248,11 +249,11 @@ impl EventManager {
                 to_block: None,
                 block_hash: None,
             }));
-            
+
             if !logs.is_empty() {
                 // 通知を送信（実際の実装では、通知を送信する処理を実装する）
                 debug!("Notifying subscription {} with {} logs", id, logs.len());
-                
+
                 // 最後の通知情報を更新
                 subscription.last_notification_at = Some(now);
                 subscription.last_notification_block = logs.last().map(|log| log.block_height);
@@ -261,12 +262,12 @@ impl EventManager {
             }
         }
     }
-    
+
     /// イベントログをクリア
     pub fn clear_logs(&mut self) {
         self.logs.clear();
     }
-    
+
     /// 購読をクリア
     pub fn clear_subscriptions(&mut self) {
         self.subscriptions.clear();

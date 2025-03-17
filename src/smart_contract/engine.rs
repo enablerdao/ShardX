@@ -1,17 +1,17 @@
+use chrono::{DateTime, Utc};
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
-use log::{debug, error, info, warn};
 
 use crate::error::Error;
-use crate::transaction::{Transaction, TransactionStatus};
 use crate::shard::ShardId;
-use crate::smart_contract::vm::{VirtualMachine, ExecutionContext, ExecutionResult, VMError};
-use crate::smart_contract::storage::{ContractStorage, StorageKey, StorageValue, StorageError};
-use crate::smart_contract::validator::{ContractValidator, ValidationResult, ValidationError};
-use crate::smart_contract::gas::{GasEstimator, GasSchedule, GasUsage, GasPrice};
 use crate::smart_contract::event::{ContractEvent, EventLog};
+use crate::smart_contract::gas::{GasEstimator, GasPrice, GasSchedule, GasUsage};
+use crate::smart_contract::storage::{ContractStorage, StorageError, StorageKey, StorageValue};
+use crate::smart_contract::validator::{ContractValidator, ValidationError, ValidationResult};
+use crate::smart_contract::vm::{ExecutionContext, ExecutionResult, VMError, VirtualMachine};
+use crate::transaction::{Transaction, TransactionStatus};
 
 /// コントラクトエンジン設定
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,11 +161,11 @@ impl Default for ContractEngineConfig {
             default_gas_limit: 1_000_000,
             max_contract_size: 24_576, // 24KB
             max_call_depth: 1024,
-            max_memory_usage: 33_554_432, // 32MB
+            max_memory_usage: 33_554_432,  // 32MB
             max_storage_usage: 16_777_216, // 16MB
             max_events: 1024,
-            max_event_size: 4096, // 4KB
-            max_log_size: 4096, // 4KB
+            max_event_size: 4096,        // 4KB
+            max_log_size: 4096,          // 4KB
             max_execution_time_ms: 5000, // 5秒
             max_contracts: 1024,
             max_contract_methods: 256,
@@ -173,7 +173,7 @@ impl Default for ContractEngineConfig {
             max_contract_fields: 256,
             max_contract_args: 32,
             max_return_value_size: 1024, // 1KB
-            max_arg_size: 1024, // 1KB
+            max_arg_size: 1024,          // 1KB
             max_contract_name_length: 64,
             max_method_name_length: 64,
             max_field_name_length: 64,
@@ -186,12 +186,12 @@ impl Default for ContractEngineConfig {
             max_contract_description_length: 256,
             max_contract_license_length: 64,
             max_contract_url_length: 128,
-            max_contract_metadata_size: 4096, // 4KB
-            max_contract_source_size: 1_048_576, // 1MB
-            max_contract_abi_size: 65_536, // 64KB
-            max_contract_bytecode_size: 24_576, // 24KB
+            max_contract_metadata_size: 4096,              // 4KB
+            max_contract_source_size: 1_048_576,           // 1MB
+            max_contract_abi_size: 65_536,                 // 64KB
+            max_contract_bytecode_size: 24_576,            // 24KB
             max_contract_deployment_bytecode_size: 24_576, // 24KB
-            max_contract_runtime_bytecode_size: 24_576, // 24KB
+            max_contract_runtime_bytecode_size: 24_576,    // 24KB
             max_contract_storage_key_size: 64,
             max_contract_storage_value_size: 1024, // 1KB
             max_contract_storage_entries: 1024,
@@ -216,13 +216,13 @@ impl Default for ContractEngineConfig {
             max_contract_log_bloom_filter_size_dwords: 64, // 64ダブルワード
             max_contract_log_bloom_filter_size_qwords: 32, // 32クワッドワード
             max_contract_log_bloom_filter_size_owords: 16, // 16オクタワード
-            max_contract_log_bloom_filter_size_hwords: 8, // 8ヘクサワード
-            max_contract_log_bloom_filter_size_twords: 4, // 4テトラワード
-            max_contract_log_bloom_filter_size_pwords: 2, // 2ペンタワード
-            max_contract_log_bloom_filter_size_xwords: 1, // 1ヘキサワード
-            max_contract_log_bloom_filter_size_swords: 1, // 1セプタワード
+            max_contract_log_bloom_filter_size_hwords: 8,  // 8ヘクサワード
+            max_contract_log_bloom_filter_size_twords: 4,  // 4テトラワード
+            max_contract_log_bloom_filter_size_pwords: 2,  // 2ペンタワード
+            max_contract_log_bloom_filter_size_xwords: 1,  // 1ヘキサワード
+            max_contract_log_bloom_filter_size_swords: 1,  // 1セプタワード
             max_contract_log_bloom_filter_size_owords2: 1, // 1オクタワード
-            max_contract_log_bloom_filter_size_nwords: 1, // 1ノナワード
+            max_contract_log_bloom_filter_size_nwords: 1,  // 1ノナワード
             max_contract_log_bloom_filter_size_dwords2: 1, // 1デカワード
             metadata: None,
         }
@@ -419,9 +419,14 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
             event_logs: Vec::new(),
         }
     }
-    
+
     /// コントラクトをデプロイ
-    pub fn deploy_contract(&mut self, code: Vec<u8>, args: Vec<u8>, gas_limit: Option<u64>) -> Result<String, Error> {
+    pub fn deploy_contract(
+        &mut self,
+        code: Vec<u8>,
+        args: Vec<u8>,
+        gas_limit: Option<u64>,
+    ) -> Result<String, Error> {
         // コントラクトサイズを検証
         if code.len() > self.config.max_contract_size {
             return Err(Error::InvalidInput(format!(
@@ -430,26 +435,27 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 self.config.max_contract_size
             )));
         }
-        
+
         // コントラクトを検証
         let validation_result = self.validator.validate_contract(&code)?;
         if !validation_result.is_valid {
             return Err(Error::InvalidInput(format!(
                 "Contract validation failed: {}",
-                validation_result.error.unwrap_or_else(|| "Unknown error".to_string())
+                validation_result
+                    .error
+                    .unwrap_or_else(|| "Unknown error".to_string())
             )));
         }
-        
+
         // ガス制限を設定
         let gas_limit = gas_limit.unwrap_or(self.config.default_gas_limit);
         if gas_limit > self.config.max_gas_limit {
             return Err(Error::InvalidInput(format!(
                 "Gas limit exceeds maximum: {} > {}",
-                gas_limit,
-                self.config.max_gas_limit
+                gas_limit, self.config.max_gas_limit
             )));
         }
-        
+
         // 実行コンテキストを作成
         let context = ExecutionContext {
             gas_limit,
@@ -462,18 +468,18 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
             is_static: false,
             depth: 0,
         };
-        
+
         // コントラクトをデプロイ
         let start_time = std::time::Instant::now();
         let result = self.vm.deploy(code, context)?;
         let execution_time_ms = start_time.elapsed().as_millis() as u64;
-        
+
         // 統計を更新
         self.update_stats_for_execution(&result, execution_time_ms);
-        
+
         // イベントログを保存
-        self.event_logs.extend(result.events.into_iter().map(|event| {
-            EventLog {
+        self.event_logs
+            .extend(result.events.into_iter().map(|event| EventLog {
                 address: result.address.clone(),
                 topics: event.topics,
                 data: event.data,
@@ -483,30 +489,34 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 transaction_index: 0,
                 log_index: 0,
                 removed: false,
-            }
-        }));
-        
+            }));
+
         // コントラクトアドレスを返す
         Ok(result.address)
     }
-    
+
     /// コントラクトを呼び出し
-    pub fn call_contract(&mut self, address: String, method: String, args: Vec<u8>, gas_limit: Option<u64>) -> Result<Vec<u8>, Error> {
+    pub fn call_contract(
+        &mut self,
+        address: String,
+        method: String,
+        args: Vec<u8>,
+        gas_limit: Option<u64>,
+    ) -> Result<Vec<u8>, Error> {
         // コントラクトの存在を確認
         if !self.storage.has_contract(&address)? {
             return Err(Error::NotFound(format!("Contract not found: {}", address)));
         }
-        
+
         // ガス制限を設定
         let gas_limit = gas_limit.unwrap_or(self.config.default_gas_limit);
         if gas_limit > self.config.max_gas_limit {
             return Err(Error::InvalidInput(format!(
                 "Gas limit exceeds maximum: {} > {}",
-                gas_limit,
-                self.config.max_gas_limit
+                gas_limit, self.config.max_gas_limit
             )));
         }
-        
+
         // 実行コンテキストを作成
         let context = ExecutionContext {
             gas_limit,
@@ -519,30 +529,30 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
             is_static: false,
             depth: 0,
         };
-        
+
         // コントラクトを呼び出し
         let start_time = std::time::Instant::now();
         let result = self.vm.call(address.clone(), method.clone(), context)?;
         let execution_time_ms = start_time.elapsed().as_millis() as u64;
-        
+
         // 統計を更新
         self.update_stats_for_execution(&result, execution_time_ms);
-        
+
         // メソッド呼び出し統計を更新
         let method_key = format!("{}:{}", address, method);
         let mut stats = self.stats.lock().unwrap();
         stats.total_method_calls += 1;
         let count = stats.calls_by_method.entry(method_key.clone()).or_insert(0);
         *count += 1;
-        
+
         if *count > stats.most_common_method_count {
             stats.most_common_method = Some(method_key);
             stats.most_common_method_count = *count;
         }
-        
+
         // イベントログを保存
-        self.event_logs.extend(result.events.into_iter().map(|event| {
-            EventLog {
+        self.event_logs
+            .extend(result.events.into_iter().map(|event| EventLog {
                 address: address.clone(),
                 topics: event.topics,
                 data: event.data,
@@ -552,20 +562,24 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 transaction_index: 0,
                 log_index: 0,
                 removed: false,
-            }
-        }));
-        
+            }));
+
         // 結果を返す
         Ok(result.return_data)
     }
-    
+
     /// コントラクトを更新
-    pub fn update_contract(&mut self, address: String, code: Vec<u8>, gas_limit: Option<u64>) -> Result<(), Error> {
+    pub fn update_contract(
+        &mut self,
+        address: String,
+        code: Vec<u8>,
+        gas_limit: Option<u64>,
+    ) -> Result<(), Error> {
         // コントラクトの存在を確認
         if !self.storage.has_contract(&address)? {
             return Err(Error::NotFound(format!("Contract not found: {}", address)));
         }
-        
+
         // コントラクトサイズを検証
         if code.len() > self.config.max_contract_size {
             return Err(Error::InvalidInput(format!(
@@ -574,26 +588,27 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 self.config.max_contract_size
             )));
         }
-        
+
         // コントラクトを検証
         let validation_result = self.validator.validate_contract(&code)?;
         if !validation_result.is_valid {
             return Err(Error::InvalidInput(format!(
                 "Contract validation failed: {}",
-                validation_result.error.unwrap_or_else(|| "Unknown error".to_string())
+                validation_result
+                    .error
+                    .unwrap_or_else(|| "Unknown error".to_string())
             )));
         }
-        
+
         // ガス制限を設定
         let gas_limit = gas_limit.unwrap_or(self.config.default_gas_limit);
         if gas_limit > self.config.max_gas_limit {
             return Err(Error::InvalidInput(format!(
                 "Gas limit exceeds maximum: {} > {}",
-                gas_limit,
-                self.config.max_gas_limit
+                gas_limit, self.config.max_gas_limit
             )));
         }
-        
+
         // 実行コンテキストを作成
         let context = ExecutionContext {
             gas_limit,
@@ -606,22 +621,22 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
             is_static: false,
             depth: 0,
         };
-        
+
         // コントラクトを更新
         let start_time = std::time::Instant::now();
         let result = self.vm.update(address, code, context)?;
         let execution_time_ms = start_time.elapsed().as_millis() as u64;
-        
+
         // 統計を更新
         self.update_stats_for_execution(&result, execution_time_ms);
-        
+
         // 更新統計を更新
         let mut stats = self.stats.lock().unwrap();
         stats.total_contract_updates += 1;
-        
+
         // イベントログを保存
-        self.event_logs.extend(result.events.into_iter().map(|event| {
-            EventLog {
+        self.event_logs
+            .extend(result.events.into_iter().map(|event| EventLog {
                 address: result.address.clone(),
                 topics: event.topics,
                 data: event.data,
@@ -631,29 +646,31 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 transaction_index: 0,
                 log_index: 0,
                 removed: false,
-            }
-        }));
-        
+            }));
+
         Ok(())
     }
-    
+
     /// コントラクトを削除
-    pub fn delete_contract(&mut self, address: String, gas_limit: Option<u64>) -> Result<(), Error> {
+    pub fn delete_contract(
+        &mut self,
+        address: String,
+        gas_limit: Option<u64>,
+    ) -> Result<(), Error> {
         // コントラクトの存在を確認
         if !self.storage.has_contract(&address)? {
             return Err(Error::NotFound(format!("Contract not found: {}", address)));
         }
-        
+
         // ガス制限を設定
         let gas_limit = gas_limit.unwrap_or(self.config.default_gas_limit);
         if gas_limit > self.config.max_gas_limit {
             return Err(Error::InvalidInput(format!(
                 "Gas limit exceeds maximum: {} > {}",
-                gas_limit,
-                self.config.max_gas_limit
+                gas_limit, self.config.max_gas_limit
             )));
         }
-        
+
         // 実行コンテキストを作成
         let context = ExecutionContext {
             gas_limit,
@@ -666,22 +683,22 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
             is_static: false,
             depth: 0,
         };
-        
+
         // コントラクトを削除
         let start_time = std::time::Instant::now();
         let result = self.vm.delete(address.clone(), context)?;
         let execution_time_ms = start_time.elapsed().as_millis() as u64;
-        
+
         // 統計を更新
         self.update_stats_for_execution(&result, execution_time_ms);
-        
+
         // 削除統計を更新
         let mut stats = self.stats.lock().unwrap();
         stats.total_contract_deletions += 1;
-        
+
         // イベントログを保存
-        self.event_logs.extend(result.events.into_iter().map(|event| {
-            EventLog {
+        self.event_logs
+            .extend(result.events.into_iter().map(|event| EventLog {
                 address,
                 topics: event.topics,
                 data: event.data,
@@ -691,14 +708,19 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 transaction_index: 0,
                 log_index: 0,
                 removed: false,
-            }
-        }));
-        
+            }));
+
         Ok(())
     }
-    
+
     /// ガスを見積もり
-    pub fn estimate_gas(&self, address: Option<String>, code: Option<Vec<u8>>, method: Option<String>, args: Vec<u8>) -> Result<u64, Error> {
+    pub fn estimate_gas(
+        &self,
+        address: Option<String>,
+        code: Option<Vec<u8>>,
+        method: Option<String>,
+        args: Vec<u8>,
+    ) -> Result<u64, Error> {
         if let Some(address) = address {
             // コントラクト呼び出しのガスを見積もり
             if let Some(method) = method {
@@ -706,7 +728,7 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 if !self.storage.has_contract(&address)? {
                     return Err(Error::NotFound(format!("Contract not found: {}", address)));
                 }
-                
+
                 // 実行コンテキストを作成
                 let context = ExecutionContext {
                     gas_limit: self.config.max_gas_limit,
@@ -719,10 +741,12 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                     is_static: true,
                     depth: 0,
                 };
-                
+
                 // ガスを見積もり
-                let gas = self.gas_estimator.estimate_call_gas(&address, &method, &context)?;
-                
+                let gas = self
+                    .gas_estimator
+                    .estimate_call_gas(&address, &method, &context)?;
+
                 Ok(gas)
             } else if let Some(code) = code {
                 // コントラクト更新のガスを見積もり
@@ -730,7 +754,7 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 if !self.storage.has_contract(&address)? {
                     return Err(Error::NotFound(format!("Contract not found: {}", address)));
                 }
-                
+
                 // 実行コンテキストを作成
                 let context = ExecutionContext {
                     gas_limit: self.config.max_gas_limit,
@@ -743,10 +767,12 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                     is_static: true,
                     depth: 0,
                 };
-                
+
                 // ガスを見積もり
-                let gas = self.gas_estimator.estimate_update_gas(&address, &code, &context)?;
-                
+                let gas = self
+                    .gas_estimator
+                    .estimate_update_gas(&address, &code, &context)?;
+
                 Ok(gas)
             } else {
                 // コントラクト削除のガスを見積もり
@@ -754,7 +780,7 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 if !self.storage.has_contract(&address)? {
                     return Err(Error::NotFound(format!("Contract not found: {}", address)));
                 }
-                
+
                 // 実行コンテキストを作成
                 let context = ExecutionContext {
                     gas_limit: self.config.max_gas_limit,
@@ -767,10 +793,10 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                     is_static: true,
                     depth: 0,
                 };
-                
+
                 // ガスを見積もり
                 let gas = self.gas_estimator.estimate_delete_gas(&address, &context)?;
-                
+
                 Ok(gas)
             }
         } else if let Some(code) = code {
@@ -787,21 +813,24 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                 is_static: true,
                 depth: 0,
             };
-            
+
             // ガスを見積もり
             let gas = self.gas_estimator.estimate_deploy_gas(&code, &context)?;
-            
+
             Ok(gas)
         } else {
-            Err(Error::InvalidInput("Either address or code must be provided".to_string()))
+            Err(Error::InvalidInput(
+                "Either address or code must be provided".to_string(),
+            ))
         }
     }
-    
+
     /// イベントログを取得
     pub fn get_event_logs(&self, filter: Option<&EventFilter>) -> Vec<EventLog> {
         if let Some(filter) = filter {
             // フィルタを適用
-            self.event_logs.iter()
+            self.event_logs
+                .iter()
                 .filter(|log| {
                     // アドレスフィルタ
                     if let Some(addresses) = &filter.addresses {
@@ -809,7 +838,7 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                             return false;
                         }
                     }
-                    
+
                     // トピックフィルタ
                     if let Some(topics) = &filter.topics {
                         for (i, topic) in topics.iter().enumerate() {
@@ -820,20 +849,20 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
                             }
                         }
                     }
-                    
+
                     // ブロック高さフィルタ
                     if let Some(from_block) = filter.from_block {
                         if log.block_height < from_block {
                             return false;
                         }
                     }
-                    
+
                     if let Some(to_block) = filter.to_block {
                         if log.block_height > to_block {
                             return false;
                         }
                     }
-                    
+
                     true
                 })
                 .cloned()
@@ -843,61 +872,61 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
             self.event_logs.clone()
         }
     }
-    
+
     /// 統計を取得
     pub fn get_stats(&self) -> ContractEngineStats {
         self.stats.lock().unwrap().clone()
     }
-    
+
     /// 設定を取得
     pub fn get_config(&self) -> &ContractEngineConfig {
         &self.config
     }
-    
+
     /// 設定を更新
     pub fn update_config(&mut self, config: ContractEngineConfig) {
         self.config = config;
     }
-    
+
     /// 統計をリセット
     pub fn reset_stats(&mut self) {
         let mut stats = self.stats.lock().unwrap();
         *stats = ContractEngineStats::default();
     }
-    
+
     /// イベントログをクリア
     pub fn clear_event_logs(&mut self) {
         self.event_logs.clear();
     }
-    
+
     /// 実行統計を更新
     fn update_stats_for_execution(&self, result: &ExecutionResult, execution_time_ms: u64) {
         let mut stats = self.stats.lock().unwrap();
-        
+
         // 基本統計を更新
         stats.total_executions += 1;
         if result.success {
             stats.successful_executions += 1;
         } else {
             stats.failed_executions += 1;
-            
+
             // エラー統計を更新
             if let Some(error) = &result.error {
                 stats.total_errors += 1;
                 let error_type = format!("{:?}", error);
                 let count = stats.errors_by_type.entry(error_type.clone()).or_insert(0);
                 *count += 1;
-                
+
                 if *count > stats.most_common_error_count {
                     stats.most_common_error = Some(error_type);
                     stats.most_common_error_count = *count;
                 }
-                
+
                 stats.last_error_time = Some(Utc::now());
                 stats.last_error_message = Some(error.to_string());
             }
         }
-        
+
         // ガス使用量を更新
         stats.total_gas_used += result.gas_used;
         stats.average_gas_used = stats.total_gas_used as f64 / stats.total_executions as f64;
@@ -905,15 +934,16 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
         if stats.min_gas_used == 0 || result.gas_used < stats.min_gas_used {
             stats.min_gas_used = result.gas_used;
         }
-        
+
         // 実行時間を更新
         stats.total_execution_time_ms += execution_time_ms;
-        stats.average_execution_time_ms = stats.total_execution_time_ms as f64 / stats.total_executions as f64;
+        stats.average_execution_time_ms =
+            stats.total_execution_time_ms as f64 / stats.total_executions as f64;
         stats.max_execution_time_ms = stats.max_execution_time_ms.max(execution_time_ms);
         if stats.min_execution_time_ms == 0 || execution_time_ms < stats.min_execution_time_ms {
             stats.min_execution_time_ms = execution_time_ms;
         }
-        
+
         // メモリ使用量を更新
         stats.total_memory_used += result.memory_used;
         stats.average_memory_used = stats.total_memory_used as f64 / stats.total_executions as f64;
@@ -921,15 +951,16 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
         if stats.min_memory_used == 0 || result.memory_used < stats.min_memory_used {
             stats.min_memory_used = result.memory_used;
         }
-        
+
         // ストレージ使用量を更新
         stats.total_storage_used += result.storage_used;
-        stats.average_storage_used = stats.total_storage_used as f64 / stats.total_executions as f64;
+        stats.average_storage_used =
+            stats.total_storage_used as f64 / stats.total_executions as f64;
         stats.max_storage_used = stats.max_storage_used.max(result.storage_used);
         if stats.min_storage_used == 0 || result.storage_used < stats.min_storage_used {
             stats.min_storage_used = result.storage_used;
         }
-        
+
         // イベント数を更新
         let event_count = result.events.len() as u64;
         stats.total_events += event_count;
@@ -938,7 +969,7 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
         if stats.min_events == 0 || event_count < stats.min_events {
             stats.min_events = event_count;
         }
-        
+
         // ログ数を更新
         let log_count = result.logs.len() as u64;
         stats.total_logs += log_count;
@@ -947,23 +978,23 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
         if stats.min_logs == 0 || log_count < stats.min_logs {
             stats.min_logs = log_count;
         }
-        
+
         // コントラクト統計を更新
         if result.address.is_empty() {
             stats.total_contract_deployments += 1;
         } else {
             stats.total_contract_calls += 1;
         }
-        
+
         // ストレージ操作統計を更新
         stats.total_storage_reads += result.storage_reads;
         stats.total_storage_writes += result.storage_writes;
         stats.total_storage_deletes += result.storage_deletes;
-        
+
         // イベントとログ統計を更新
         stats.total_contract_events += event_count;
         stats.total_contract_logs += log_count;
-        
+
         // 最後の実行時刻を更新
         stats.last_execution_time = Utc::now();
     }
@@ -972,13 +1003,19 @@ impl<V: VirtualMachine, S: ContractStorage> ContractEngine<V, S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::smart_contract::vm::{MockVirtualMachine, ExecutionResult, VMError};
-    use crate::smart_contract::storage::{MockContractStorage, StorageKey, StorageValue, StorageError};
-    
+    use crate::smart_contract::storage::{
+        MockContractStorage, StorageError, StorageKey, StorageValue,
+    };
+    use crate::smart_contract::vm::{ExecutionResult, MockVirtualMachine, VMError};
+
     struct MockVirtualMachine;
-    
+
     impl VirtualMachine for MockVirtualMachine {
-        fn deploy(&self, code: Vec<u8>, context: ExecutionContext) -> Result<ExecutionResult, VMError> {
+        fn deploy(
+            &self,
+            code: Vec<u8>,
+            context: ExecutionContext,
+        ) -> Result<ExecutionResult, VMError> {
             // モックの実装
             Ok(ExecutionResult {
                 success: true,
@@ -995,8 +1032,13 @@ mod tests {
                 error: None,
             })
         }
-        
-        fn call(&self, address: String, method: String, context: ExecutionContext) -> Result<ExecutionResult, VMError> {
+
+        fn call(
+            &self,
+            address: String,
+            method: String,
+            context: ExecutionContext,
+        ) -> Result<ExecutionResult, VMError> {
             // モックの実装
             Ok(ExecutionResult {
                 success: true,
@@ -1013,8 +1055,13 @@ mod tests {
                 error: None,
             })
         }
-        
-        fn update(&self, address: String, code: Vec<u8>, context: ExecutionContext) -> Result<ExecutionResult, VMError> {
+
+        fn update(
+            &self,
+            address: String,
+            code: Vec<u8>,
+            context: ExecutionContext,
+        ) -> Result<ExecutionResult, VMError> {
             // モックの実装
             Ok(ExecutionResult {
                 success: true,
@@ -1031,8 +1078,12 @@ mod tests {
                 error: None,
             })
         }
-        
-        fn delete(&self, address: String, context: ExecutionContext) -> Result<ExecutionResult, VMError> {
+
+        fn delete(
+            &self,
+            address: String,
+            context: ExecutionContext,
+        ) -> Result<ExecutionResult, VMError> {
             // モックの実装
             Ok(ExecutionResult {
                 success: true,
@@ -1050,112 +1101,132 @@ mod tests {
             })
         }
     }
-    
+
     struct MockContractStorage;
-    
+
     impl ContractStorage for MockContractStorage {
         fn get(&self, key: &StorageKey) -> Result<Option<StorageValue>, StorageError> {
             // モックの実装
             Ok(Some(vec![1, 2, 3]))
         }
-        
+
         fn set(&mut self, key: StorageKey, value: StorageValue) -> Result<(), StorageError> {
             // モックの実装
             Ok(())
         }
-        
+
         fn delete(&mut self, key: &StorageKey) -> Result<(), StorageError> {
             // モックの実装
             Ok(())
         }
-        
+
         fn has(&self, key: &StorageKey) -> Result<bool, StorageError> {
             // モックの実装
             Ok(true)
         }
-        
+
         fn has_contract(&self, address: &str) -> Result<bool, StorageError> {
             // モックの実装
             Ok(true)
         }
-        
+
         fn get_contract(&self, address: &str) -> Result<Option<Vec<u8>>, StorageError> {
             // モックの実装
             Ok(Some(vec![1, 2, 3]))
         }
-        
+
         fn set_contract(&mut self, address: &str, code: Vec<u8>) -> Result<(), StorageError> {
             // モックの実装
             Ok(())
         }
-        
+
         fn delete_contract(&mut self, address: &str) -> Result<(), StorageError> {
             // モックの実装
             Ok(())
         }
-        
-        fn get_contract_storage(&self, address: &str, key: &StorageKey) -> Result<Option<StorageValue>, StorageError> {
+
+        fn get_contract_storage(
+            &self,
+            address: &str,
+            key: &StorageKey,
+        ) -> Result<Option<StorageValue>, StorageError> {
             // モックの実装
             Ok(Some(vec![1, 2, 3]))
         }
-        
-        fn set_contract_storage(&mut self, address: &str, key: StorageKey, value: StorageValue) -> Result<(), StorageError> {
+
+        fn set_contract_storage(
+            &mut self,
+            address: &str,
+            key: StorageKey,
+            value: StorageValue,
+        ) -> Result<(), StorageError> {
             // モックの実装
             Ok(())
         }
-        
-        fn delete_contract_storage(&mut self, address: &str, key: &StorageKey) -> Result<(), StorageError> {
+
+        fn delete_contract_storage(
+            &mut self,
+            address: &str,
+            key: &StorageKey,
+        ) -> Result<(), StorageError> {
             // モックの実装
             Ok(())
         }
-        
-        fn has_contract_storage(&self, address: &str, key: &StorageKey) -> Result<bool, StorageError> {
+
+        fn has_contract_storage(
+            &self,
+            address: &str,
+            key: &StorageKey,
+        ) -> Result<bool, StorageError> {
             // モックの実装
             Ok(true)
         }
-        
-        fn get_contract_storage_keys(&self, address: &str) -> Result<Vec<StorageKey>, StorageError> {
+
+        fn get_contract_storage_keys(
+            &self,
+            address: &str,
+        ) -> Result<Vec<StorageKey>, StorageError> {
             // モックの実装
             Ok(Vec::new())
         }
-        
+
         fn clear_contract_storage(&mut self, address: &str) -> Result<(), StorageError> {
             // モックの実装
             Ok(())
         }
     }
-    
+
     #[test]
     fn test_contract_engine() {
         // コントラクトエンジンを作成
         let config = ContractEngineConfig::default();
         let vm = MockVirtualMachine;
         let storage = MockContractStorage;
-        
+
         let mut engine = ContractEngine::new(config, vm, storage);
-        
+
         // コントラクトをデプロイ
         let code = vec![1, 2, 3];
         let args = vec![4, 5, 6];
         let result = engine.deploy_contract(code, args, None);
         assert!(result.is_ok());
-        
+
         // コントラクトを呼び出し
         let address = result.unwrap();
         let method = "test_method".to_string();
         let args = vec![7, 8, 9];
         let result = engine.call_contract(address.clone(), method, args, None);
         assert!(result.is_ok());
-        
+
         // コントラクトを更新
         let code = vec![10, 11, 12];
         let result = engine.update_contract(address.clone(), code, None);
         assert!(result.is_ok());
-        
+
         // コントラクトを削除
         let result = engine.delete_contract(address, None);
         assert!(result.is_ok());
-        
+
         // 統計を確認
         let stats = engine.get_stats();
         assert_eq!(stats.total_executions, 4);

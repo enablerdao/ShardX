@@ -1,13 +1,13 @@
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::error::Error;
 use crate::shard::{ShardId, ShardInfo};
+use crate::smart_contract::storage::{ContractStorage, StorageError, StorageKey, StorageValue};
+use crate::smart_contract::vm::{ExecutionContext, ExecutionResult, VMError, VirtualMachine};
 use crate::transaction::{Transaction, TransactionStatus};
-use crate::smart_contract::vm::{VirtualMachine, ExecutionContext, ExecutionResult, VMError};
-use crate::smart_contract::storage::{ContractStorage, StorageKey, StorageValue, StorageError};
 
 /// クロスシャード呼び出し
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,12 +111,12 @@ impl<V: VirtualMachine, S: ContractStorage> CrossShardExecutor<V, S> {
             timeout_seconds,
         }
     }
-    
+
     /// シャード情報を追加
     pub fn add_shard_info(&mut self, shard_id: ShardId, info: ShardInfo) {
         self.shard_info.insert(shard_id, info);
     }
-    
+
     /// クロスシャード呼び出しを作成
     pub fn create_call(
         &mut self,
@@ -130,20 +130,26 @@ impl<V: VirtualMachine, S: ContractStorage> CrossShardExecutor<V, S> {
     ) -> Result<String, Error> {
         // 送信先シャードが存在するか確認
         if !self.shard_info.contains_key(&target_shard_id) {
-            return Err(Error::InvalidInput(format!("Target shard not found: {}", target_shard_id)));
+            return Err(Error::InvalidInput(format!(
+                "Target shard not found: {}",
+                target_shard_id
+            )));
         }
-        
+
         // 送信元コントラクトが存在するか確認
         if !self.storage.has_contract(&source_contract)? {
-            return Err(Error::NotFound(format!("Source contract not found: {}", source_contract)));
+            return Err(Error::NotFound(format!(
+                "Source contract not found: {}",
+                source_contract
+            )));
         }
-        
+
         // 呼び出しIDを生成
         let id = format!("cross_shard_call_{}", Utc::now().timestamp_nanos());
-        
+
         // ノンスを生成
         let nonce = self.pending_calls.len() as u64 + self.completed_calls.len() as u64;
-        
+
         // クロスシャード呼び出しを作成
         let call = CrossShardCall {
             id: id.clone(),
@@ -162,49 +168,63 @@ impl<V: VirtualMachine, S: ContractStorage> CrossShardExecutor<V, S> {
             result: None,
             metadata: None,
         };
-        
+
         // 保留中の呼び出しに追加
         self.pending_calls.insert(id.clone(), call);
-        
+
         Ok(id)
     }
-    
+
     /// クロスシャード呼び出しを送信
     pub fn send_call(&mut self, call_id: &str) -> Result<(), Error> {
         // 呼び出しを取得
-        let call = self.pending_calls.get_mut(call_id).ok_or_else(|| {
-            Error::NotFound(format!("Cross-shard call not found: {}", call_id))
-        })?;
-        
+        let call = self
+            .pending_calls
+            .get_mut(call_id)
+            .ok_or_else(|| Error::NotFound(format!("Cross-shard call not found: {}", call_id)))?;
+
         // ステータスをチェック
         if call.status != CrossShardCallStatus::Pending {
-            return Err(Error::InvalidState(format!("Call is not pending: {:?}", call.status)));
+            return Err(Error::InvalidState(format!(
+                "Call is not pending: {:?}",
+                call.status
+            )));
         }
-        
+
         // 送信先シャードが存在するか確認
         if !self.shard_info.contains_key(&call.target_shard_id) {
-            return Err(Error::InvalidInput(format!("Target shard not found: {}", call.target_shard_id)));
+            return Err(Error::InvalidInput(format!(
+                "Target shard not found: {}",
+                call.target_shard_id
+            )));
         }
-        
+
         // 実際の実装では、送信先シャードにメッセージを送信する
         // ここでは簡易的に送信済みとする
         call.status = CrossShardCallStatus::Sent;
-        
+
         Ok(())
     }
-    
+
     /// クロスシャード呼び出しを受信
     pub fn receive_call(&mut self, call: CrossShardCall) -> Result<(), Error> {
         // 送信先シャードが現在のシャードか確認
         if call.target_shard_id != self.current_shard_id {
-            return Err(Error::InvalidInput(format!("Call is not for this shard: {}", call.target_shard_id)));
+            return Err(Error::InvalidInput(format!(
+                "Call is not for this shard: {}",
+                call.target_shard_id
+            )));
         }
-        
+
         // 呼び出しIDが既に存在するか確認
-        if self.pending_calls.contains_key(&call.id) || self.completed_calls.contains_key(&call.id) {
-            return Err(Error::AlreadyExists(format!("Call already exists: {}", call.id)));
+        if self.pending_calls.contains_key(&call.id) || self.completed_calls.contains_key(&call.id)
+        {
+            return Err(Error::AlreadyExists(format!(
+                "Call already exists: {}",
+                call.id
+            )));
         }
-        
+
         // 送信先コントラクトが存在するか確認
         if !self.storage.has_contract(&call.target_contract)? {
             // 呼び出しを失敗として完了
@@ -215,59 +235,77 @@ impl<V: VirtualMachine, S: ContractStorage> CrossShardExecutor<V, S> {
                 success: false,
                 return_data: Vec::new(),
                 gas_used: 0,
-                error_message: Some(format!("Target contract not found: {}", failed_call.target_contract)),
+                error_message: Some(format!(
+                    "Target contract not found: {}",
+                    failed_call.target_contract
+                )),
                 completed_at: Utc::now(),
             });
-            
-            self.completed_calls.insert(failed_call.id.clone(), failed_call);
-            
-            return Err(Error::NotFound(format!("Target contract not found: {}", call.target_contract)));
+
+            self.completed_calls
+                .insert(failed_call.id.clone(), failed_call);
+
+            return Err(Error::NotFound(format!(
+                "Target contract not found: {}",
+                call.target_contract
+            )));
         }
-        
+
         // 呼び出しを保留中に追加
         let mut received_call = call;
         received_call.status = CrossShardCallStatus::Received;
-        
-        self.pending_calls.insert(received_call.id.clone(), received_call);
-        
+
+        self.pending_calls
+            .insert(received_call.id.clone(), received_call);
+
         Ok(())
     }
-    
+
     /// クロスシャード呼び出しを実行
     pub fn execute_call(&mut self, call_id: &str) -> Result<CrossShardResult, Error> {
         // 呼び出しを取得
-        let call = self.pending_calls.get_mut(call_id).ok_or_else(|| {
-            Error::NotFound(format!("Cross-shard call not found: {}", call_id))
-        })?;
-        
+        let call = self
+            .pending_calls
+            .get_mut(call_id)
+            .ok_or_else(|| Error::NotFound(format!("Cross-shard call not found: {}", call_id)))?;
+
         // ステータスをチェック
-        if call.status != CrossShardCallStatus::Received && call.status != CrossShardCallStatus::Sent {
-            return Err(Error::InvalidState(format!("Call is not ready for execution: {:?}", call.status)));
+        if call.status != CrossShardCallStatus::Received
+            && call.status != CrossShardCallStatus::Sent
+        {
+            return Err(Error::InvalidState(format!(
+                "Call is not ready for execution: {:?}",
+                call.status
+            )));
         }
-        
+
         // 送信先コントラクトが存在するか確認
         if !self.storage.has_contract(&call.target_contract)? {
             // 呼び出しを失敗として完了
             call.status = CrossShardCallStatus::Failed;
             call.completed_at = Some(Utc::now());
-            
+
             let result = CrossShardResult {
                 success: false,
                 return_data: Vec::new(),
                 gas_used: 0,
-                error_message: Some(format!("Target contract not found: {}", call.target_contract)),
+                error_message: Some(format!(
+                    "Target contract not found: {}",
+                    call.target_contract
+                )),
                 completed_at: Utc::now(),
             };
-            
+
             call.result = Some(result.clone());
-            
+
             // 完了した呼び出しに移動
             let completed_call = self.pending_calls.remove(call_id).unwrap();
-            self.completed_calls.insert(call_id.to_string(), completed_call);
-            
+            self.completed_calls
+                .insert(call_id.to_string(), completed_call);
+
             return Ok(result);
         }
-        
+
         // 実行コンテキストを作成
         let context = ExecutionContext {
             gas_limit: call.gas_limit,
@@ -280,36 +318,41 @@ impl<V: VirtualMachine, S: ContractStorage> CrossShardExecutor<V, S> {
             is_static: false,
             depth: 0,
         };
-        
+
         // 呼び出しを実行中に更新
         call.status = CrossShardCallStatus::Executing;
-        
+
         // コントラクトを呼び出し
-        let vm_result = match self.vm.call(call.target_contract.clone(), call.method.clone(), context) {
-            Ok(result) => result,
-            Err(e) => {
-                // 呼び出しを失敗として完了
-                call.status = CrossShardCallStatus::Failed;
-                call.completed_at = Some(Utc::now());
-                
-                let result = CrossShardResult {
-                    success: false,
-                    return_data: Vec::new(),
-                    gas_used: 0,
-                    error_message: Some(format!("VM error: {}", e)),
-                    completed_at: Utc::now(),
-                };
-                
-                call.result = Some(result.clone());
-                
-                // 完了した呼び出しに移動
-                let completed_call = self.pending_calls.remove(call_id).unwrap();
-                self.completed_calls.insert(call_id.to_string(), completed_call);
-                
-                return Ok(result);
-            }
-        };
-        
+        let vm_result =
+            match self
+                .vm
+                .call(call.target_contract.clone(), call.method.clone(), context)
+            {
+                Ok(result) => result,
+                Err(e) => {
+                    // 呼び出しを失敗として完了
+                    call.status = CrossShardCallStatus::Failed;
+                    call.completed_at = Some(Utc::now());
+
+                    let result = CrossShardResult {
+                        success: false,
+                        return_data: Vec::new(),
+                        gas_used: 0,
+                        error_message: Some(format!("VM error: {}", e)),
+                        completed_at: Utc::now(),
+                    };
+
+                    call.result = Some(result.clone());
+
+                    // 完了した呼び出しに移動
+                    let completed_call = self.pending_calls.remove(call_id).unwrap();
+                    self.completed_calls
+                        .insert(call_id.to_string(), completed_call);
+
+                    return Ok(result);
+                }
+            };
+
         // 結果を作成
         let result = CrossShardResult {
             success: vm_result.success,
@@ -318,118 +361,134 @@ impl<V: VirtualMachine, S: ContractStorage> CrossShardExecutor<V, S> {
             error_message: vm_result.error.map(|e| format!("{:?}", e)),
             completed_at: Utc::now(),
         };
-        
+
         // 呼び出しを完了
         call.status = if result.success {
             CrossShardCallStatus::Completed
         } else {
             CrossShardCallStatus::Failed
         };
-        
+
         call.completed_at = Some(result.completed_at);
         call.result = Some(result.clone());
-        
+
         // 完了した呼び出しに移動
         let completed_call = self.pending_calls.remove(call_id).unwrap();
-        self.completed_calls.insert(call_id.to_string(), completed_call);
-        
+        self.completed_calls
+            .insert(call_id.to_string(), completed_call);
+
         Ok(result)
     }
-    
+
     /// クロスシャード呼び出しの結果を取得
     pub fn get_call_result(&self, call_id: &str) -> Result<Option<CrossShardResult>, Error> {
         // 完了した呼び出しから検索
         if let Some(call) = self.completed_calls.get(call_id) {
             return Ok(call.result.clone());
         }
-        
+
         // 保留中の呼び出しから検索
         if let Some(call) = self.pending_calls.get(call_id) {
             return Ok(call.result.clone());
         }
-        
-        Err(Error::NotFound(format!("Cross-shard call not found: {}", call_id)))
+
+        Err(Error::NotFound(format!(
+            "Cross-shard call not found: {}",
+            call_id
+        )))
     }
-    
+
     /// クロスシャード呼び出しのステータスを取得
     pub fn get_call_status(&self, call_id: &str) -> Result<CrossShardCallStatus, Error> {
         // 完了した呼び出しから検索
         if let Some(call) = self.completed_calls.get(call_id) {
             return Ok(call.status.clone());
         }
-        
+
         // 保留中の呼び出しから検索
         if let Some(call) = self.pending_calls.get(call_id) {
             return Ok(call.status.clone());
         }
-        
-        Err(Error::NotFound(format!("Cross-shard call not found: {}", call_id)))
+
+        Err(Error::NotFound(format!(
+            "Cross-shard call not found: {}",
+            call_id
+        )))
     }
-    
+
     /// クロスシャード呼び出しを取得
     pub fn get_call(&self, call_id: &str) -> Result<&CrossShardCall, Error> {
         // 完了した呼び出しから検索
         if let Some(call) = self.completed_calls.get(call_id) {
             return Ok(call);
         }
-        
+
         // 保留中の呼び出しから検索
         if let Some(call) = self.pending_calls.get(call_id) {
             return Ok(call);
         }
-        
-        Err(Error::NotFound(format!("Cross-shard call not found: {}", call_id)))
+
+        Err(Error::NotFound(format!(
+            "Cross-shard call not found: {}",
+            call_id
+        )))
     }
-    
+
     /// 保留中のクロスシャード呼び出しを取得
     pub fn get_pending_calls(&self) -> Vec<&CrossShardCall> {
         self.pending_calls.values().collect()
     }
-    
+
     /// 完了したクロスシャード呼び出しを取得
     pub fn get_completed_calls(&self) -> Vec<&CrossShardCall> {
         self.completed_calls.values().collect()
     }
-    
+
     /// 送信先シャード別の保留中呼び出しを取得
     pub fn get_pending_calls_by_target_shard(&self, shard_id: &ShardId) -> Vec<&CrossShardCall> {
-        self.pending_calls.values()
+        self.pending_calls
+            .values()
             .filter(|call| call.target_shard_id == *shard_id)
             .collect()
     }
-    
+
     /// 送信元シャード別の保留中呼び出しを取得
     pub fn get_pending_calls_by_source_shard(&self, shard_id: &ShardId) -> Vec<&CrossShardCall> {
-        self.pending_calls.values()
+        self.pending_calls
+            .values()
             .filter(|call| call.source_shard_id == *shard_id)
             .collect()
     }
-    
+
     /// 送信先コントラクト別の保留中呼び出しを取得
     pub fn get_pending_calls_by_target_contract(&self, contract: &str) -> Vec<&CrossShardCall> {
-        self.pending_calls.values()
+        self.pending_calls
+            .values()
             .filter(|call| call.target_contract == *contract)
             .collect()
     }
-    
+
     /// 送信元コントラクト別の保留中呼び出しを取得
     pub fn get_pending_calls_by_source_contract(&self, contract: &str) -> Vec<&CrossShardCall> {
-        self.pending_calls.values()
+        self.pending_calls
+            .values()
             .filter(|call| call.source_contract == *contract)
             .collect()
     }
-    
+
     /// タイムアウトした呼び出しを処理
     pub fn process_timeouts(&mut self) -> Vec<String> {
         let now = Utc::now();
         let timeout_duration = chrono::Duration::seconds(self.timeout_seconds as i64);
         let mut timed_out_calls = Vec::new();
-        
+
         // タイムアウトした呼び出しを検索
         for (id, call) in self.pending_calls.iter_mut() {
-            if call.status != CrossShardCallStatus::Completed && call.status != CrossShardCallStatus::Failed {
+            if call.status != CrossShardCallStatus::Completed
+                && call.status != CrossShardCallStatus::Failed
+            {
                 let elapsed = now - call.created_at;
-                
+
                 if elapsed > timeout_duration {
                     call.status = CrossShardCallStatus::TimedOut;
                     call.completed_at = Some(now);
@@ -440,90 +499,90 @@ impl<V: VirtualMachine, S: ContractStorage> CrossShardExecutor<V, S> {
                         error_message: Some("Call timed out".to_string()),
                         completed_at: now,
                     });
-                    
+
                     timed_out_calls.push(id.clone());
                 }
             }
         }
-        
+
         // タイムアウトした呼び出しを完了した呼び出しに移動
         for id in &timed_out_calls {
             if let Some(call) = self.pending_calls.remove(id) {
                 self.completed_calls.insert(id.clone(), call);
             }
         }
-        
+
         timed_out_calls
     }
-    
+
     /// 保留中の呼び出しをクリーンアップ
     pub fn cleanup_pending_calls(&mut self, max_age_seconds: u64) -> Vec<String> {
         let now = Utc::now();
         let max_age_duration = chrono::Duration::seconds(max_age_seconds as i64);
         let mut cleaned_calls = Vec::new();
-        
+
         // 古い呼び出しを検索
         for (id, call) in self.pending_calls.iter() {
             let elapsed = now - call.created_at;
-            
+
             if elapsed > max_age_duration {
                 cleaned_calls.push(id.clone());
             }
         }
-        
+
         // 古い呼び出しを削除
         for id in &cleaned_calls {
             self.pending_calls.remove(id);
         }
-        
+
         cleaned_calls
     }
-    
+
     /// 完了した呼び出しをクリーンアップ
     pub fn cleanup_completed_calls(&mut self, max_age_seconds: u64) -> Vec<String> {
         let now = Utc::now();
         let max_age_duration = chrono::Duration::seconds(max_age_seconds as i64);
         let mut cleaned_calls = Vec::new();
-        
+
         // 古い呼び出しを検索
         for (id, call) in self.completed_calls.iter() {
             if let Some(completed_at) = call.completed_at {
                 let elapsed = now - completed_at;
-                
+
                 if elapsed > max_age_duration {
                     cleaned_calls.push(id.clone());
                 }
             }
         }
-        
+
         // 古い呼び出しを削除
         for id in &cleaned_calls {
             self.completed_calls.remove(id);
         }
-        
+
         cleaned_calls
     }
-    
+
     /// タイムアウト時間を設定
     pub fn set_timeout(&mut self, timeout_seconds: u64) {
         self.timeout_seconds = timeout_seconds;
     }
-    
+
     /// 現在のシャードIDを取得
     pub fn get_current_shard_id(&self) -> &ShardId {
         &self.current_shard_id
     }
-    
+
     /// 現在のシャードIDを設定
     pub fn set_current_shard_id(&mut self, shard_id: ShardId) {
         self.current_shard_id = shard_id;
     }
-    
+
     /// シャード情報を取得
     pub fn get_shard_info(&self, shard_id: &ShardId) -> Option<&ShardInfo> {
         self.shard_info.get(shard_id)
     }
-    
+
     /// すべてのシャード情報を取得
     pub fn get_all_shard_info(&self) -> &HashMap<ShardId, ShardInfo> {
         &self.shard_info
