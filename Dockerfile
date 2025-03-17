@@ -1,4 +1,4 @@
-# マルチステージビルド - ビルダーステージ
+# シンプルなビルドステージ
 FROM rust:latest as builder
 
 WORKDIR /app
@@ -15,26 +15,13 @@ RUN apt-get update && \
 # Rustとcargoのバージョンを確認
 RUN rustc --version && cargo --version
 
-# キャッシュ最適化のためにまずCargo.tomlをコピー
-COPY Cargo.toml ./
+# すべてのソースコードをコピー
+COPY . .
 
-# 新しいCargo.lockを生成（既存のものは使用しない）
+# Cargo.lockを削除して新しく生成
 RUN rm -f Cargo.lock && cargo update
 
-# ダミーソースを作成してビルド依存関係をキャッシュ
-RUN mkdir -p src && \
-    echo 'fn main() { println!("Dummy build"); }' > src/main.rs && \
-    mkdir -p benches && \
-    echo 'fn main() {}' > benches/transaction_benchmark.rs && \
-    cargo build && \
-    rm -rf src benches
-
-# 実際のソースコードをコピー
-COPY src ./src
-COPY web ./web
-COPY benches ./benches
-
-# 最適化されたリリースビルドを実行
+# リリースビルドを実行
 RUN cargo build --release
 
 # バイナリを最適化
