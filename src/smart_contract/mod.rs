@@ -1,15 +1,15 @@
 pub mod engine;
 pub mod vm;
-// pub mod compiler; // TODO: このモジュールが見つかりません
-// pub mod executor; // TODO: このモジュールが見つかりません
+pub mod compiler;
+pub mod executor;
 pub mod evm;
 pub mod storage;
 pub mod wasm;
-// pub mod validator; // TODO: このモジュールが見つかりません
+pub mod validator;
 pub mod execution_optimizer;
-// pub mod abi; // TODO: このモジュールが見つかりません
+pub mod abi;
 pub mod event;
-// pub mod gas; // TODO: このモジュールが見つかりません
+pub mod gas;
 pub mod cross_shard;
 
 pub use abi::{ABIEvent, ABIFunction, ABIParameter, ABIType, ContractABI};
