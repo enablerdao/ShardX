@@ -150,7 +150,7 @@ jobs:
           echo "## Optimization Recommendations" >> .github/reports/ci_optimization.md
           
           # キャッシュの使用状況を確認
-          CACHE_COUNT=$(grep -r "actions/cache" .github/workflows | wc -l)
+          CACHE_COUNT=$(grep -r "actions/cache\|Swatinem/rust-cache" .github/workflows | wc -l)
           if [ "$CACHE_COUNT" -lt "$WORKFLOW_COUNT" ]; then
             echo "- ⚠️ Some workflows may not be using caching. Consider adding cache actions to improve build times." >> .github/reports/ci_optimization.md
           else
@@ -171,6 +171,25 @@ jobs:
             echo "- ⚠️ Duplicate dependency installation detected. Consider creating a reusable workflow for common setup steps." >> .github/reports/ci_optimization.md
           else
             echo "- ✅ Dependency installation appears to be optimized." >> .github/reports/ci_optimization.md
+          fi
+          
+          # ワークフローの構文チェック
+          echo "" >> .github/reports/ci_optimization.md
+          echo "### Workflow Syntax Check" >> .github/reports/ci_optimization.md
+          
+          if command -v actionlint &> /dev/null; then
+            echo "Running actionlint to validate workflow syntax..." >> .github/reports/ci_optimization.md
+            actionlint_output=$(actionlint 2>&1 || true)
+            if [ -n "$actionlint_output" ]; then
+              echo "- ⚠️ Found potential issues in workflow files:" >> .github/reports/ci_optimization.md
+              echo '```' >> .github/reports/ci_optimization.md
+              echo "$actionlint_output" >> .github/reports/ci_optimization.md
+              echo '```' >> .github/reports/ci_optimization.md
+            else
+              echo "- ✅ No syntax issues found in workflow files." >> .github/reports/ci_optimization.md
+            fi
+          else
+            echo "- ℹ️ actionlint not available, skipping workflow syntax check." >> .github/reports/ci_optimization.md
           fi
 
       - name: Create PR with optimization reports
