@@ -1,0 +1,194 @@
+name: Optimize CI/CD
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # 毎週日曜日に実行
+  workflow_dispatch:
+    inputs:
+      update_dependencies:
+        description: '依存関係を更新する'
+        required: false
+        type: boolean
+        default: false
+      security_only:
+        description: 'セキュリティ更新のみ'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  optimize-ci:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev build-essential clang libclang-dev llvm-dev
+          sudo apt-get install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+          npm install -g npm-check-updates
+
+      - name: Install cargo tools
+        run: |
+          cargo install cargo-edit
+          cargo install cargo-audit
+          cargo install cargo-llvm-cov
+
+      - name: Analyze build times
+        run: |
+          echo "Analyzing build times..."
+          mkdir -p .github/reports
+          RUSTFLAGS="-Z time-passes" cargo build --release > .github/reports/build_time_analysis.txt 2>&1 || true
+          echo "Top 20 slowest build steps:" > .github/reports/slow_builds.txt
+          grep "time:" .github/reports/build_time_analysis.txt | sort -k2 -n -r | head -20 >> .github/reports/slow_builds.txt
+
+      - name: Check for security vulnerabilities
+        run: |
+          echo "Checking for security vulnerabilities..."
+          cargo audit --json > .github/reports/security_audit.json || true
+          echo "Security audit completed"
+
+      - name: Update dependencies if requested
+        if: ${{ github.event.inputs.update_dependencies == 'true' || github.event_name == 'schedule' }}
+        run: |
+          echo "Updating dependencies..."
+          if [[ "${{ github.event.inputs.security_only }}" == "true" ]]; then
+            ./tools/dependency_updater.sh --security
+          else
+            ./tools/dependency_updater.sh --all
+          fi
+
+      - name: Measure test coverage
+        run: |
+          echo "Measuring test coverage..."
+          cargo llvm-cov --no-default-features --features="snow" --lcov --output-path lcov.info
+          
+          # 簡易的なカバレッジレポートを生成
+          mkdir -p .github/reports
+          echo "# Test Coverage Report" > .github/reports/coverage_report.md
+          echo "Generated on: $(date)" >> .github/reports/coverage_report.md
+          echo "" >> .github/reports/coverage_report.md
+          echo "## Summary" >> .github/reports/coverage_report.md
+          
+          # lcov.infoからカバレッジ情報を抽出
+          TOTAL_LINES=$(grep -c "DA:" lcov.info || echo 0)
+          COVERED_LINES=$(grep "DA:" lcov.info | grep -v "DA:.*,0$" | wc -l || echo 0)
+          
+          if [ "$TOTAL_LINES" -gt 0 ]; then
+            COVERAGE_PCT=$((COVERED_LINES * 100 / TOTAL_LINES))
+            echo "- Line coverage: $COVERAGE_PCT% ($COVERED_LINES/$TOTAL_LINES)" >> .github/reports/coverage_report.md
+          else
+            echo "- No coverage data available" >> .github/reports/coverage_report.md
+          fi
+          
+          echo "" >> .github/reports/coverage_report.md
+          echo "## Low Coverage Modules" >> .github/reports/coverage_report.md
+          
+          # モジュールごとのカバレッジを計算
+          grep "SF:" lcov.info | while read -r line; do
+            FILE=${line#SF:}
+            MODULE=$(echo $FILE | sed 's|/workspace/ShardX/src/||' | sed 's|/|::|g' | sed 's|\.rs$||')
+            
+            # このファイルの行数とカバーされた行数を計算
+            FILE_LINES=$(grep -A 1000000 "SF:$FILE" lcov.info | grep -B 1000000 "end_of_record" | grep "DA:" | wc -l)
+            FILE_COVERED=$(grep -A 1000000 "SF:$FILE" lcov.info | grep -B 1000000 "end_of_record" | grep "DA:" | grep -v "DA:.*,0$" | wc -l)
+            
+            if [ "$FILE_LINES" -gt 0 ]; then
+              FILE_PCT=$((FILE_COVERED * 100 / FILE_LINES))
+              
+              # カバレッジが50%未満のモジュールを報告
+              if [ "$FILE_PCT" -lt 50 ]; then
+                echo "- $MODULE: $FILE_PCT% ($FILE_COVERED/$FILE_LINES)" >> .github/reports/coverage_report.md
+              fi
+            fi
+          done
+
+      - name: Analyze CI workflow
+        run: |
+          echo "Analyzing CI workflow..."
+          mkdir -p .github/reports
+          
+          echo "# CI/CD Optimization Report" > .github/reports/ci_optimization.md
+          echo "Generated on: $(date)" >> .github/reports/ci_optimization.md
+          echo "" >> .github/reports/ci_optimization.md
+          
+          echo "## Workflow Analysis" >> .github/reports/ci_optimization.md
+          echo "Analyzing GitHub Actions workflows..." >> .github/reports/ci_optimization.md
+          
+          # ワークフローファイルの数を数える
+          WORKFLOW_COUNT=$(find .github/workflows -name "*.yml" | wc -l)
+          echo "- Total workflows: $WORKFLOW_COUNT" >> .github/reports/ci_optimization.md
+          
+          # 各ワークフローのジョブ数を分析
+          echo "" >> .github/reports/ci_optimization.md
+          echo "### Workflow Jobs" >> .github/reports/ci_optimization.md
+          
+          find .github/workflows -name "*.yml" | while read -r workflow; do
+            WORKFLOW_NAME=$(basename "$workflow")
+            JOB_COUNT=$(grep -c "^  [a-zA-Z0-9_-]*:" "$workflow" || echo 0)
+            echo "- $WORKFLOW_NAME: $JOB_COUNT jobs" >> .github/reports/ci_optimization.md
+          done
+          
+          echo "" >> .github/reports/ci_optimization.md
+          echo "## Optimization Recommendations" >> .github/reports/ci_optimization.md
+          
+          # キャッシュの使用状況を確認
+          CACHE_COUNT=$(grep -r "actions/cache" .github/workflows | wc -l)
+          if [ "$CACHE_COUNT" -lt "$WORKFLOW_COUNT" ]; then
+            echo "- ⚠️ Some workflows may not be using caching. Consider adding cache actions to improve build times." >> .github/reports/ci_optimization.md
+          else
+            echo "- ✅ All workflows appear to be using caching." >> .github/reports/ci_optimization.md
+          fi
+          
+          # マトリックスビルドの使用状況を確認
+          MATRIX_COUNT=$(grep -r "matrix:" .github/workflows | wc -l)
+          if [ "$MATRIX_COUNT" -eq 0 ]; then
+            echo "- ⚠️ No matrix builds found. Consider using matrix strategy for testing across multiple configurations." >> .github/reports/ci_optimization.md
+          else
+            echo "- ✅ Matrix builds are being used for parallel testing." >> .github/reports/ci_optimization.md
+          fi
+          
+          # 依存関係のインストールの重複を確認
+          INSTALL_COUNT=$(grep -r "apt-get install" .github/workflows | wc -l)
+          if [ "$INSTALL_COUNT" -gt "$WORKFLOW_COUNT" ]; then
+            echo "- ⚠️ Duplicate dependency installation detected. Consider creating a reusable workflow for common setup steps." >> .github/reports/ci_optimization.md
+          else
+            echo "- ✅ Dependency installation appears to be optimized." >> .github/reports/ci_optimization.md
+          fi
+
+      - name: Create PR with optimization reports
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "CI/CD: 最適化レポートと改善提案"
+          title: "CI/CD: 最適化レポートと改善提案"
+          body: |
+            このPRは自動的に生成されました。CI/CDパイプラインの最適化レポートと改善提案を含みます。
+            
+            ## 含まれるレポート
+            - ビルド時間分析
+            - セキュリティ監査
+            - テストカバレッジレポート
+            - CI/CD最適化提案
+            
+            これらのレポートを確認し、提案された最適化を適用することで、CI/CDパイプラインの効率を向上させることができます。
+          branch: ci-optimization-report
+          base: main
+          delete-branch: true

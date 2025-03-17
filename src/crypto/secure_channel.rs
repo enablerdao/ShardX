@@ -421,7 +421,7 @@ impl SecureChannelFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::io::duplex;
+    use tokio::io::{duplex, AsyncReadExt, AsyncWriteExt};
 
     #[tokio::test]
     async fn test_secure_channel_handshake() {
@@ -527,38 +527,151 @@ mod tests {
         // ハンドシェイクの完了を待機
         let mut client_stream = client_task.await.unwrap();
         let mut server_stream = server_task.await.unwrap();
-
+        
         // クライアントからサーバーにメッセージを送信
         let message = b"Hello, secure world!";
         client_stream.write_all(message).await.unwrap();
-
+        
         // サーバーがメッセージを受信
         let mut received = vec![0u8; message.len()];
         server_stream.read_exact(&mut received).await.unwrap();
         assert_eq!(received, message);
-
+        
         // サーバーからクライアントにメッセージを送信
         let message = b"Hello, secure client!";
         server_stream.write_all(message).await.unwrap();
-
+        
         // クライアントがメッセージを受信
         let mut received = vec![0u8; message.len()];
         client_stream.read_exact(&mut received).await.unwrap();
         assert_eq!(received, message);
     }
-
-    #[test]
-    fn test_secure_channel_factory() {
+    
+    #[tokio::test]
+    async fn test_secure_channel_factory() {
         // ファクトリを作成
         let factory = SecureChannelFactory::new(None).unwrap();
-
-        // イニシエーターを作成
+        
+        // 公開鍵を取得
+        let public_key = factory.local_public_key();
+        assert_eq!(public_key.len(), 32);
+        
+        // イニシエーターとレスポンダーを作成
         let initiator = factory.create_initiator(None).unwrap();
-
-        // レスポンダーを作成
         let responder = factory.create_responder().unwrap();
-
+        
         // 公開鍵を確認
-        assert_eq!(factory.local_public_key(), &initiator.local_public_key());
+        assert_eq!(initiator.local_public_key(), *factory.local_public_key());
+        assert_eq!(responder.local_public_key(), *factory.local_public_key());
+    }
+    
+    #[tokio::test]
+    async fn test_secure_channel_with_predefined_keys() {
+        // 事前定義されたキーペアを生成
+        let initiator_keypair = snow::Keypair::generate().unwrap();
+        let responder_keypair = snow::Keypair::generate().unwrap();
+        
+        // ファクトリを作成
+        let initiator_factory = SecureChannelFactory::new(Some(&initiator_keypair.private)).unwrap();
+        let responder_factory = SecureChannelFactory::new(Some(&responder_keypair.private)).unwrap();
+        
+        // 公開鍵を確認
+        assert_eq!(*initiator_factory.local_public_key(), initiator_keypair.public);
+        assert_eq!(*responder_factory.local_public_key(), responder_keypair.public);
+        
+        // 双方向チャネルを作成
+        let (client, server) = duplex(1024);
+        
+        // イニシエーターとレスポンダーを作成
+        let mut initiator = initiator_factory
+            .create_initiator(Some(&responder_keypair.public))
+            .unwrap();
+        
+        let mut responder = responder_factory
+            .create_responder()
+            .unwrap();
+        
+        // 並行してハンドシェイクを実行
+        let initiator_task = tokio::spawn(async move {
+            initiator
+                .perform_handshake(&mut client.clone())
+                .await
+                .unwrap();
+            initiator
+        });
+        
+        let responder_task = tokio::spawn(async move {
+            responder
+                .perform_handshake(&mut server.clone())
+                .await
+                .unwrap();
+            responder
+        });
+        
+        // ハンドシェイクの完了を待機
+        let mut initiator = initiator_task.await.unwrap();
+        let mut responder = responder_task.await.unwrap();
+        
+        // メッセージを交換
+        let message = b"Secure message with predefined keys";
+        initiator.send(&mut client, message).await.unwrap();
+        
+        let received = responder.receive(&mut server).await.unwrap();
+        assert_eq!(received, message);
+    }
+    
+    #[tokio::test]
+    async fn test_secure_stream_into_inner() {
+        // イニシエーターとレスポンダーのキーペアを生成
+        let initiator_keypair = snow::Keypair::generate().unwrap();
+        let responder_keypair = snow::Keypair::generate().unwrap();
+        
+        // 双方向チャネルを作成
+        let (client, server) = duplex(1024);
+        
+        // イニシエーターとレスポンダーのセキュアチャネルを作成
+        let initiator = SecureChannel::new(
+            Role::Initiator,
+            &initiator_keypair.private,
+            Some(&responder_keypair.public),
+        )
+        .unwrap();
+        
+        // セキュアストリームを作成
+        let client_stream = SecureStream::new(client, initiator);
+        
+        // 内部ストリームを取得
+        let inner = client_stream.into_inner();
+        
+        // 内部ストリームを使用
+        let mut inner_clone = inner.clone();
+        inner_clone.write_all(b"Direct message").await.unwrap();
+    }
+    
+    #[tokio::test]
+    async fn test_error_handling() {
+        // イニシエーターとレスポンダーのキーペアを生成
+        let initiator_keypair = snow::Keypair::generate().unwrap();
+        
+        // 不正な秘密鍵でセキュアチャネルを作成しようとする
+        let invalid_key = [0u8; 10]; // 短すぎる鍵
+        let result = SecureChannel::new(Role::Initiator, &invalid_key, None);
+        assert!(result.is_err());
+        
+        // ハンドシェイク前にメッセージを送信しようとする
+        let mut channel = SecureChannel::new(
+            Role::Initiator,
+            &initiator_keypair.private,
+            None,
+        )
+        .unwrap();
+        
+        let (mut client, _) = duplex(1024);
+        let result = channel.send(&mut client, b"Premature message").await;
+        assert!(result.is_err());
+        
+        // ハンドシェイク前にメッセージを受信しようとする
+        let result = channel.receive(&mut client).await;
+        assert!(result.is_err());
     }
 }
