@@ -29,3 +29,6 @@ mod tests;
 
 // Re-export key types for easier access
 pub use cross_chain::{BridgeConfig, ChainType, CrossChainBridge};
+
+// Re-export external crates for internal use
+pub(crate) use snow;
