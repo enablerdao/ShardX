@@ -17,10 +17,10 @@ env:
   RUST_BACKTRACE: 1
   CARGO_NET_RETRY: 10
   RUST_TOOLCHAIN: "1.75.0"
-  RUSTC_WRAPPER: "sccache"
-  SCCACHE_GHA_ENABLED: "true"
-  SCCACHE_CACHE_SIZE: "5G"
-  SCCACHE_DIR: "/home/runner/.cache/sccache"
+  LIBCLANG_PATH: /usr/lib/llvm-14/lib
+  BINDGEN_EXTRA_CLANG_ARGS: -I/usr/lib/llvm-14/include
+  CARGO_INCREMENTAL: 1
+  CARGO_BUILD_JOBS: 2
 
 jobs:
   # 基本チェック（フォーマット、Clippy、コンパイル）
@@ -30,37 +30,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Cache APT packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >-
-            pkg-config libssl-dev build-essential
-            llvm-14 llvm-14-dev libclang-14-dev clang-14
-            libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
-            cmake ninja-build
-          version: 1.0
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev build-essential
+          sudo apt-get install -y llvm-14 llvm-14-dev libclang-14-dev clang-14
+          sudo apt-get install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+          sudo apt-get install -y cmake ninja-build
+          # Create symbolic links if needed
+          sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
+          sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
       
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt, clippy
-      
-      - name: Install sccache
-        run: |
-          curl -L https://github.com/mozilla/sccache/releases/download/v0.7.7/sccache-v0.7.7-x86_64-unknown-linux-musl.tar.gz | tar xz
-          sudo mv sccache-*/sccache /usr/local/bin/
-          sccache --start-server
-          sccache --show-stats
-      
-      - name: Set environment variables
-        run: |
-          echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-14/include\"" >> $GITHUB_ENV
-          echo "CARGO_BUILD_JOBS=2" >> $GITHUB_ENV
-          # Create symbolic links if needed
-          sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
-          sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -74,7 +59,6 @@ jobs:
             ~/.cargo/git/db
             target/debug/deps
             target/debug/build
-            ~/.cache/sccache
       
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -88,9 +72,6 @@ jobs:
       
       - name: Check compilation
         run: cargo check --no-default-features --features=snow || true
-      
-      - name: sccache stats
-        run: sccache --show-stats
 
   # 並列テスト
   test:
@@ -108,35 +89,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Cache APT packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >-
-            pkg-config libssl-dev build-essential
-            llvm-14 llvm-14-dev libclang-14-dev clang-14
-            libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
-            cmake ninja-build
-          version: 1.0
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev build-essential
+          sudo apt-get install -y llvm-14 llvm-14-dev libclang-14-dev clang-14
+          sudo apt-get install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+          sudo apt-get install -y cmake ninja-build
+          # Create symbolic links if needed
+          sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
+          sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
       
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
-      
-      - name: Install sccache
-        run: |
-          curl -L https://github.com/mozilla/sccache/releases/download/v0.7.7/sccache-v0.7.7-x86_64-unknown-linux-musl.tar.gz | tar xz
-          sudo mv sccache-*/sccache /usr/local/bin/
-          sccache --start-server
-      
-      - name: Set environment variables
-        run: |
-          echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-14/include\"" >> $GITHUB_ENV
-          echo "CARGO_BUILD_JOBS=2" >> $GITHUB_ENV
-          # Create symbolic links if needed
-          sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
-          sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -149,7 +116,6 @@ jobs:
             ~/.cargo/git/db
             target/debug/deps
             target/debug/build
-            ~/.cache/sccache
       
       - name: Run tests for ${{ matrix.test-group }}
         run: |
@@ -171,9 +137,6 @@ jobs:
           else
             echo "Directory src/${{ matrix.test-group }} does not exist, skipping tests"
           fi
-      
-      - name: sccache stats
-        run: sccache --show-stats
 
   # バイナリビルド
   build:
@@ -183,35 +146,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Cache APT packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >-
-            pkg-config libssl-dev build-essential
-            llvm-14 llvm-14-dev libclang-14-dev clang-14
-            libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
-            cmake ninja-build
-          version: 1.0
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev build-essential
+          sudo apt-get install -y llvm-14 llvm-14-dev libclang-14-dev clang-14
+          sudo apt-get install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+          sudo apt-get install -y cmake ninja-build
+          # Create symbolic links if needed
+          sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
+          sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
       
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
-      
-      - name: Install sccache
-        run: |
-          curl -L https://github.com/mozilla/sccache/releases/download/v0.7.7/sccache-v0.7.7-x86_64-unknown-linux-musl.tar.gz | tar xz
-          sudo mv sccache-*/sccache /usr/local/bin/
-          sccache --start-server
-      
-      - name: Set environment variables
-        run: |
-          echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-14/include\"" >> $GITHUB_ENV
-          echo "CARGO_BUILD_JOBS=2" >> $GITHUB_ENV
-          # Create symbolic links if needed
-          sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
-          sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -225,7 +174,6 @@ jobs:
             ~/.cargo/git/db
             target/release/deps
             target/release/build
-            ~/.cache/sccache
       
       - name: Cache RocksDB
         uses: actions/cache@v3
@@ -244,9 +192,6 @@ jobs:
           # 並列ビルドを最適化
           RUSTFLAGS="-C codegen-units=16 -C opt-level=3 -C target-cpu=native -C debuginfo=0 -C embed-bitcode=no" \
           cargo build --release --no-default-features --features=snow -j2 || true
-      
-      - name: sccache stats
-        run: sccache --show-stats
       
       - name: Check binary existence
         id: check_binary
@@ -315,8 +260,6 @@ jobs:
           
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          buildkitd-flags: --debug
       
       - name: Login to DockerHub
         if: github.event_name != 'pull_request'
