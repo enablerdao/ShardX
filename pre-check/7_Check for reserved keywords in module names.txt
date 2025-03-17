@@ -1,0 +1,27 @@
+﻿2025-03-17T07:36:56.5801949Z ##[group]Run echo "Checking for reserved keywords in module names..."
+2025-03-17T07:36:56.5802425Z [36;1mecho "Checking for reserved keywords in module names..."[0m
+2025-03-17T07:36:56.5802936Z [36;1m[0m
+2025-03-17T07:36:56.5803114Z [36;1m# List of Rust reserved keywords[0m
+2025-03-17T07:36:56.5804270Z [36;1mkeywords=("as" "break" "const" "continue" "crate" "else" "enum" "extern" "false" "fn" "for" "if" "impl" "in" "let" "loop" "match" "mod" "move" "mut" "pub" "ref" "return" "self" "Self" "static" "struct" "super" "trait" "true" "type" "unsafe" "use" "where" "while" "async" "await" "dyn" "abstract" "become" "box" "do" "final" "macro" "override" "priv" "typeof" "unsized" "virtual" "yield")[0m
+2025-03-17T07:36:56.5805253Z [36;1m[0m
+2025-03-17T07:36:56.5805475Z [36;1m# Check for module names that are reserved keywords[0m
+2025-03-17T07:36:56.5805773Z [36;1mfor keyword in "${keywords[@]}"; do[0m
+2025-03-17T07:36:56.5806137Z [36;1m  if find src -name "$keyword.rs" -o -name "$keyword" -type d | grep -q .; then[0m
+2025-03-17T07:36:56.5806593Z [36;1m    echo "⚠️ Found module named with reserved keyword: $keyword"[0m
+2025-03-17T07:36:56.5807072Z [36;1m    echo "::error::Found module named with reserved keyword: $keyword. Please rename this module."[0m
+2025-03-17T07:36:56.5807470Z [36;1m    exit 1[0m
+2025-03-17T07:36:56.5807646Z [36;1m  fi[0m
+2025-03-17T07:36:56.5807801Z [36;1mdone[0m
+2025-03-17T07:36:56.5807945Z [36;1m[0m
+2025-03-17T07:36:56.5808155Z [36;1mecho "✅ No reserved keywords used as module names."[0m
+2025-03-17T07:36:56.5858814Z shell: /usr/bin/bash -e {0}
+2025-03-17T07:36:56.5859038Z env:
+2025-03-17T07:36:56.5859210Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:56.5859449Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:56.5859644Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:56.5859833Z   CACHE_ON_FAILURE: false
+2025-03-17T07:36:56.5860021Z ##[endgroup]
+2025-03-17T07:36:56.5924496Z Checking for reserved keywords in module names...
+2025-03-17T07:36:56.6318117Z ⚠️ Found module named with reserved keyword: mod
+2025-03-17T07:36:56.6322285Z ##[error]Found module named with reserved keyword: mod. Please rename this module.
+2025-03-17T07:36:56.6325138Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,5 @@
+2025-03-17T07:36:46.1929757Z Requested labels: ubuntu-latest
+2025-03-17T07:36:46.1929757Z Job defined at: enablerdao/ShardX/.github/workflows/pre-check.yml@refs/heads/main
+2025-03-17T07:36:46.1929757Z Waiting for a runner to pick up this job...
+2025-03-17T07:36:46.5235577Z Job is waiting for a hosted runner to come online.
+2025-03-17T07:36:46.5235758Z Job is about to start running on the hosted runner: GitHub Actions

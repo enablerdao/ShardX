@@ -1,0 +1,24 @@
+﻿2025-03-17T07:36:51.8865479Z ##[group]Pull down action image 'rhysd/actionlint:latest'
+2025-03-17T07:36:51.8917654Z ##[command]/usr/bin/docker pull rhysd/actionlint:latest
+2025-03-17T07:36:52.2543208Z latest: Pulling from rhysd/actionlint
+2025-03-17T07:36:52.3266944Z 1f3e46996e29: Pulling fs layer
+2025-03-17T07:36:52.3269467Z 4e6599d62119: Pulling fs layer
+2025-03-17T07:36:52.3270420Z 46b6d0e9fe9d: Pulling fs layer
+2025-03-17T07:36:52.3271130Z f23002ece875: Pulling fs layer
+2025-03-17T07:36:52.3271782Z f23002ece875: Waiting
+2025-03-17T07:36:52.4086286Z 46b6d0e9fe9d: Verifying Checksum
+2025-03-17T07:36:52.4089473Z 46b6d0e9fe9d: Download complete
+2025-03-17T07:36:52.4209244Z 4e6599d62119: Verifying Checksum
+2025-03-17T07:36:52.4210219Z 4e6599d62119: Download complete
+2025-03-17T07:36:52.4258155Z 1f3e46996e29: Verifying Checksum
+2025-03-17T07:36:52.4259364Z 1f3e46996e29: Download complete
+2025-03-17T07:36:52.5430142Z f23002ece875: Verifying Checksum
+2025-03-17T07:36:52.5431224Z f23002ece875: Download complete
+2025-03-17T07:36:52.5438756Z 1f3e46996e29: Pull complete
+2025-03-17T07:36:52.6298018Z 4e6599d62119: Pull complete
+2025-03-17T07:36:52.7147133Z 46b6d0e9fe9d: Pull complete
+2025-03-17T07:36:53.2969792Z f23002ece875: Pull complete
+2025-03-17T07:36:53.3015525Z Digest: sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9
+2025-03-17T07:36:53.3030231Z Status: Downloaded newer image for rhysd/actionlint:latest
+2025-03-17T07:36:53.3039211Z docker.io/rhysd/actionlint:latest
+2025-03-17T07:36:53.3063960Z ##[endgroup]

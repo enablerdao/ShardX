@@ -1,0 +1,384 @@
+﻿2025-03-17T07:36:50.8911265Z Current runner version: '2.322.0'
+2025-03-17T07:36:50.8938550Z ##[group]Operating System
+2025-03-17T07:36:50.8939300Z Ubuntu
+2025-03-17T07:36:50.8939733Z 24.04.2
+2025-03-17T07:36:50.8940333Z LTS
+2025-03-17T07:36:50.8940809Z ##[endgroup]
+2025-03-17T07:36:50.8941268Z ##[group]Runner Image
+2025-03-17T07:36:50.8941927Z Image: ubuntu-24.04
+2025-03-17T07:36:50.8942412Z Version: 20250309.1.0
+2025-03-17T07:36:50.8943597Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250309.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-03-17T07:36:50.8944968Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250309.1
+2025-03-17T07:36:50.8945872Z ##[endgroup]
+2025-03-17T07:36:50.8946392Z ##[group]Runner Image Provisioner
+2025-03-17T07:36:50.8947009Z 2.0.422.1
+2025-03-17T07:36:50.8947469Z ##[endgroup]
+2025-03-17T07:36:50.8948450Z ##[group]GITHUB_TOKEN Permissions
+2025-03-17T07:36:50.8950288Z Contents: read
+2025-03-17T07:36:50.8950840Z Metadata: read
+2025-03-17T07:36:50.8951540Z Packages: read
+2025-03-17T07:36:50.8952100Z ##[endgroup]
+2025-03-17T07:36:50.8954323Z Secret source: Actions
+2025-03-17T07:36:50.8955023Z Prepare workflow directory
+2025-03-17T07:36:50.9279608Z Prepare all required actions
+2025-03-17T07:36:50.9319351Z Getting action download info
+2025-03-17T07:36:51.3140948Z Download action repository 'actions/checkout@v4' (SHA:11bd71901bbe5b1630ceea73d27597364c9af683)
+2025-03-17T07:36:51.4114681Z Download action repository 'dtolnay/rust-toolchain@stable' (SHA:f9f65f52341ba3c1d5e1901c77dc7a9e58186191)
+2025-03-17T07:36:51.5709771Z Download action repository 'Swatinem/rust-cache@v2' (SHA:f0deed1e0edfc6a9be95417288c0e1099b1eeec3)
+2025-03-17T07:36:51.8406029Z Complete job name: pre-check
+2025-03-17T07:36:51.8865506Z ##[group]Pull down action image 'rhysd/actionlint:latest'
+2025-03-17T07:36:51.8917677Z ##[command]/usr/bin/docker pull rhysd/actionlint:latest
+2025-03-17T07:36:52.2543305Z latest: Pulling from rhysd/actionlint
+2025-03-17T07:36:52.3267053Z 1f3e46996e29: Pulling fs layer
+2025-03-17T07:36:52.3269505Z 4e6599d62119: Pulling fs layer
+2025-03-17T07:36:52.3270435Z 46b6d0e9fe9d: Pulling fs layer
+2025-03-17T07:36:52.3271133Z f23002ece875: Pulling fs layer
+2025-03-17T07:36:52.3271786Z f23002ece875: Waiting
+2025-03-17T07:36:52.4086411Z 46b6d0e9fe9d: Verifying Checksum
+2025-03-17T07:36:52.4089510Z 46b6d0e9fe9d: Download complete
+2025-03-17T07:36:52.4209281Z 4e6599d62119: Verifying Checksum
+2025-03-17T07:36:52.4210224Z 4e6599d62119: Download complete
+2025-03-17T07:36:52.4258187Z 1f3e46996e29: Verifying Checksum
+2025-03-17T07:36:52.4259374Z 1f3e46996e29: Download complete
+2025-03-17T07:36:52.5430260Z f23002ece875: Verifying Checksum
+2025-03-17T07:36:52.5431349Z f23002ece875: Download complete
+2025-03-17T07:36:52.5438929Z 1f3e46996e29: Pull complete
+2025-03-17T07:36:52.6298128Z 4e6599d62119: Pull complete
+2025-03-17T07:36:52.7147199Z 46b6d0e9fe9d: Pull complete
+2025-03-17T07:36:53.2969855Z f23002ece875: Pull complete
+2025-03-17T07:36:53.3015556Z Digest: sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9
+2025-03-17T07:36:53.3030252Z Status: Downloaded newer image for rhysd/actionlint:latest
+2025-03-17T07:36:53.3039231Z docker.io/rhysd/actionlint:latest
+2025-03-17T07:36:53.3063977Z ##[endgroup]
+2025-03-17T07:36:53.3316496Z ##[group]Run actions/checkout@v4
+2025-03-17T07:36:53.3317654Z with:
+2025-03-17T07:36:53.3317982Z   repository: enablerdao/ShardX
+2025-03-17T07:36:53.3318417Z   token: ***
+2025-03-17T07:36:53.3318634Z   ssh-strict: true
+2025-03-17T07:36:53.3318848Z   ssh-user: git
+2025-03-17T07:36:53.3319076Z   persist-credentials: true
+2025-03-17T07:36:53.3319351Z   clean: true
+2025-03-17T07:36:53.3319607Z   sparse-checkout-cone-mode: true
+2025-03-17T07:36:53.3319873Z   fetch-depth: 1
+2025-03-17T07:36:53.3320082Z   fetch-tags: false
+2025-03-17T07:36:53.3320308Z   show-progress: true
+2025-03-17T07:36:53.3320522Z   lfs: false
+2025-03-17T07:36:53.3320728Z   submodules: false
+2025-03-17T07:36:53.3320945Z   set-safe-directory: true
+2025-03-17T07:36:53.3321476Z ##[endgroup]
+2025-03-17T07:36:53.5459833Z Syncing repository: enablerdao/ShardX
+2025-03-17T07:36:53.5461224Z ##[group]Getting Git version info
+2025-03-17T07:36:53.5461718Z Working directory is '/home/runner/work/ShardX/ShardX'
+2025-03-17T07:36:53.5462373Z [command]/usr/bin/git version
+2025-03-17T07:36:53.5537187Z git version 2.48.1
+2025-03-17T07:36:53.5567259Z ##[endgroup]
+2025-03-17T07:36:53.5588968Z Temporarily overriding HOME='/home/runner/work/_temp/6860ef24-95f3-4266-914c-8bd7666ba45f' before making global git config changes
+2025-03-17T07:36:53.5589860Z Adding repository directory to the temporary git global config as a safe directory
+2025-03-17T07:36:53.5594550Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ShardX/ShardX
+2025-03-17T07:36:53.5634682Z Deleting the contents of '/home/runner/work/ShardX/ShardX'
+2025-03-17T07:36:53.5638453Z ##[group]Initializing the repository
+2025-03-17T07:36:53.5643154Z [command]/usr/bin/git init /home/runner/work/ShardX/ShardX
+2025-03-17T07:36:53.5711409Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-03-17T07:36:53.5712247Z hint: is subject to change. To configure the initial branch name to use in all
+2025-03-17T07:36:53.5713111Z hint: of your new repositories, which will suppress this warning, call:
+2025-03-17T07:36:53.5713491Z hint:
+2025-03-17T07:36:53.5713816Z hint: 	git config --global init.defaultBranch <name>
+2025-03-17T07:36:53.5714143Z hint:
+2025-03-17T07:36:53.5714447Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-03-17T07:36:53.5714938Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-03-17T07:36:53.5715321Z hint:
+2025-03-17T07:36:53.5715536Z hint: 	git branch -m <name>
+2025-03-17T07:36:53.5719447Z Initialized empty Git repository in /home/runner/work/ShardX/ShardX/.git/
+2025-03-17T07:36:53.5730318Z [command]/usr/bin/git remote add origin https://github.com/enablerdao/ShardX
+2025-03-17T07:36:53.5766184Z ##[endgroup]
+2025-03-17T07:36:53.5766928Z ##[group]Disabling automatic garbage collection
+2025-03-17T07:36:53.5771594Z [command]/usr/bin/git config --local gc.auto 0
+2025-03-17T07:36:53.5800860Z ##[endgroup]
+2025-03-17T07:36:53.5801258Z ##[group]Setting up auth
+2025-03-17T07:36:53.5808473Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-03-17T07:36:53.5839698Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-03-17T07:36:53.6161009Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-03-17T07:36:53.6190575Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-03-17T07:36:53.6418574Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-03-17T07:36:53.6464489Z ##[endgroup]
+2025-03-17T07:36:53.6464994Z ##[group]Fetching the repository
+2025-03-17T07:36:53.6473239Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +34b0b813c5c90d94afc19db0d4e49bfc92622a86:refs/remotes/origin/main
+2025-03-17T07:36:54.3675657Z From https://github.com/enablerdao/ShardX
+2025-03-17T07:36:54.3676462Z  * [new ref]         34b0b813c5c90d94afc19db0d4e49bfc92622a86 -> origin/main
+2025-03-17T07:36:54.3710528Z ##[endgroup]
+2025-03-17T07:36:54.3711131Z ##[group]Determining the checkout info
+2025-03-17T07:36:54.3713109Z ##[endgroup]
+2025-03-17T07:36:54.3719570Z [command]/usr/bin/git sparse-checkout disable
+2025-03-17T07:36:54.3765589Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-03-17T07:36:54.3797848Z ##[group]Checking out the ref
+2025-03-17T07:36:54.3803349Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2025-03-17T07:36:54.4539687Z Switched to a new branch 'main'
+2025-03-17T07:36:54.4540824Z branch 'main' set up to track 'origin/main'.
+2025-03-17T07:36:54.4550057Z ##[endgroup]
+2025-03-17T07:36:54.4590806Z [command]/usr/bin/git log -1 --format=%H
+2025-03-17T07:36:54.4614017Z 34b0b813c5c90d94afc19db0d4e49bfc92622a86
+2025-03-17T07:36:54.4891421Z ##[group]Run dtolnay/rust-toolchain@stable
+2025-03-17T07:36:54.4891713Z with:
+2025-03-17T07:36:54.4891899Z   components: rustfmt, clippy
+2025-03-17T07:36:54.4892111Z   toolchain: stable
+2025-03-17T07:36:54.4892292Z ##[endgroup]
+2025-03-17T07:36:54.5071444Z ##[group]Run : parse toolchain version
+2025-03-17T07:36:54.5071839Z [36;1m: parse toolchain version[0m
+2025-03-17T07:36:54.5072196Z [36;1mif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then[0m
+2025-03-17T07:36:54.5072550Z [36;1m  if [[ Linux == macOS ]]; then[0m
+2025-03-17T07:36:54.5073238Z [36;1m    echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5073700Z [36;1m  else[0m
+2025-03-17T07:36:54.5074045Z [36;1m    echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5074428Z [36;1m  fi[0m
+2025-03-17T07:36:54.5074731Z [36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then[0m
+2025-03-17T07:36:54.5075184Z [36;1m  echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5075602Z [36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then[0m
+2025-03-17T07:36:54.5076066Z [36;1m  echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5076468Z [36;1melse[0m
+2025-03-17T07:36:54.5076683Z [36;1m  echo "toolchain=$toolchain" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5077019Z [36;1mfi[0m
+2025-03-17T07:36:54.5130202Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:54.5130547Z env:
+2025-03-17T07:36:54.5130712Z   toolchain: stable
+2025-03-17T07:36:54.5130901Z ##[endgroup]
+2025-03-17T07:36:54.5291557Z ##[group]Run : construct rustup command line
+2025-03-17T07:36:54.5291873Z [36;1m: construct rustup command line[0m
+2025-03-17T07:36:54.5292282Z [36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5293110Z [36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5293530Z [36;1mecho "downgrade=" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:54.5339766Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:54.5340069Z env:
+2025-03-17T07:36:54.5340228Z   targets: 
+2025-03-17T07:36:54.5340402Z   components: rustfmt, clippy
+2025-03-17T07:36:54.5340612Z ##[endgroup]
+2025-03-17T07:36:54.5441741Z ##[group]Run : set $CARGO_HOME
+2025-03-17T07:36:54.5441985Z [36;1m: set $CARGO_HOME[0m
+2025-03-17T07:36:54.5442285Z [36;1mecho CARGO_HOME=${CARGO_HOME:-$HOME/.cargo} >> $GITHUB_ENV[0m
+2025-03-17T07:36:54.5487737Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:54.5488055Z ##[endgroup]
+2025-03-17T07:36:54.5586326Z ##[group]Run : install rustup if needed
+2025-03-17T07:36:54.5586622Z [36;1m: install rustup if needed[0m
+2025-03-17T07:36:54.5586884Z [36;1mif ! command -v rustup &>/dev/null; then[0m
+2025-03-17T07:36:54.5587566Z [36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail "https://sh.rustup.rs" | sh -s -- --default-toolchain none -y[0m
+2025-03-17T07:36:54.5588186Z [36;1m  echo "$CARGO_HOME/bin" >> $GITHUB_PATH[0m
+2025-03-17T07:36:54.5588433Z [36;1mfi[0m
+2025-03-17T07:36:54.5634925Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:54.5635233Z env:
+2025-03-17T07:36:54.5635414Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:54.5635637Z ##[endgroup]
+2025-03-17T07:36:54.5730625Z ##[group]Run rustup toolchain install stable --component rustfmt --component clippy --profile minimal --no-self-update
+2025-03-17T07:36:54.5731451Z [36;1mrustup toolchain install stable --component rustfmt --component clippy --profile minimal --no-self-update[0m
+2025-03-17T07:36:54.5777703Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:54.5778148Z env:
+2025-03-17T07:36:54.5778333Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:54.5778550Z ##[endgroup]
+2025-03-17T07:36:54.7673622Z info: syncing channel updates for 'stable-x86_64-unknown-linux-gnu'
+2025-03-17T07:36:54.9091385Z info: latest update on 2025-02-20, rust version 1.85.0 (4d91de4e4 2025-02-17)
+2025-03-17T07:36:54.9500904Z info: component 'clippy' for target 'x86_64-unknown-linux-gnu' is up to date
+2025-03-17T07:36:54.9501460Z info: component 'rustfmt' for target 'x86_64-unknown-linux-gnu' is up to date
+2025-03-17T07:36:54.9522855Z 
+2025-03-17T07:36:54.9616745Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.85.0 (4d91de4e4 2025-02-17)
+2025-03-17T07:36:54.9617341Z 
+2025-03-17T07:36:54.9659174Z ##[group]Run rustup default stable
+2025-03-17T07:36:54.9659451Z [36;1mrustup default stable[0m
+2025-03-17T07:36:54.9708550Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:54.9708874Z env:
+2025-03-17T07:36:54.9709047Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:54.9709269Z ##[endgroup]
+2025-03-17T07:36:54.9831455Z info: using existing install for 'stable-x86_64-unknown-linux-gnu'
+2025-03-17T07:36:55.0145578Z info: default toolchain set to 'stable-x86_64-unknown-linux-gnu'
+2025-03-17T07:36:55.0146065Z 
+2025-03-17T07:36:55.0246536Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.85.0 (4d91de4e4 2025-02-17)
+2025-03-17T07:36:55.0246953Z 
+2025-03-17T07:36:55.0288519Z ##[group]Run : create cachekey
+2025-03-17T07:36:55.0288800Z [36;1m: create cachekey[0m
+2025-03-17T07:36:55.0289236Z [36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')[0m
+2025-03-17T07:36:55.0289810Z [36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')[0m
+2025-03-17T07:36:55.0290252Z [36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT[0m
+2025-03-17T07:36:55.0340033Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:55.0340336Z env:
+2025-03-17T07:36:55.0340511Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:55.0340725Z ##[endgroup]
+2025-03-17T07:36:55.1282906Z ##[group]Run : disable incremental compilation
+2025-03-17T07:36:55.1283243Z [36;1m: disable incremental compilation[0m
+2025-03-17T07:36:55.1283536Z [36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then[0m
+2025-03-17T07:36:55.1283828Z [36;1m  echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV[0m
+2025-03-17T07:36:55.1284071Z [36;1mfi[0m
+2025-03-17T07:36:55.1332243Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:55.1332549Z env:
+2025-03-17T07:36:55.1332977Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:55.1333232Z ##[endgroup]
+2025-03-17T07:36:55.1420836Z ##[group]Run : enable colors in Cargo output
+2025-03-17T07:36:55.1421137Z [36;1m: enable colors in Cargo output[0m
+2025-03-17T07:36:55.1421414Z [36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then[0m
+2025-03-17T07:36:55.1421738Z [36;1m  echo CARGO_TERM_COLOR=always >> $GITHUB_ENV[0m
+2025-03-17T07:36:55.1421989Z [36;1mfi[0m
+2025-03-17T07:36:55.1465928Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:55.1466231Z env:
+2025-03-17T07:36:55.1466400Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:55.1466626Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:55.1466804Z ##[endgroup]
+2025-03-17T07:36:55.1551577Z ##[group]Run : enable Cargo sparse registry
+2025-03-17T07:36:55.1551885Z [36;1m: enable Cargo sparse registry[0m
+2025-03-17T07:36:55.1552211Z [36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70[0m
+2025-03-17T07:36:55.1553082Z [36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol ]; then[0m
+2025-03-17T07:36:55.1553926Z [36;1m  if rustc +stable --version --verbose | grep -q '^release: 1\.6[89]\.'; then[0m
+2025-03-17T07:36:55.1554590Z [36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+2025-03-17T07:36:55.1555064Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV[0m
+2025-03-17T07:36:55.1555496Z [36;1m  elif rustc +stable --version --verbose | grep -q '^release: 1\.6[67]\.'; then[0m
+2025-03-17T07:36:55.1555990Z [36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+2025-03-17T07:36:55.1556438Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV[0m
+2025-03-17T07:36:55.1556731Z [36;1m  fi[0m
+2025-03-17T07:36:55.1556897Z [36;1mfi[0m
+2025-03-17T07:36:55.1600158Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:55.1600464Z env:
+2025-03-17T07:36:55.1600642Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:55.1600868Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:55.1601065Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:55.1601256Z ##[endgroup]
+2025-03-17T07:36:55.1989232Z ##[group]Run : work around spurious network errors in curl 8.0
+2025-03-17T07:36:55.1989649Z [36;1m: work around spurious network errors in curl 8.0[0m
+2025-03-17T07:36:55.1990190Z [36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation[0m
+2025-03-17T07:36:55.1990742Z [36;1mif rustc +stable --version --verbose | grep -q '^release: 1\.7[01]\.'; then[0m
+2025-03-17T07:36:55.1991140Z [36;1m  echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV[0m
+2025-03-17T07:36:55.1991420Z [36;1mfi[0m
+2025-03-17T07:36:55.2041162Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:55.2041468Z env:
+2025-03-17T07:36:55.2041646Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:55.2041868Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:55.2042079Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:55.2042275Z ##[endgroup]
+2025-03-17T07:36:55.2283044Z ##[group]Run rustc +stable --version --verbose
+2025-03-17T07:36:55.2283376Z [36;1mrustc +stable --version --verbose[0m
+2025-03-17T07:36:55.2332071Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-03-17T07:36:55.2332386Z env:
+2025-03-17T07:36:55.2332564Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:55.2333009Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:55.2333207Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:55.2333401Z ##[endgroup]
+2025-03-17T07:36:55.2548956Z rustc 1.85.0 (4d91de4e4 2025-02-17)
+2025-03-17T07:36:55.2550034Z binary: rustc
+2025-03-17T07:36:55.2551022Z commit-hash: 4d91de4e48198da2e33413efdcd9cd2cc0c46688
+2025-03-17T07:36:55.2551543Z commit-date: 2025-02-17
+2025-03-17T07:36:55.2551894Z host: x86_64-unknown-linux-gnu
+2025-03-17T07:36:55.2552228Z release: 1.85.0
+2025-03-17T07:36:55.2552786Z LLVM version: 19.1.7
+2025-03-17T07:36:55.2687572Z ##[group]Run Swatinem/rust-cache@v2
+2025-03-17T07:36:55.2687858Z with:
+2025-03-17T07:36:55.2688032Z   shared-key: rust-cache
+2025-03-17T07:36:55.2688224Z   prefix-key: v0-rust
+2025-03-17T07:36:55.2688423Z   cache-targets: true
+2025-03-17T07:36:55.2688607Z   cache-all-crates: false
+2025-03-17T07:36:55.2688801Z   save-if: true
+2025-03-17T07:36:55.2688976Z   cache-provider: github
+2025-03-17T07:36:55.2689158Z   cache-bin: true
+2025-03-17T07:36:55.2689328Z   lookup-only: false
+2025-03-17T07:36:55.2689504Z env:
+2025-03-17T07:36:55.2689666Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:55.2689876Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:55.2690059Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:55.2690252Z ##[endgroup]
+2025-03-17T07:36:56.3399079Z ##[group]Cache Configuration
+2025-03-17T07:36:56.3399574Z Cache Provider:
+2025-03-17T07:36:56.3399979Z     github
+2025-03-17T07:36:56.3400266Z Workspaces:
+2025-03-17T07:36:56.3400566Z     /home/runner/work/ShardX/ShardX
+2025-03-17T07:36:56.3401066Z Cache Paths:
+2025-03-17T07:36:56.3401456Z     /home/runner/.cargo/bin
+2025-03-17T07:36:56.3402327Z     /home/runner/.cargo/.crates.toml
+2025-03-17T07:36:56.3402986Z     /home/runner/.cargo/.crates2.json
+2025-03-17T07:36:56.3403407Z     /home/runner/.cargo/registry
+2025-03-17T07:36:56.3403780Z     /home/runner/.cargo/git
+2025-03-17T07:36:56.3404160Z     /home/runner/work/ShardX/ShardX/target
+2025-03-17T07:36:56.3404565Z Restore Key:
+2025-03-17T07:36:56.3404892Z     v0-rust-rust-cache-Linux-31217fda
+2025-03-17T07:36:56.3405299Z Cache Key:
+2025-03-17T07:36:56.3405645Z     v0-rust-rust-cache-Linux-31217fda-f2bdf931
+2025-03-17T07:36:56.3406109Z .. Prefix:
+2025-03-17T07:36:56.3406424Z   - v0-rust-rust-cache-Linux
+2025-03-17T07:36:56.3406834Z .. Environment considered:
+2025-03-17T07:36:56.3407459Z   - Rust Version: 1.85.0 x86_64-unknown-linux-gnu (4d91de4e48198da2e33413efdcd9cd2cc0c46688)
+2025-03-17T07:36:56.3408085Z   - CARGO_HOME
+2025-03-17T07:36:56.3408379Z   - CARGO_INCREMENTAL
+2025-03-17T07:36:56.3408743Z   - CARGO_TERM_COLOR
+2025-03-17T07:36:56.3409083Z .. Lockfiles considered:
+2025-03-17T07:36:56.3409496Z   - /home/runner/work/ShardX/ShardX/Cargo.lock
+2025-03-17T07:36:56.3409990Z   - /home/runner/work/ShardX/ShardX/Cargo.toml
+2025-03-17T07:36:56.3410708Z ##[endgroup]
+2025-03-17T07:36:56.3410894Z 
+2025-03-17T07:36:56.3411035Z ... Restoring cache ...
+2025-03-17T07:36:56.4133420Z ##[warning]Cache not found for keys: v0-rust-rust-cache-Linux-31217fda-f2bdf931, v0-rust-rust-cache-Linux-31217fda
+2025-03-17T07:36:56.4140635Z No cache found.
+2025-03-17T07:36:56.4208327Z ##[group]Run echo "Checking for duplicate module files..."
+2025-03-17T07:36:56.4208741Z [36;1mecho "Checking for duplicate module files..."[0m
+2025-03-17T07:36:56.4209001Z [36;1m[0m
+2025-03-17T07:36:56.4209171Z [36;1m# Find all mod.rs files[0m
+2025-03-17T07:36:56.4209448Z [36;1mfind src -name "mod.rs" | while read -r mod_file; do[0m
+2025-03-17T07:36:56.4209742Z [36;1m  dir=$(dirname "$mod_file")[0m
+2025-03-17T07:36:56.4209966Z [36;1m  base=$(basename "$dir")[0m
+2025-03-17T07:36:56.4210213Z [36;1m  parent_dir=$(dirname "$dir")[0m
+2025-03-17T07:36:56.4210436Z [36;1m  [0m
+2025-03-17T07:36:56.4210691Z [36;1m  # Check if there's also a .rs file with the same name as the directory[0m
+2025-03-17T07:36:56.4211035Z [36;1m  if [ -f "$parent_dir/$base.rs" ]; then[0m
+2025-03-17T07:36:56.4211377Z [36;1m    echo "⚠️ Duplicate module found: $parent_dir/$base.rs and $mod_file"[0m
+2025-03-17T07:36:56.4211851Z [36;1m    echo "::warning::Duplicate module found: $parent_dir/$base.rs and $mod_file"[0m
+2025-03-17T07:36:56.4212258Z [36;1m    echo "$parent_dir/$base.rs" >> duplicate_modules.txt[0m
+2025-03-17T07:36:56.4212786Z [36;1m    echo "$mod_file" >> duplicate_modules.txt[0m
+2025-03-17T07:36:56.4213128Z [36;1m  fi[0m
+2025-03-17T07:36:56.4213288Z [36;1mdone[0m
+2025-03-17T07:36:56.4213433Z [36;1m[0m
+2025-03-17T07:36:56.4213615Z [36;1mif [ -f duplicate_modules.txt ]; then[0m
+2025-03-17T07:36:56.4213992Z [36;1m  echo "::error::Found duplicate module files. Please remove one of each pair."[0m
+2025-03-17T07:36:56.4214343Z [36;1m  exit 1[0m
+2025-03-17T07:36:56.4214512Z [36;1melse[0m
+2025-03-17T07:36:56.4214720Z [36;1m  echo "✅ No duplicate module files found."[0m
+2025-03-17T07:36:56.4214968Z [36;1mfi[0m
+2025-03-17T07:36:56.4265299Z shell: /usr/bin/bash -e {0}
+2025-03-17T07:36:56.4265511Z env:
+2025-03-17T07:36:56.4265682Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:56.4265999Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:56.4266348Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:56.4266568Z   CACHE_ON_FAILURE: false
+2025-03-17T07:36:56.4266886Z ##[endgroup]
+2025-03-17T07:36:56.4336004Z Checking for duplicate module files...
+2025-03-17T07:36:56.5776985Z ✅ No duplicate module files found.
+2025-03-17T07:36:56.5801958Z ##[group]Run echo "Checking for reserved keywords in module names..."
+2025-03-17T07:36:56.5802428Z [36;1mecho "Checking for reserved keywords in module names..."[0m
+2025-03-17T07:36:56.5802939Z [36;1m[0m
+2025-03-17T07:36:56.5803117Z [36;1m# List of Rust reserved keywords[0m
+2025-03-17T07:36:56.5804275Z [36;1mkeywords=("as" "break" "const" "continue" "crate" "else" "enum" "extern" "false" "fn" "for" "if" "impl" "in" "let" "loop" "match" "mod" "move" "mut" "pub" "ref" "return" "self" "Self" "static" "struct" "super" "trait" "true" "type" "unsafe" "use" "where" "while" "async" "await" "dyn" "abstract" "become" "box" "do" "final" "macro" "override" "priv" "typeof" "unsized" "virtual" "yield")[0m
+2025-03-17T07:36:56.5805255Z [36;1m[0m
+2025-03-17T07:36:56.5805478Z [36;1m# Check for module names that are reserved keywords[0m
+2025-03-17T07:36:56.5805775Z [36;1mfor keyword in "${keywords[@]}"; do[0m
+2025-03-17T07:36:56.5806165Z [36;1m  if find src -name "$keyword.rs" -o -name "$keyword" -type d | grep -q .; then[0m
+2025-03-17T07:36:56.5806597Z [36;1m    echo "⚠️ Found module named with reserved keyword: $keyword"[0m
+2025-03-17T07:36:56.5807075Z [36;1m    echo "::error::Found module named with reserved keyword: $keyword. Please rename this module."[0m
+2025-03-17T07:36:56.5807478Z [36;1m    exit 1[0m
+2025-03-17T07:36:56.5807648Z [36;1m  fi[0m
+2025-03-17T07:36:56.5807803Z [36;1mdone[0m
+2025-03-17T07:36:56.5807947Z [36;1m[0m
+2025-03-17T07:36:56.5808158Z [36;1mecho "✅ No reserved keywords used as module names."[0m
+2025-03-17T07:36:56.5858820Z shell: /usr/bin/bash -e {0}
+2025-03-17T07:36:56.5859042Z env:
+2025-03-17T07:36:56.5859219Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:56.5859452Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:56.5859647Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:56.5859836Z   CACHE_ON_FAILURE: false
+2025-03-17T07:36:56.5860024Z ##[endgroup]
+2025-03-17T07:36:56.5924517Z Checking for reserved keywords in module names...
+2025-03-17T07:36:56.6318174Z ⚠️ Found module named with reserved keyword: mod
+2025-03-17T07:36:56.6322298Z ##[error]Found module named with reserved keyword: mod. Please rename this module.
+2025-03-17T07:36:56.6325147Z ##[error]Process completed with exit code 1.
+2025-03-17T07:36:56.6399228Z Post job cleanup.
+2025-03-17T07:36:56.7329136Z [command]/usr/bin/git version
+2025-03-17T07:36:56.7368406Z git version 2.48.1
+2025-03-17T07:36:56.7413543Z Temporarily overriding HOME='/home/runner/work/_temp/b6b9a9bb-f828-4560-946d-4a723a46c491' before making global git config changes
+2025-03-17T07:36:56.7414794Z Adding repository directory to the temporary git global config as a safe directory
+2025-03-17T07:36:56.7427263Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ShardX/ShardX
+2025-03-17T07:36:56.7463417Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-03-17T07:36:56.7496968Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-03-17T07:36:56.7764520Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-03-17T07:36:56.7789102Z http.https://github.com/.extraheader
+2025-03-17T07:36:56.7806678Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-03-17T07:36:56.7843880Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-03-17T07:36:56.8215270Z Cleaning up orphan processes

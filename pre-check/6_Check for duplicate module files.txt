@@ -1,0 +1,33 @@
+﻿2025-03-17T07:36:56.4208316Z ##[group]Run echo "Checking for duplicate module files..."
+2025-03-17T07:36:56.4208737Z [36;1mecho "Checking for duplicate module files..."[0m
+2025-03-17T07:36:56.4208998Z [36;1m[0m
+2025-03-17T07:36:56.4209169Z [36;1m# Find all mod.rs files[0m
+2025-03-17T07:36:56.4209445Z [36;1mfind src -name "mod.rs" | while read -r mod_file; do[0m
+2025-03-17T07:36:56.4209740Z [36;1m  dir=$(dirname "$mod_file")[0m
+2025-03-17T07:36:56.4209964Z [36;1m  base=$(basename "$dir")[0m
+2025-03-17T07:36:56.4210210Z [36;1m  parent_dir=$(dirname "$dir")[0m
+2025-03-17T07:36:56.4210433Z [36;1m  [0m
+2025-03-17T07:36:56.4210688Z [36;1m  # Check if there's also a .rs file with the same name as the directory[0m
+2025-03-17T07:36:56.4211033Z [36;1m  if [ -f "$parent_dir/$base.rs" ]; then[0m
+2025-03-17T07:36:56.4211373Z [36;1m    echo "⚠️ Duplicate module found: $parent_dir/$base.rs and $mod_file"[0m
+2025-03-17T07:36:56.4211821Z [36;1m    echo "::warning::Duplicate module found: $parent_dir/$base.rs and $mod_file"[0m
+2025-03-17T07:36:56.4212255Z [36;1m    echo "$parent_dir/$base.rs" >> duplicate_modules.txt[0m
+2025-03-17T07:36:56.4212780Z [36;1m    echo "$mod_file" >> duplicate_modules.txt[0m
+2025-03-17T07:36:56.4213125Z [36;1m  fi[0m
+2025-03-17T07:36:56.4213286Z [36;1mdone[0m
+2025-03-17T07:36:56.4213430Z [36;1m[0m
+2025-03-17T07:36:56.4213612Z [36;1mif [ -f duplicate_modules.txt ]; then[0m
+2025-03-17T07:36:56.4213989Z [36;1m  echo "::error::Found duplicate module files. Please remove one of each pair."[0m
+2025-03-17T07:36:56.4214341Z [36;1m  exit 1[0m
+2025-03-17T07:36:56.4214510Z [36;1melse[0m
+2025-03-17T07:36:56.4214717Z [36;1m  echo "✅ No duplicate module files found."[0m
+2025-03-17T07:36:56.4214966Z [36;1mfi[0m
+2025-03-17T07:36:56.4265292Z shell: /usr/bin/bash -e {0}
+2025-03-17T07:36:56.4265509Z env:
+2025-03-17T07:36:56.4265679Z   CARGO_HOME: /home/runner/.cargo
+2025-03-17T07:36:56.4265994Z   CARGO_INCREMENTAL: 0
+2025-03-17T07:36:56.4266344Z   CARGO_TERM_COLOR: always
+2025-03-17T07:36:56.4266546Z   CACHE_ON_FAILURE: false
+2025-03-17T07:36:56.4266881Z ##[endgroup]
+2025-03-17T07:36:56.4335987Z Checking for duplicate module files...
+2025-03-17T07:36:56.5776945Z ✅ No duplicate module files found.
