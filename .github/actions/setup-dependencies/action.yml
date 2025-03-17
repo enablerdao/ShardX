@@ -1,0 +1,51 @@
+name: 'Setup Dependencies'
+description: 'Install and configure all dependencies for ShardX builds'
+
+inputs:
+  llvm-version:
+    description: 'LLVM version to install'
+    required: false
+    default: '14'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Cache APT packages
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: >-
+          pkg-config libssl-dev build-essential
+          llvm-14 llvm-14-dev libclang-14-dev clang-14
+          libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+          cmake ninja-build
+        version: 1.0
+
+    - name: Create symbolic links
+      shell: bash
+      run: |
+        sudo ln -sf /usr/lib/llvm-${{ inputs.llvm-version }}/bin/llvm-config /usr/bin/llvm-config
+        sudo ln -sf /usr/bin/clang-${{ inputs.llvm-version }} /usr/bin/clang
+
+    - name: Set environment variables
+      shell: bash
+      run: |
+        echo "LIBCLANG_PATH=/usr/lib/llvm-${{ inputs.llvm-version }}/lib" >> $GITHUB_ENV
+        echo "BINDGEN_EXTRA_CLANG_ARGS=\"-I/usr/lib/llvm-${{ inputs.llvm-version }}/include\"" >> $GITHUB_ENV
+        echo "CARGO_BUILD_JOBS=2" >> $GITHUB_ENV
+        echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
+        
+    - name: Install sccache
+      shell: bash
+      run: |
+        SCCACHE_VERSION="0.7.7"
+        curl -L https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-x86_64-unknown-linux-musl.tar.gz | tar xz
+        sudo mv sccache-v${SCCACHE_VERSION}-x86_64-unknown-linux-musl/sccache /usr/local/bin/sccache
+        sudo chmod +x /usr/local/bin/sccache
+        echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        
+    - name: Configure sccache
+      shell: bash
+      run: |
+        mkdir -p ~/.cache/sccache
+        sccache --start-server
+        sccache --show-stats

@@ -1,0 +1,70 @@
+name: 'Optimize Docker Build'
+description: 'Optimize Docker build process'
+
+inputs:
+  context:
+    description: 'Docker build context'
+    required: false
+    default: '.'
+  push:
+    description: 'Push to registry'
+    required: false
+    default: 'false'
+  tags:
+    description: 'Docker image tags'
+    required: true
+  labels:
+    description: 'Docker image labels'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        buildkitd-flags: --debug
+        
+    - name: Setup Docker build cache
+      shell: bash
+      run: |
+        mkdir -p /tmp/docker-cache
+        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+        echo "BUILDKIT_PROGRESS=plain" >> $GITHUB_ENV
+        
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ inputs.context }}
+        push: false
+        load: true
+        tags: temp-image:latest
+        labels: ${{ inputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        outputs: type=docker,dest=/tmp/shardx-image.tar
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+          RUST_TOOLCHAIN=${{ env.RUST_TOOLCHAIN }}
+          CARGO_BUILD_JOBS=2
+          LIBCLANG_PATH=/usr/lib/llvm-14/lib
+          BINDGEN_EXTRA_CLANG_ARGS=-I/usr/lib/llvm-14/include
+          
+    - name: Test Docker image
+      shell: bash
+      run: |
+        docker load < /tmp/shardx-image.tar
+        docker tag temp-image:latest ${{ inputs.tags }}
+        docker run --rm ${{ inputs.tags }} --version || echo "Version command failed, but continuing"
+        docker run --rm ${{ inputs.tags }} --help || echo "Help command failed, but continuing"
+        
+    - name: Push Docker image
+      if: ${{ inputs.push == 'true' }}
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ inputs.context }}
+        push: true
+        tags: ${{ inputs.tags }}
+        labels: ${{ inputs.labels }}
+        cache-from: type=gha

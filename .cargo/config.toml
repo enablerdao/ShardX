@@ -6,25 +6,34 @@ jobs = 2
 rustflags = [
     "-C", "target-cpu=native",
     "-C", "opt-level=3",
+    "-C", "embed-bitcode=no",
+    "-C", "debuginfo=0",
 ]
 
 # インクリメンタルコンパイルを有効化
 incremental = true
 
-# [target.x86_64-unknown-linux-gnu]
-# # LLDリンカーを使用
-# linker = "clang"
-# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+# ネットワーク設定
+net.retry = 10
+net.git-fetch-with-cli = true
+
+[target.x86_64-unknown-linux-gnu]
+# LLDリンカーを使用
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 [profile.dev]
 # 開発ビルドでも最適化を有効化
 opt-level = 1
 # デバッグ情報を含める
-debug = true
+debug = 1
 # コード生成単位を小さくして並列性を向上
 codegen-units = 256
 # インクリメンタルコンパイルを有効化
 incremental = true
+# 依存関係の最適化レベルを上げる
+[profile.dev.package."*"]
+opt-level = 2
 
 [profile.release]
 # 最大限の最適化
@@ -34,9 +43,14 @@ debug = false
 # リンク時最適化を有効化
 lto = "thin"
 # コード生成単位を減らして最適化を向上
-codegen-units = 16
+codegen-units = 1
 # パニック時にアンワインドせずに中止
 panic = "abort"
+# 依存関係の最適化
+strip = true  # バイナリサイズを削減
+[profile.release.package."*"]
+opt-level = 3
+codegen-units = 1
 
 [profile.bench]
 # ベンチマーク用の最適化
