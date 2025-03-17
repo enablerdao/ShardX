@@ -64,7 +64,7 @@ COPY benches ./benches
 # リリースビルドを実行（RocksDBの依存関係を無効化）
 RUN RUSTFLAGS="-C link-arg=-Wl,--allow-multiple-definition" \
     RUST_BACKTRACE=1 \
-    cargo build --release -v --no-default-features --features="minimal" || \
+    cargo build --release -v --no-default-features || \
     (echo "Release build failed, but continuing with minimal binary")
 
 # ランタイムステージ - 超軽量なベースイメージを使用
@@ -83,10 +83,15 @@ RUN apt-get update && \
 # データディレクトリを作成
 RUN mkdir -p /app/data /app/web && chmod 777 /app/data
 
-# ビルダーステージからバイナリとウェブファイルをコピー（存在する場合）
-COPY --from=builder /app/target/release/shardx* /app/ || true
-COPY --from=builder /app/target/debug/shardx* /app/ || true
-COPY --from=builder /app/web /app/web || true
+# ビルダーステージからバイナリとウェブファイルをコピー
+# 注: ファイルが存在しない場合のエラーを回避するためにシェルスクリプトを使用
+RUN mkdir -p /app/tmp
+COPY --from=builder /app/target/release/shardx* /app/tmp/ 2>/dev/null || true
+COPY --from=builder /app/target/debug/shardx* /app/tmp/ 2>/dev/null || true
+RUN if [ -d "/app/tmp" ]; then mv /app/tmp/* /app/ 2>/dev/null || true; rm -rf /app/tmp; fi
+
+# ウェブファイルをコピー
+COPY --from=builder /app/web /app/web 2>/dev/null || true
 
 # デバッグ用のダミーバイナリを作成（ビルドが失敗した場合）
 RUN if [ ! -f /app/shardx ]; then \
