@@ -1,0 +1,114 @@
+name: Pre-Check
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
+
+jobs:
+  pre-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "rust-cache"
+
+      - name: Check for duplicate module files
+        run: |
+          echo "Checking for duplicate module files..."
+          
+          # Find all mod.rs files
+          find src -name "mod.rs" | while read -r mod_file; do
+            dir=$(dirname "$mod_file")
+            base=$(basename "$dir")
+            parent_dir=$(dirname "$dir")
+            
+            # Check if there's also a .rs file with the same name as the directory
+            if [ -f "$parent_dir/$base.rs" ]; then
+              echo "⚠️ Duplicate module found: $parent_dir/$base.rs and $mod_file"
+              echo "::warning::Duplicate module found: $parent_dir/$base.rs and $mod_file"
+              echo "$parent_dir/$base.rs" >> duplicate_modules.txt
+              echo "$mod_file" >> duplicate_modules.txt
+            fi
+          done
+          
+          if [ -f duplicate_modules.txt ]; then
+            echo "::error::Found duplicate module files. Please remove one of each pair."
+            exit 1
+          else
+            echo "✅ No duplicate module files found."
+          fi
+
+      - name: Check for reserved keywords in module names
+        run: |
+          echo "Checking for reserved keywords in module names..."
+          
+          # List of Rust reserved keywords
+          keywords=("as" "break" "const" "continue" "crate" "else" "enum" "extern" "false" "fn" "for" "if" "impl" "in" "let" "loop" "match" "mod" "move" "mut" "pub" "ref" "return" "self" "Self" "static" "struct" "super" "trait" "true" "type" "unsafe" "use" "where" "while" "async" "await" "dyn" "abstract" "become" "box" "do" "final" "macro" "override" "priv" "typeof" "unsized" "virtual" "yield")
+          
+          # Check for module names that are reserved keywords
+          for keyword in "${keywords[@]}"; do
+            if find src -name "$keyword.rs" -o -name "$keyword" -type d | grep -q .; then
+              echo "⚠️ Found module named with reserved keyword: $keyword"
+              echo "::error::Found module named with reserved keyword: $keyword. Please rename this module."
+              exit 1
+            fi
+          done
+          
+          echo "✅ No reserved keywords used as module names."
+
+      - name: Check for missing files referenced in mod.rs
+        run: |
+          echo "Checking for missing files referenced in mod.rs files..."
+          
+          # Find all mod.rs files
+          find src -name "mod.rs" | while read -r mod_file; do
+            dir=$(dirname "$mod_file")
+            
+            # Extract module declarations
+            grep -E "^(pub )?mod [a-zA-Z0-9_]+;" "$mod_file" | sed -E 's/^(pub )?mod ([a-zA-Z0-9_]+);/\2/' | while read -r module; do
+              # Check if the module exists either as a file or directory
+              if [ ! -f "$dir/$module.rs" ] && [ ! -d "$dir/$module" ]; then
+                echo "⚠️ Missing module file: $dir/$module.rs or directory: $dir/$module"
+                echo "::warning::Missing module file referenced in $mod_file: $module"
+                echo "$mod_file:$module" >> missing_modules.txt
+              fi
+            done
+          done
+          
+          if [ -f missing_modules.txt ]; then
+            echo "::error::Found missing module files referenced in mod.rs files."
+            cat missing_modules.txt
+            exit 1
+          else
+            echo "✅ No missing module files found."
+          fi
+
+      - name: Check code formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Check for compilation errors
+        run: cargo check --all-targets --all-features
+
+      - name: Validate GitHub Actions workflows
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color

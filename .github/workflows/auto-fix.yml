@@ -1,0 +1,84 @@
+name: Auto Fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_pr:
+        description: 'Create a PR with fixes'
+        required: true
+        default: 'true'
+        type: boolean
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜日に実行
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "rust-cache"
+
+      - name: Make fix-modules.sh executable
+        run: chmod +x tools/fix-modules.sh
+
+      - name: Fix modules
+        run: ./tools/fix-modules.sh
+
+      - name: Format code
+        run: cargo fmt --all
+
+      - name: Check if there are changes
+        id: git-check
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit changes
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "自動コード修正: モジュール構造とフォーマットの修正"
+
+      - name: Create Pull Request
+        if: steps.git-check.outputs.changes == 'true' && (github.event.inputs.create_pr == 'true' || github.event_name == 'schedule')
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "自動コード修正: モジュール構造とフォーマットの修正"
+          title: "自動コード修正: モジュール構造とフォーマットの修正"
+          body: |
+            このPRは自動的に生成されました。以下の問題を修正します：
+            
+            - モジュールの重複を解決
+            - 予約語をモジュール名として使用している問題を修正
+            - 存在しないモジュールへの参照を修正
+            - コードフォーマットの適用
+            
+            これらの修正により、ビルドエラーを防ぎ、コードの品質を向上させます。
+          branch: auto-fix-modules
+          base: main
+          delete-branch: true
+
+      - name: Push changes directly
+        if: steps.git-check.outputs.changes == 'true' && github.event.inputs.create_pr == 'false' && github.event_name == 'workflow_dispatch'
+        run: git push
