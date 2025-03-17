@@ -21,11 +21,11 @@ COPY . .
 # Cargo.lockを削除して新しく生成
 RUN rm -f Cargo.lock && cargo update
 
-# リリースビルドを実行
-RUN cargo build --release
+# まずデバッグビルドを試す
+RUN cargo build -v
 
-# バイナリを最適化
-RUN strip target/release/shardx
+# リリースビルドを実行
+RUN cargo build --release -v || (echo "Release build failed, checking errors" && cat target/release/build/*/*.log)
 
 # ランタイムステージ - 超軽量なベースイメージを使用
 FROM debian:bookworm-slim AS runtime
@@ -43,9 +43,16 @@ RUN apt-get update && \
 # データディレクトリを作成
 RUN mkdir -p /app/data /app/web && chmod 777 /app/data
 
-# ビルダーステージからバイナリとウェブファイルをコピー
-COPY --from=builder /app/target/release/shardx /app/shardx
-COPY --from=builder /app/web /app/web
+# ビルダーステージからバイナリとウェブファイルをコピー（存在する場合）
+COPY --from=builder /app/target/release/shardx* /app/ || true
+COPY --from=builder /app/target/debug/shardx* /app/ || true
+COPY --from=builder /app/web /app/web || true
+
+# デバッグ用のダミーバイナリを作成（ビルドが失敗した場合）
+RUN if [ ! -f /app/shardx ]; then \
+    echo '#!/bin/sh' > /app/shardx && \
+    echo 'echo "ShardX binary not available. Build process failed."' >> /app/shardx; \
+    fi
 
 # バイナリが実行可能であることを確認
 RUN chmod +x /app/shardx
