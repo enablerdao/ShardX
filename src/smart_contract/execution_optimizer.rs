@@ -7,7 +7,7 @@ use tokio::time;
 
 use crate::error::Error;
 use crate::metrics::MetricsCollector;
-use crate::smartcontract::{
+use crate::smart_contract::{
     Contract, ContractFunction, ContractState, ExecutionContext, ExecutionResult,
 };
 
