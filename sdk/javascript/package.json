@@ -20,7 +20,7 @@
   "author": "ShardX Team",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.27.2",
+    "axios": "^1.8.2",
     "bignumber.js": "^9.1.0",
     "bs58": "^5.0.0",
     "buffer": "^6.0.3",

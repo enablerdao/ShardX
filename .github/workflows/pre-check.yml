@@ -62,13 +62,26 @@ jobs:
           keywords=("as" "break" "const" "continue" "crate" "else" "enum" "extern" "false" "fn" "for" "if" "impl" "in" "let" "loop" "match" "mod" "move" "mut" "pub" "ref" "return" "self" "Self" "static" "struct" "super" "trait" "true" "type" "unsafe" "use" "where" "while" "async" "await" "dyn" "abstract" "become" "box" "do" "final" "macro" "override" "priv" "typeof" "unsized" "virtual" "yield")
           
           # Check for module names that are reserved keywords
+          found_reserved=false
           for keyword in "${keywords[@]}"; do
-            if find src -name "$keyword.rs" -o -name "$keyword" -type d | grep -q .; then
-              echo "⚠️ Found module named with reserved keyword: $keyword"
-              echo "::error::Found module named with reserved keyword: $keyword. Please rename this module."
-              exit 1
+            # ファイル名のチェック
+            if find src -type f -name "$keyword.rs" | grep -v "mod.rs" | grep -q .; then
+              echo "⚠️ Found file named with reserved keyword: $keyword.rs"
+              echo "::error::Found file named with reserved keyword: $keyword.rs. Please rename this file."
+              found_reserved=true
+            fi
+            
+            # ディレクトリ名のチェック
+            if find src -type d -name "$keyword" | grep -q .; then
+              echo "⚠️ Found directory named with reserved keyword: $keyword"
+              echo "::error::Found directory named with reserved keyword: $keyword. Please rename this directory."
+              found_reserved=true
             fi
           done
+          
+          if [ "$found_reserved" = true ]; then
+            exit 1
+          fi
           
           echo "✅ No reserved keywords used as module names."
 
