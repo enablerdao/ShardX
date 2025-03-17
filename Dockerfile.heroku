@@ -1,0 +1,44 @@
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# 必要なパッケージをインストール
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    wget \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# ShardXのバイナリをダウンロード
+RUN mkdir -p /app/bin && \
+    curl -L -o /app/bin/shardx https://github.com/enablerdao/ShardX/releases/download/v0.1.0/shardx-linux-amd64 && \
+    chmod +x /app/bin/shardx
+
+# データディレクトリを作成
+RUN mkdir -p /app/data && chmod 777 /app/data
+
+# Webインターフェースをダウンロード
+RUN mkdir -p /app/web && \
+    curl -L -o /tmp/web.tar.gz https://github.com/enablerdao/ShardX/releases/download/v0.1.0/web-dist.tar.gz && \
+    tar -xzf /tmp/web.tar.gz -C /app/web && \
+    rm /tmp/web.tar.gz
+
+# シンボリックリンクを作成
+RUN ln -s /app/bin/shardx /app/shardx
+
+# 環境変数の設定
+ENV RUST_LOG=info
+ENV DATA_DIR=/app/data
+ENV WEB_DIR=/app/web
+ENV NODE_ID=heroku_node
+ENV INITIAL_SHARDS=32
+ENV RUST_BACKTRACE=1
+
+# ポートを公開（Herokuは$PORTを使用）
+EXPOSE $PORT
+
+# アプリケーションを実行
+CMD ["/app/shardx"]
