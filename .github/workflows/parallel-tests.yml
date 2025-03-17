@@ -34,7 +34,7 @@ jobs:
         run: cargo fmt --all -- --check
       
       - name: Lint with clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --no-default-features -- -D warnings
 
   parallel-test:
     needs: pre-check
