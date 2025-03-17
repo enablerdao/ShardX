@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+.github
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Data directories
+data/
+tmp/
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Tests
+tests/
+test_data/
+
+# Configuration files that should not be included
+.env
+.env.*
+config/local.toml
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo

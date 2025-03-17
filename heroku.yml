@@ -1,13 +1,11 @@
 build:
   docker:
     web: Dockerfile
-    worker: Dockerfile
   config:
     INITIAL_SHARDS: 32
 
 run:
   web: /app/shardx
-  worker: /app/shardx --worker
 
 setup:
   addons:
@@ -21,3 +19,4 @@ setup:
     DATA_DIR: /app/data
     REDIS_ENABLED: true
     WEB_ENABLED: true
+    PORT: 54868
