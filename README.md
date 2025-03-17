@@ -45,7 +45,27 @@ cd ShardX
 # ビルド後にDockerHubにプッシュ（ログインが必要）
 docker login
 ./build-docker.sh --push
+
+# マルチアーキテクチャビルド（ARM64とAMD64）
+./build-docker.sh --multi-arch
+
+# カスタムプラットフォーム指定
+./build-docker.sh --platform "linux/amd64,linux/arm64,linux/arm/v7"
+
+# すべてのオプションを組み合わせる
+./build-docker.sh --tag v1.0.0 --multi-arch --push
 ```
+
+##### ビルドスクリプトのオプション
+
+| オプション | 短縮形 | 説明 |
+|------------|--------|------|
+| `--tag TAG` | `-t TAG` | Dockerイメージのタグを指定（デフォルト: latest） |
+| `--version VER` | `-v VER` | バージョン番号を指定（デフォルト: Cargo.tomlから取得） |
+| `--push` | `-p` | ビルド後にDockerイメージをプッシュ |
+| `--platform PLATFORMS` | - | ビルドするプラットフォームをカンマ区切りで指定 |
+| `--multi-arch` | `-m` | マルチアーキテクチャビルドを有効化 |
+| `--help` | `-h` | ヘルプメッセージを表示 |
 
 ### 動作確認（インストール後）
 
