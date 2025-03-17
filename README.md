@@ -14,7 +14,7 @@
 
 ```bash
 # 方法1: Dockerを使用（すべてのOS）- 最も簡単
-docker run -p 54867:54867 -p 54868:54868 enablerdao/shardx:latest
+docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
 
 # 方法2: Docker Composeを使用（複数ノード構成）
 git clone https://github.com/enablerdao/ShardX.git
@@ -37,14 +37,14 @@ cargo build --release
 # Dockerイメージをビルド
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
-./build-docker.sh
+docker build -t yukih47/shardx:latest .
 
 # バージョンタグを指定してビルド
-./build-docker.sh --tag v1.0.0
+docker build -t yukih47/shardx:v1.0.0 .
 
 # ビルド後にDockerHubにプッシュ（ログインが必要）
 docker login
-./build-docker.sh --push
+docker push yukih47/shardx:latest
 ```
 
 ### 動作確認（インストール後）
