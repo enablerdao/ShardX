@@ -23,9 +23,15 @@ case $OS in
   'Darwin')
     OS='macos'
     ;;
+  'FreeBSD')
+    OS='freebsd'
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    OS='windows'
+    ;;
   *)
     echo -e "${RED}サポートされていないOS: $OS${NC}"
-    echo "現在、LinuxとmacOSのみサポートしています。"
+    echo "現在、Linux、macOS、FreeBSD、Windowsのみサポートしています。"
     exit 1
     ;;
 esac
@@ -71,10 +77,27 @@ echo -e "${BLUE}ShardX $VERSION をインストールします...${NC}"
 mkdir -p "$BIN_DIR" "$DATA_DIR" "$CONFIG_DIR" "$WEB_DIR"
 
 # GitHubリリースからバイナリをダウンロード
-BINARY_URL="https://github.com/enablerdao/ShardX/releases/download/$VERSION/shardx-$OS-$ARCH"
+# アーキテクチャ名をGitHubリリース形式に変換
+if [ "$ARCH" = "amd64" ]; then
+  GITHUB_ARCH="x86_64"
+elif [ "$ARCH" = "arm64" ]; then
+  GITHUB_ARCH="arm64"
+else
+  GITHUB_ARCH="$ARCH"
+fi
+
+# Windowsの場合は.exeを追加
+if [ "$OS" = "windows" ]; then
+  BINARY_URL="https://github.com/enablerdao/ShardX/releases/download/$VERSION/shardx-$OS-$GITHUB_ARCH.exe"
+  BINARY_NAME="shardx.exe"
+else
+  BINARY_URL="https://github.com/enablerdao/ShardX/releases/download/$VERSION/shardx-$OS-$GITHUB_ARCH"
+  BINARY_NAME="shardx"
+fi
+
 echo -e "${BLUE}バイナリをダウンロード中: $BINARY_URL${NC}"
 
-if ! curl -L -o "$BIN_DIR/shardx" "$BINARY_URL"; then
+if ! curl -L -o "$BIN_DIR/$BINARY_NAME" "$BINARY_URL"; then
   echo -e "${YELLOW}リリースバイナリのダウンロードに失敗しました。ソースからビルドします...${NC}"
   
   # 必要なツールの確認
@@ -138,21 +161,28 @@ else
   fi
 fi
 
-# 実行ファイルへのシンボリックリンクを作成
-SYMLINK_DIR="$HOME/.local/bin"
-mkdir -p "$SYMLINK_DIR"
+# 実行ファイルへのシンボリックリンクを作成（Windows以外）
+if [ "$OS" != "windows" ]; then
+  SYMLINK_DIR="$HOME/.local/bin"
+  mkdir -p "$SYMLINK_DIR"
 
-if [ -f "$SYMLINK_DIR/shardx" ]; then
-  rm "$SYMLINK_DIR/shardx"
+  if [ -f "$SYMLINK_DIR/$BINARY_NAME" ]; then
+    rm "$SYMLINK_DIR/$BINARY_NAME"
+  fi
+
+  ln -s "$BIN_DIR/$BINARY_NAME" "$SYMLINK_DIR/$BINARY_NAME"
+else
+  # Windowsの場合はPATHに追加する方法を表示
+  echo -e "${YELLOW}Windowsでは、$BIN_DIRをPATH環境変数に追加してください。${NC}"
 fi
 
-ln -s "$BIN_DIR/shardx" "$SYMLINK_DIR/shardx"
-
-# PATHを確認
-if [[ ":$PATH:" != *":$SYMLINK_DIR:"* ]]; then
-  echo -e "${YELLOW}$SYMLINK_DIR がPATHに含まれていません。${NC}"
-  echo -e "以下をシェルの設定ファイル（~/.bashrc、~/.zshrc など）に追加してください:"
-  echo -e "${GREEN}export PATH=\"\$PATH:$SYMLINK_DIR\"${NC}"
+# PATHを確認（Windows以外）
+if [ "$OS" != "windows" ]; then
+  if [[ ":$PATH:" != *":$SYMLINK_DIR:"* ]]; then
+    echo -e "${YELLOW}$SYMLINK_DIR がPATHに含まれていません。${NC}"
+    echo -e "以下をシェルの設定ファイル（~/.bashrc、~/.zshrc など）に追加してください:"
+    echo -e "${GREEN}export PATH=\"\$PATH:$SYMLINK_DIR\"${NC}"
+  fi
 fi
 
 # 設定ファイルを作成
@@ -184,21 +214,37 @@ EOL
 fi
 
 # 起動スクリプトを作成
-cat > "$BIN_DIR/run.sh" << EOL
-#!/bin/bash
-$BIN_DIR/shardx --config $CONFIG_DIR/config.toml
+if [ "$OS" = "windows" ]; then
+  cat > "$BIN_DIR/run.bat" << EOL
+@echo off
+"$BIN_DIR\\$BINARY_NAME" --config "$CONFIG_DIR\\config.toml"
 EOL
-chmod +x "$BIN_DIR/run.sh"
+else
+  cat > "$BIN_DIR/run.sh" << EOL
+#!/bin/bash
+$BIN_DIR/$BINARY_NAME --config $CONFIG_DIR/config.toml
+EOL
+  chmod +x "$BIN_DIR/run.sh"
+fi
 
 # 完了メッセージ
 echo
 echo -e "${GREEN}ShardX $VERSION のインストールが完了しました！${NC}"
 echo
-echo -e "バイナリの場所: ${BLUE}$BIN_DIR/shardx${NC}"
+echo -e "バイナリの場所: ${BLUE}$BIN_DIR/$BINARY_NAME${NC}"
 echo -e "設定ファイル: ${BLUE}$CONFIG_DIR/config.toml${NC}"
 echo -e "データディレクトリ: ${BLUE}$DATA_DIR${NC}"
 echo
-echo -e "ShardXを起動するには: ${GREEN}shardx${NC}"
-echo -e "設定ファイルを指定して起動するには: ${GREEN}shardx --config $CONFIG_DIR/config.toml${NC}"
+
+if [ "$OS" = "windows" ]; then
+  echo -e "ShardXを起動するには: ${GREEN}$BIN_DIR\\$BINARY_NAME${NC}"
+  echo -e "設定ファイルを指定して起動するには: ${GREEN}$BIN_DIR\\$BINARY_NAME --config $CONFIG_DIR\\config.toml${NC}"
+  echo -e "または起動スクリプトを使用: ${GREEN}$BIN_DIR\\run.bat${NC}"
+else
+  echo -e "ShardXを起動するには: ${GREEN}$BINARY_NAME${NC}"
+  echo -e "設定ファイルを指定して起動するには: ${GREEN}$BINARY_NAME --config $CONFIG_DIR/config.toml${NC}"
+  echo -e "または起動スクリプトを使用: ${GREEN}$BIN_DIR/run.sh${NC}"
+fi
+
 echo
 echo -e "詳細なドキュメントは https://github.com/enablerdao/ShardX/docs を参照してください"

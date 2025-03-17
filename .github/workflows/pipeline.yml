@@ -383,6 +383,23 @@ jobs:
           name: shardx-all-platforms
           path: ./release/
           retention-days: 30
+          
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./release/shardx-linux-x86_64
+            ./release/shardx-linux-arm64
+            ./release/shardx-windows-x86_64.exe
+            ./release/shardx-macos-x86_64
+            ./release/shardx-macos-arm64
+            ./release/shardx-freebsd-x86_64
+            ./release/shardx-all-platforms.zip
+            ./release/SHA256SUMS.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: true
   
   # Dockerイメージビルド
   docker:
