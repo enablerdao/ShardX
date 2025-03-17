@@ -1,15 +1,15 @@
 pub mod engine;
 pub mod vm;
-pub mod compiler;
-pub mod executor;
+// pub mod compiler; // TODO: このモジュールが見つかりません
+// pub mod executor; // TODO: このモジュールが見つかりません
 pub mod storage;
 pub mod wasm;
 pub mod evm;
-pub mod validator;
-pub mod optimizer;
-pub mod abi;
+// pub mod validator; // TODO: このモジュールが見つかりません
+// pub mod optimizer; // TODO: このモジュールが見つかりません
+// pub mod abi; // TODO: このモジュールが見つかりません
 pub mod event;
-pub mod gas;
+// pub mod gas; // TODO: このモジュールが見つかりません
 pub mod cross_shard;
 
 pub use engine::{ContractEngine, ContractEngineConfig, ContractEngineStats};

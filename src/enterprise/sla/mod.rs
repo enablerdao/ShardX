@@ -8,11 +8,11 @@
 // - SLA違反アラート
 // - サポートチケット管理
 
-mod agreement;
-mod metric;
-mod report;
-mod alert;
-mod support;
+// mod agreement; // TODO: このモジュールが見つかりません
+// mod metric; // TODO: このモジュールが見つかりません
+// mod report; // TODO: このモジュールが見つかりません
+// mod alert; // TODO: このモジュールが見つかりません
+// mod support; // TODO: このモジュールが見つかりません
 
 pub use self::agreement::{ServiceLevelAgreement, SLALevel, SLATier, SLAStatus};
 pub use self::metric::{SLAMetric, MetricType, MetricValue, MetricThreshold};

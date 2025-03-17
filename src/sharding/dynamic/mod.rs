@@ -12,13 +12,13 @@
 // - 自動シャードバランシング
 
 mod config;
-mod metrics;
-mod balancer;
-mod splitter;
-mod merger;
-mod relocator;
-mod hotspot;
-mod optimizer;
+// mod metrics; // TODO: このモジュールが見つかりません
+// mod balancer; // TODO: このモジュールが見つかりません
+// mod splitter; // TODO: このモジュールが見つかりません
+// mod merger; // TODO: このモジュールが見つかりません
+// mod relocator; // TODO: このモジュールが見つかりません
+// mod hotspot; // TODO: このモジュールが見つかりません
+// mod optimizer; // TODO: このモジュールが見つかりません
 
 pub use self::config::{DynamicShardingConfig, ShardSplitPolicy, ShardMergePolicy, RebalancePolicy};
 pub use self::metrics::{ShardMetrics, LoadMetric, DataDistributionMetric};

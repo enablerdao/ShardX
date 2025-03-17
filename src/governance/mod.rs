@@ -1,23 +1,23 @@
 pub mod proposal;
 pub mod voting;
-pub mod policy;
+// pub mod policy; // TODO: このモジュールが見つかりません
 pub mod dao;
-pub mod treasury;
-pub mod committee;
-pub mod role;
-pub mod permission;
-pub mod execution;
-pub mod monitoring;
-pub mod dispute;
-pub mod reward;
-pub mod reputation;
-pub mod delegation;
-pub mod quadratic_voting;
-pub mod conviction_voting;
-pub mod liquid_democracy;
-pub mod futarchy;
-pub mod holacracy;
-pub mod sociocracy;
+// pub mod treasury; // TODO: このモジュールが見つかりません
+// pub mod committee; // TODO: このモジュールが見つかりません
+// pub mod role; // TODO: このモジュールが見つかりません
+// pub mod permission; // TODO: このモジュールが見つかりません
+// pub mod execution; // TODO: このモジュールが見つかりません
+// pub mod monitoring; // TODO: このモジュールが見つかりません
+// pub mod dispute; // TODO: このモジュールが見つかりません
+// pub mod reward; // TODO: このモジュールが見つかりません
+// pub mod reputation; // TODO: このモジュールが見つかりません
+// pub mod delegation; // TODO: このモジュールが見つかりません
+// pub mod quadratic_voting; // TODO: このモジュールが見つかりません
+// pub mod conviction_voting; // TODO: このモジュールが見つかりません
+// pub mod liquid_democracy; // TODO: このモジュールが見つかりません
+// pub mod futarchy; // TODO: このモジュールが見つかりません
+// pub mod holacracy; // TODO: このモジュールが見つかりません
+// pub mod sociocracy; // TODO: このモジュールが見つかりません
 
 pub use proposal::{Proposal, ProposalStatus, ProposalType, ProposalMetadata, ProposalOptions};
 pub use voting::{Vote, VoteType, VotingPower, VotingStrategy, VotingPeriod, VotingResult, VotingSystem};

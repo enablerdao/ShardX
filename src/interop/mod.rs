@@ -9,10 +9,10 @@
 // - 相互運用性プロトコル
 
 mod bridge;
-mod wrapped_assets;
-mod message_passing;
-mod state_proof;
-mod protocols;
+// mod wrapped_assets; // TODO: このモジュールが見つかりません
+// mod message_passing; // TODO: このモジュールが見つかりません
+// mod state_proof; // TODO: このモジュールが見つかりません
+// mod protocols; // TODO: このモジュールが見つかりません
 
 pub use self::bridge::{Bridge, BridgeConfig, BridgeTransaction, BridgeEvent};
 pub use self::wrapped_assets::{WrappedAsset, AssetRegistry, AssetMapping};

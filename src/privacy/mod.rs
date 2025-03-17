@@ -10,9 +10,9 @@
 
 mod stealth_address;
 mod confidential_transaction;
-mod ring_signature;
-mod mixer;
-mod private_smart_contract;
+// mod ring_signature; // TODO: このモジュールが見つかりません
+// mod mixer; // TODO: このモジュールが見つかりません
+// mod private_smart_contract; // TODO: このモジュールが見つかりません
 
 pub use self::stealth_address::{StealthAddress, StealthAddressGenerator, StealthKeyPair};
 pub use self::confidential_transaction::{ConfidentialTransaction, ConfidentialAmount, BlindingFactor};

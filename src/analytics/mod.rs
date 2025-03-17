@@ -1,7 +1,7 @@
 pub mod transaction_analyzer;
 pub mod chart;
-pub mod metrics;
-pub mod alerts;
+// pub mod metrics; // TODO: このモジュールが見つかりません
+// pub mod alerts; // TODO: このモジュールが見つかりません
 pub mod ai_predictor;
 
 pub use transaction_analyzer::{

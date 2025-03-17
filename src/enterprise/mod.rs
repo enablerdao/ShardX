@@ -11,7 +11,7 @@
 pub mod security;
 pub mod compliance;
 pub mod audit;
-pub mod access_control;
+// pub mod access_control; // TODO: このモジュールが見つかりません
 pub mod sla;
 
 pub use self::security::{EnterpriseSecurityManager, SecurityPolicy, SecurityControl, SecurityAudit};

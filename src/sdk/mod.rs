@@ -10,9 +10,9 @@
 
 mod client;
 mod contract_tools;
-mod transaction_builder;
-mod wallet;
-mod event_monitor;
+// mod transaction_builder; // TODO: このモジュールが見つかりません
+// mod wallet; // TODO: このモジュールが見つかりません
+// mod event_monitor; // TODO: このモジュールが見つかりません
 
 pub use self::client::{ShardXClient, ClientConfig, ClientError};
 pub use self::contract_tools::{ContractCompiler, ContractDeployer, ContractTemplate};

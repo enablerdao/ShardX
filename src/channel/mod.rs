@@ -12,15 +12,15 @@
 // - 紛争解決
 
 mod config;
-mod state;
-mod payment;
-mod network;
-mod dispute;
-mod update;
-mod signature;
-mod watcher;
-mod virtual_channel;
-mod routing;
+// mod state; // TODO: このモジュールが見つかりません
+// mod payment; // TODO: このモジュールが見つかりません
+// mod network; // TODO: このモジュールが見つかりません
+// mod dispute; // TODO: このモジュールが見つかりません
+// mod update; // TODO: このモジュールが見つかりません
+// mod signature; // TODO: このモジュールが見つかりません
+// mod watcher; // TODO: このモジュールが見つかりません
+// mod virtual_channel; // TODO: このモジュールが見つかりません
+// mod routing; // TODO: このモジュールが見つかりません
 
 pub use self::config::{ChannelConfig, ChannelParams, ChannelPolicy};
 pub use self::state::{ChannelState, StateUpdate, StateProof, StateVersion};
