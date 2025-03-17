@@ -46,7 +46,7 @@ pub enum Error {
 
     /// I/Oエラー
     #[error("I/O error: {0}")]
-    IoError(#[from] io::Error),
+    IoError(String),
 
     /// シリアライズエラー
     #[error("Serialization error: {0}")]
@@ -123,6 +123,10 @@ pub enum Error {
     /// セキュリティ違反
     #[error("Security violation: {0}")]
     SecurityViolation(String),
+
+    /// 暗号化エラー
+    #[error("Crypto error: {0}")]
+    CryptoError(String),
 
     /// 不明なエラー
     #[error("Unknown error: {0}")]
