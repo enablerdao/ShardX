@@ -9,9 +9,10 @@ Dockerfile
 docker-compose.yml
 
 # Rust
-target/
+target/*
+!target/release/shardx
 **/*.rs.bk
-Cargo.lock
+Cargo.lock.orig
 
 # Editor directories and files
 .idea/
