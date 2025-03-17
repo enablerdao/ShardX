@@ -1,5 +1,5 @@
 # マルチステージビルド - ビルダーステージ
-FROM rust:1.75-slim-bookworm as builder
+FROM rust:latest as builder
 
 WORKDIR /app
 
@@ -12,27 +12,30 @@ RUN apt-get update && \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Cargoを最新バージョンに更新
-RUN rustup update
+# Rustとcargoのバージョンを確認
+RUN rustc --version && cargo --version
 
-# キャッシュ最適化のためにまずCargo.tomlとCargo.lockをコピー
-COPY Cargo.toml Cargo.lock* ./
+# キャッシュ最適化のためにまずCargo.tomlをコピー
+COPY Cargo.toml ./
 
-# Cargo.lockが存在しない場合は新しく生成
-RUN if [ ! -f Cargo.lock ]; then touch Cargo.lock; fi
+# 新しいCargo.lockを生成（既存のものは使用しない）
+RUN rm -f Cargo.lock && cargo update
 
-# 依存関係のみをビルドするためのダミーソースを作成
+# ダミーソースを作成してビルド依存関係をキャッシュ
 RUN mkdir -p src && \
-    echo "fn main() {println!(\"Dummy build\");}" > src/main.rs && \
-    cargo build --release && \
-    rm -rf src
+    echo 'fn main() { println!("Dummy build"); }' > src/main.rs && \
+    mkdir -p benches && \
+    echo 'fn main() {}' > benches/transaction_benchmark.rs && \
+    cargo build && \
+    rm -rf src benches
 
 # 実際のソースコードをコピー
 COPY src ./src
 COPY web ./web
+COPY benches ./benches
 
 # 最適化されたリリースビルドを実行
-RUN RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo build --release
+RUN cargo build --release
 
 # バイナリを最適化
 RUN strip target/release/shardx
