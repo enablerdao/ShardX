@@ -181,6 +181,9 @@ mod tests {
         metrics.observe_histogram("test_histogram", 2.0);
         metrics.observe_histogram("test_histogram", 3.0);
         assert_eq!(metrics.get_histogram_average("test_histogram"), Some(2.0));
-        assert_eq!(metrics.get_histogram_percentile("test_histogram", 50.0), Some(2.0));
+        assert_eq!(
+            metrics.get_histogram_percentile("test_histogram", 50.0),
+            Some(2.0)
+        );
     }
 }
