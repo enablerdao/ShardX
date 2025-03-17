@@ -15,13 +15,11 @@ RUN apt-get update && \
     llvm-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# libclangのパスを検索して設定
-RUN find /usr -name libclang.so* | head -n 1 | xargs dirname > /tmp/libclang_path && \
-    echo "Found libclang at: $(cat /tmp/libclang_path)" && \
-    echo "export LIBCLANG_PATH=$(cat /tmp/libclang_path)" >> /root/.bashrc
+# libclangのパスを直接設定
+RUN apt-get update && apt-get install -y llvm-14 libclang-14-dev && rm -rf /var/lib/apt/lists/*
 
 # 環境変数を設定
-ENV LIBCLANG_PATH=$(cat /tmp/libclang_path)
+ENV LIBCLANG_PATH=/usr/lib/llvm-14/lib
 
 # Rustとcargoのバージョンを確認
 RUN rustc --version && cargo --version
