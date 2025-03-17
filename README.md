@@ -76,9 +76,6 @@ curl -X POST http://localhost:54868/api/v1/transactions \
   <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
     <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
   </a>
-  <a href="https://fly.io/launch/github/enablerdao/ShardX">
-    <img src="https://fly.io/static/images/brand/logo-mark-dark.svg" alt="Deploy to Fly.io" height="44px" />
-  </a>
   <a href="https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX">
     <img src="https://vercel.com/button" alt="Deploy with Vercel" height="44px" />
   </a>
@@ -92,6 +89,27 @@ curl -X POST http://localhost:54868/api/v1/transactions \
     <img src="https://replit.com/badge/github/enablerdao/ShardX" alt="Run on Replit" height="44px" />
   </a>
 </div>
+
+### Fly.ioへのデプロイ（推奨）
+
+Fly.ioはグローバル分散デプロイに最適で、ShardXの性能を最大限に引き出せるプラットフォームです。以下の手順でデプロイできます：
+
+```bash
+# Fly.ioのCLIをインストール
+curl -L https://fly.io/install.sh | sh
+
+# ログイン
+fly auth login
+
+# アプリケーションを起動
+cd ShardX
+fly launch
+
+# デプロイ
+fly deploy
+```
+
+詳細は[Fly.ioデプロイガイド](docs/deployment/fly-io-deployment.md)を参照してください。
 
 ### プラットフォームの特徴と推奨用途
 
