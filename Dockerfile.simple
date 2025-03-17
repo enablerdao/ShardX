@@ -1,48 +1,75 @@
+# シンプルなマルチアーキテクチャ対応Dockerfile
 FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# 必要なパッケージをインストール
+# 必要な依存関係のみをインストール
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
+    libssl-dev \
     curl \
-    wget \
-    gnupg \
-    lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
-# ShardXのバイナリをコピー
-COPY target/release/shardx /app/bin/shardx
-RUN chmod +x /app/bin/shardx
+# データディレクトリを作成
+RUN mkdir -p /app/data /app/web && chmod 777 /app/data
 
-# データディレクトリを作成（一時ディレクトリも使用可能）
-RUN mkdir -p /app/data /tmp/shardx-data && chmod 777 /app/data /tmp/shardx-data
+# バイナリとウェブファイルをコピー
+COPY target/x86_64-unknown-linux-gnu/release/shardx /app/shardx.x86_64 || true
+COPY target/aarch64-unknown-linux-gnu/release/shardx /app/shardx.arm64 || true
+COPY web /app/web/ || true
 
-# Webインターフェースをコピー
-COPY web/dist /app/web
+# アーキテクチャに応じたバイナリを選択するスクリプト
+RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'ARCH=$(uname -m)' >> /app/entrypoint.sh && \
+    echo 'if [ "$ARCH" = "x86_64" ]; then' >> /app/entrypoint.sh && \
+    echo '  if [ -f "/app/shardx.x86_64" ]; then' >> /app/entrypoint.sh && \
+    echo '    cp /app/shardx.x86_64 /app/shardx' >> /app/entrypoint.sh && \
+    echo '  fi' >> /app/entrypoint.sh && \
+    echo 'elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then' >> /app/entrypoint.sh && \
+    echo '  if [ -f "/app/shardx.arm64" ]; then' >> /app/entrypoint.sh && \
+    echo '    cp /app/shardx.arm64 /app/shardx' >> /app/entrypoint.sh && \
+    echo '  fi' >> /app/entrypoint.sh && \
+    echo 'fi' >> /app/entrypoint.sh && \
+    echo 'if [ ! -f "/app/shardx" ]; then' >> /app/entrypoint.sh && \
+    echo '  echo "#!/bin/sh" > /app/shardx' >> /app/entrypoint.sh && \
+    echo '  echo "echo \"ShardX binary not available for architecture: $ARCH\"" >> /app/shardx' >> /app/entrypoint.sh && \
+    echo '  echo "echo \"Please check the build logs for more information.\"" >> /app/shardx' >> /app/entrypoint.sh && \
+    echo 'fi' >> /app/entrypoint.sh && \
+    echo 'chmod +x /app/shardx' >> /app/entrypoint.sh && \
+    echo 'exec /app/shardx "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
-# Nginxをインストール
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends nginx && \
-    rm -rf /var/lib/apt/lists/*
+# 非rootユーザーを作成
+RUN groupadd -r shardx && useradd -r -g shardx shardx
+RUN chown -R shardx:shardx /app
 
-# Nginx設定
-COPY web/nginx.conf /etc/nginx/conf.d/default.conf
+# 非rootユーザーに切り替え
+USER shardx
 
 # APIポートを公開
-EXPOSE 54867 54868
+EXPOSE ${PORT:-54868} ${P2P_PORT:-54867}
+
+# ヘルスチェック設定
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-54868}/info || exit 1
 
 # 環境変数の設定
 ENV RUST_LOG=info
 ENV DATA_DIR=/app/data
+ENV WEB_DIR=/app/web
 ENV PORT=54868
+ENV P2P_PORT=54867
 ENV NODE_ID=node1
 ENV INITIAL_SHARDS=256
+ENV RUST_BACKTRACE=1
 
-# 起動スクリプト
-COPY scripts/docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh
+# エントリーポイントを実行
+ENTRYPOINT ["/app/entrypoint.sh"]
 
-# アプリケーションを実行
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# メタデータを追加
+LABEL org.opencontainers.image.title="ShardX"
+LABEL org.opencontainers.image.description="高性能ブロックチェーンプラットフォーム"
+LABEL org.opencontainers.image.vendor="EnablerDAO"
+LABEL org.opencontainers.image.source="https://github.com/enablerdao/ShardX"
+LABEL org.opencontainers.image.licenses="MIT"

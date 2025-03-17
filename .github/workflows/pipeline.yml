@@ -495,6 +495,7 @@ jobs:
             LIBCLANG_PATH=/usr/lib/llvm-14/lib
             BINDGEN_EXTRA_CLANG_ARGS=-I/usr/lib/llvm-14/include
           outputs: type=docker,dest=/tmp/shardx-image.tar
+          file: ./Dockerfile.simple
       
       - name: Test Docker image
         run: |
@@ -514,4 +515,5 @@ jobs:
           tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
+          file: ./Dockerfile.simple
         continue-on-error: true
