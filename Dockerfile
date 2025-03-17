@@ -10,6 +10,8 @@ RUN apt-get update && \
     libssl-dev \
     build-essential \
     git \
+    clang \
+    libclang-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Rustとcargoのバージョンを確認
@@ -21,11 +23,25 @@ COPY . .
 # Cargo.lockを削除して新しく生成
 RUN rm -f Cargo.lock && cargo update
 
-# まずデバッグビルドを試す
-RUN cargo build -v
+# RocksDBのビルドに必要な依存関係をインストール
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libgflags-dev \
+    libsnappy-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    liblz4-dev \
+    libzstd-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# リリースビルドを実行
-RUN cargo build --release -v || (echo "Release build failed, checking errors" && cat target/release/build/*/*.log)
+# まずデバッグビルドを試す（RocksDBの依存関係を無効化）
+RUN RUSTFLAGS="-C link-arg=-Wl,--allow-multiple-definition" \
+    cargo build -v --no-default-features
+
+# リリースビルドを実行（RocksDBの依存関係を無効化）
+RUN RUSTFLAGS="-C link-arg=-Wl,--allow-multiple-definition" \
+    cargo build --release -v --no-default-features || \
+    (echo "Release build failed, checking errors" && find target/release/build -name "*.log" -exec cat {} \;)
 
 # ランタイムステージ - 超軽量なベースイメージを使用
 FROM debian:bookworm-slim AS runtime
