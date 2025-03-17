@@ -1,5 +1,3 @@
-ONNX1.7:5
-```
-This is a placeholder for the development ONNX model file.
-In a real implementation, this would be a binary file containing a lightweight version of the trained neural network model.
-```
+version https://git-lfs.github.com/spec/v1
+oid sha256:0f3a15d95827c9b8b3c6e590ecdff87f65ca6383e1886f6678809a2ea729dd63
+size 200

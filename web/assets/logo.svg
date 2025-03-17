@@ -1,33 +1,3 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    .text { font-family: 'Arial', sans-serif; font-weight: bold; }
-    .gradient-bg { fill: url(#gradient); }
-    @media (prefers-color-scheme: dark) {
-      .text { fill: white; }
-    }
-  </style>
-  <defs>
-    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8844ff" />
-      <stop offset="100%" stop-color="#44aaff" />
-    </linearGradient>
-  </defs>
-  <rect width="500" height="500" rx="60" class="gradient-bg" />
-  <g transform="translate(50, 250)">
-    <!-- Flowing wave design representing shards -->
-    <path d="M0,0 C50,-40 100,-50 150,-30 C200,-10 250,-40 300,-20 C350,0 400,-30 450,-10" 
-          stroke="white" stroke-width="15" fill="none" stroke-linecap="round" />
-    <path d="M0,40 C50,0 100,-10 150,10 C200,30 250,0 300,20 C350,40 400,10 450,30" 
-          stroke="rgba(255,255,255,0.7)" stroke-width="12" fill="none" stroke-linecap="round" />
-    <path d="M0,80 C50,40 100,30 150,50 C200,70 250,40 300,60 C350,80 400,50 450,70" 
-          stroke="rgba(255,255,255,0.4)" stroke-width="10" fill="none" stroke-linecap="round" />
-    
-    <!-- Diamond shapes representing shards -->
-    <path d="M100,0 L110,-10 L120,0 L110,10 Z" fill="white" opacity="0.9" />
-    <path d="M200,10 L210,0 L220,10 L210,20 Z" fill="white" opacity="0.9" />
-    <path d="M300,-20 L310,-30 L320,-20 L310,-10 Z" fill="white" opacity="0.9" />
-    <path d="M380,0 L390,-10 L400,0 L390,10 Z" fill="white" opacity="0.9" />
-  </g>
-  <text x="250" y="150" font-size="70" text-anchor="middle" class="text">ShardX</text>
-</svg>
+version https://git-lfs.github.com/spec/v1
+oid sha256:c0133def0ede6e33856429857c469eab56efd08ddf0ce53c4b8e4ec661639cdb
+size 1731
