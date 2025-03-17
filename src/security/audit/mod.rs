@@ -11,16 +11,16 @@
 // - セキュリティレポート生成
 // - コンプライアンスチェック
 
-mod config;
-mod scanner;
-mod reporter;
-mod compliance;
-mod pentester;
-mod code_analyzer;
-mod risk_assessor;
-mod remediation;
-mod history;
-mod scheduler;
+// mod config; // TODO: このモジュールが見つかりません
+// mod scanner; // TODO: このモジュールが見つかりません
+// mod reporter; // TODO: このモジュールが見つかりません
+// mod compliance; // TODO: このモジュールが見つかりません
+// mod pentester; // TODO: このモジュールが見つかりません
+// mod code_analyzer; // TODO: このモジュールが見つかりません
+// mod risk_assessor; // TODO: このモジュールが見つかりません
+// mod remediation; // TODO: このモジュールが見つかりません
+// mod history; // TODO: このモジュールが見つかりません
+// mod scheduler; // TODO: このモジュールが見つかりません
 
 pub use self::config::{AuditConfig, ScannerConfig, ReporterConfig, ComplianceConfig};
 pub use self::scanner::{VulnerabilityScanner, ScanResult, VulnerabilityLevel};

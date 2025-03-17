@@ -8,10 +8,10 @@
 // - OpenAPI仕様
 // - サードパーティ統合
 
-mod rest;
-mod graphql;
-mod websocket;
-mod openapi;
+// mod rest; // TODO: このモジュールが見つかりません
+// mod graphql; // TODO: このモジュールが見つかりません
+// mod websocket; // TODO: このモジュールが見つかりません
+// mod openapi; // TODO: このモジュールが見つかりません
 mod third_party;
 
 pub use self::rest::{RestApi, RestEndpoint, RestHandler};

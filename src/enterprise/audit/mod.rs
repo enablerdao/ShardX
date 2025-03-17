@@ -8,11 +8,11 @@
 // - 監査証跡
 // - 監査アラート
 
-mod log;
+// mod log; // TODO: このモジュールが見つかりません
 mod event;
-mod report;
-mod trail;
-mod alert;
+// mod report; // TODO: このモジュールが見つかりません
+// mod trail; // TODO: このモジュールが見つかりません
+// mod alert; // TODO: このモジュールが見つかりません
 
 pub use self::log::{AuditLog, LogLevel, LogFormat, LogStorage};
 pub use self::event::{AuditEvent, AuditEventType, EventSource, EventTarget};

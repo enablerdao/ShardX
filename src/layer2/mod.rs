@@ -13,15 +13,15 @@
 // - バリデータネットワーク
 
 mod config;
-mod rollup;
-mod sidechain;
-mod plasma;
-mod validator;
-mod bridge;
-mod sync;
-mod proof;
-mod challenge;
-mod batch;
+// mod rollup; // TODO: このモジュールが見つかりません
+// mod sidechain; // TODO: このモジュールが見つかりません
+// mod plasma; // TODO: このモジュールが見つかりません
+// mod validator; // TODO: このモジュールが見つかりません
+// mod bridge; // TODO: このモジュールが見つかりません
+// mod sync; // TODO: このモジュールが見つかりません
+// mod proof; // TODO: このモジュールが見つかりません
+// mod challenge; // TODO: このモジュールが見つかりません
+// mod batch; // TODO: このモジュールが見つかりません
 
 pub use self::config::{Layer2Config, RollupConfig, SidechainConfig, PlasmaConfig, ValidatorConfig};
 pub use self::rollup::{Rollup, RollupType, RollupState, OptimisticRollup, ZKRollup};

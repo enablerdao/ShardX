@@ -11,8 +11,8 @@
 mod vulnerability_scanner;
 mod audit;
 mod incident_response;
-mod anomaly_detection;
-mod security_policy;
+// mod anomaly_detection; // TODO: このモジュールが見つかりません
+// mod security_policy; // TODO: このモジュールが見つかりません
 
 pub use self::vulnerability_scanner::{VulnerabilityScanner, VulnerabilityReport, Vulnerability, SeverityLevel};
 pub use self::audit::{SecurityAuditor, AuditReport, AuditFinding};

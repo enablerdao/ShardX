@@ -9,10 +9,10 @@
 // - 証拠収集
 
 mod framework;
-mod requirement;
-mod audit;
-mod report;
-mod evidence;
+// mod requirement; // TODO: このモジュールが見つかりません
+// mod audit; // TODO: このモジュールが見つかりません
+// mod report; // TODO: このモジュールが見つかりません
+// mod evidence; // TODO: このモジュールが見つかりません
 
 pub use self::framework::{ComplianceFramework, FrameworkType, FrameworkVersion, FrameworkStatus};
 pub use self::requirement::{ComplianceRequirement, RequirementCategory, RequirementStatus, RequirementPriority};

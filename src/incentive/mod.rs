@@ -9,10 +9,10 @@
 // - 貢献者報酬
 
 mod rewards;
-mod staking;
-mod liquidity_mining;
-mod referral;
-mod contributor;
+// mod staking; // TODO: このモジュールが見つかりません
+// mod liquidity_mining; // TODO: このモジュールが見つかりません
+// mod referral; // TODO: このモジュールが見つかりません
+// mod contributor; // TODO: このモジュールが見つかりません
 
 pub use self::rewards::{Reward, RewardType, RewardDistribution, RewardManager};
 pub use self::staking::{Stake, StakingPool, StakingManager, StakingConfig};

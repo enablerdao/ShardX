@@ -8,11 +8,11 @@
 // - セキュリティポリシー
 // - 脆弱性管理
 
-mod encryption;
-mod key_management;
-mod authentication;
-mod policy;
-mod vulnerability;
+// mod encryption; // TODO: このモジュールが見つかりません
+// mod key_management; // TODO: このモジュールが見つかりません
+// mod authentication; // TODO: このモジュールが見つかりません
+// mod policy; // TODO: このモジュールが見つかりません
+// mod vulnerability; // TODO: このモジュールが見つかりません
 
 pub use self::encryption::{EncryptionManager, EncryptionAlgorithm, EncryptionMode};
 pub use self::key_management::{KeyManager, KeyRotation, KeyBackup, HSMIntegration};

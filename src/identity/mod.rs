@@ -2,21 +2,21 @@ pub mod did;
 pub mod verifiable_credential;
 pub mod verifiable_presentation;
 pub mod resolver;
-pub mod registry;
-pub mod document;
+// pub mod registry; // TODO: このモジュールが見つかりません
+// pub mod document; // TODO: このモジュールが見つかりません
 pub mod method;
-pub mod service;
-pub mod authentication;
-pub mod verification;
-pub mod revocation;
-pub mod key_management;
-pub mod storage;
-pub mod schema;
+// pub mod service; // TODO: このモジュールが見つかりません
+// pub mod authentication; // TODO: このモジュールが見つかりません
+// pub mod verification; // TODO: このモジュールが見つかりません
+// pub mod revocation; // TODO: このモジュールが見つかりません
+// pub mod key_management; // TODO: このモジュールが見つかりません
+// pub mod storage; // TODO: このモジュールが見つかりません
+// pub mod schema; // TODO: このモジュールが見つかりません
 pub mod issuer;
-pub mod holder;
-pub mod verifier;
-pub mod trust_framework;
-pub mod governance;
+// pub mod holder; // TODO: このモジュールが見つかりません
+// pub mod verifier; // TODO: このモジュールが見つかりません
+// pub mod trust_framework; // TODO: このモジュールが見つかりません
+// pub mod governance; // TODO: このモジュールが見つかりません
 
 pub use did::{DID, DIDMethod, DIDResolver, DIDDocument, DIDService, DIDAuthentication, DIDVerificationMethod};
 pub use verifiable_credential::{VerifiableCredential, CredentialSubject, CredentialStatus, CredentialSchema, CredentialEvidence, CredentialProof};

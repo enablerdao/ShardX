@@ -12,15 +12,15 @@
 // - インセンティブメカニズム
 
 mod config;
-mod node;
-mod task;
-mod verifier;
-mod prover;
-mod executor;
-mod scheduler;
-mod incentive;
-mod registry;
-mod protocol;
+// mod node; // TODO: このモジュールが見つかりません
+// mod task; // TODO: このモジュールが見つかりません
+// mod verifier; // TODO: このモジュールが見つかりません
+// mod prover; // TODO: このモジュールが見つかりません
+// mod executor; // TODO: このモジュールが見つかりません
+// mod scheduler; // TODO: このモジュールが見つかりません
+// mod incentive; // TODO: このモジュールが見つかりません
+// mod registry; // TODO: このモジュールが見つかりません
+// mod protocol; // TODO: このモジュールが見つかりません
 
 pub use self::config::{OffchainConfig, ComputeNodeConfig, TaskConfig, VerifierConfig};
 pub use self::node::{ComputeNode, NodeStatus, NodeCapability, NodeResource};
