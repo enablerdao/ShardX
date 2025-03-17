@@ -1,0 +1,49 @@
+name: Static Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  static_analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: clippy, rustfmt
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      
+      - name: Run Clippy
+        run: |
+          chmod +x ./tools/static_analysis/run_analysis.sh
+          ./tools/static_analysis/run_analysis.sh --clippy
+      
+      - name: Run rustfmt
+        run: |
+          ./tools/static_analysis/run_analysis.sh --fmt
+      
+      - name: Upload analysis report
+        uses: actions/upload-artifact@v3
+        with:
+          name: static-analysis-report
+          path: target/static_analysis/static_analysis_report.md
+          if-no-files-found: warn
