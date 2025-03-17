@@ -4,7 +4,6 @@ jobs = 4
 
 # リンカーの最適化
 rustflags = [
-    "-C", "link-arg=-fuse-ld=lld",
     "-C", "target-cpu=native",
     "-C", "opt-level=3",
 ]
@@ -12,10 +11,10 @@ rustflags = [
 # インクリメンタルコンパイルを有効化
 incremental = true
 
-[target.x86_64-unknown-linux-gnu]
-# LLDリンカーを使用
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+# [target.x86_64-unknown-linux-gnu]
+# # LLDリンカーを使用
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 [profile.dev]
 # 開発ビルドでも最適化を有効化
