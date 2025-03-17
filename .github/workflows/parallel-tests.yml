@@ -39,9 +39,9 @@ jobs:
       
       - name: Set LIBCLANG_PATH
         run: |
-          find /usr -name libclang.so* | head -n 1 | xargs dirname > /tmp/libclang_path
-          echo "LIBCLANG_PATH=$(cat /tmp/libclang_path)" >> $GITHUB_ENV
-          echo "Found libclang at: $LIBCLANG_PATH"
+          # 直接パスを指定する方法に変更
+          echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
+          echo "Using libclang at: /usr/lib/llvm-14/lib"
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
