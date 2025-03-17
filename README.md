@@ -16,14 +16,35 @@
 # 方法1: Dockerを使用（すべてのOS）- 最も簡単
 docker run -p 54867:54867 -p 54868:54868 enablerdao/shardx:latest
 
-# 方法2: 自動インストールスクリプト（Linux/macOS）
+# 方法2: Docker Composeを使用（複数ノード構成）
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
+docker-compose up -d
+
+# 方法3: 自動インストールスクリプト（Linux/macOS）
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
 
-# 方法3: ソースからビルド（すべてのOS）
+# 方法4: ソースからビルド（すべてのOS）
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
 cargo build --release
 ./target/release/shardx
+```
+
+#### Dockerイメージのビルド方法（開発者向け）
+
+```bash
+# Dockerイメージをビルド
+git clone https://github.com/enablerdao/ShardX.git
+cd ShardX
+./build-docker.sh
+
+# バージョンタグを指定してビルド
+./build-docker.sh --tag v1.0.0
+
+# ビルド後にDockerHubにプッシュ（ログインが必要）
+docker login
+./build-docker.sh --push
 ```
 
 ### 動作確認（インストール後）
@@ -107,6 +128,8 @@ curl -X POST http://localhost:54868/api/v1/transactions \
 - ✅ **クロスシャード処理**: シャード間の一貫性を保証
 - ✅ **クロスチェーン機能**: 異なるブロックチェーン間の相互運用性
 - ✅ **詳細な分析ダッシュボード**: リアルタイムでトランザクションを可視化
+- ✅ **高度なチャート機能**: 複雑なデータの視覚化と分析
+- ✅ **ガバナンス機能**: コミュニティ主導の意思決定メカニズム
 
 ## 📊 パフォーマンス（実測値）
 
@@ -150,6 +173,19 @@ curl http://localhost:54868/api/v1/predictions/transaction-count?horizon=1h
 
 # トランザクション分析を実行
 curl http://localhost:54868/api/v1/analysis/patterns
+
+# 高度なチャートデータを取得
+curl http://localhost:54868/api/v1/charts/transaction-volume?period=7d&interval=1h
+
+# ガバナンス提案を作成
+curl -X POST http://localhost:54868/api/v1/governance/proposals \
+  -H "Content-Type: application/json" \
+  -d '{"title":"新機能の追加","description":"AIによる予測機能の強化","proposer":"addr1"}'
+
+# ガバナンス提案に投票
+curl -X POST http://localhost:54868/api/v1/governance/proposals/1/votes \
+  -H "Content-Type: application/json" \
+  -d '{"voter":"addr1","vote":"yes","reason":"革新的な機能だと思います"}'
 ```
 
 ## 📊 パフォーマンス（実測値）
@@ -167,7 +203,7 @@ curl http://localhost:54868/api/v1/analysis/patterns
 - [クイックスタートガイド](docs/quickstart.md) - 5分で始める方法
 - [API リファレンス](docs/api/README.md) - すべてのエンドポイントの説明
 - [デプロイガイド](docs/deployment/multi-platform-deployment.md) - 各クラウドプラットフォームへのデプロイ方法
-- [ロードマップ](docs/roadmap/index.md) - 今後の開発計画
+- [ロードマップ](ROADMAP.md) - 今後の開発計画
 
 ## 🤝 コントリビューション
 
