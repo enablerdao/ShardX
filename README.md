@@ -76,9 +76,6 @@ curl -X POST http://localhost:54868/api/v1/transactions \
   <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
     <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
   </a>
-  <a href="https://fly.io/launch/github/enablerdao/ShardX">
-    <img src="https://fly.io/static/images/brand/logo-mark-dark.svg" alt="Deploy to Fly.io" height="44px" />
-  </a>
   <a href="https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX">
     <img src="https://vercel.com/button" alt="Deploy with Vercel" height="44px" />
   </a>
