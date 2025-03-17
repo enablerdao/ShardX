@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
+use chrono::{DateTime, Duration, Utc};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::error::Error;
 
@@ -43,19 +43,19 @@ impl VotingPower {
             additional_properties: HashMap::new(),
         }
     }
-    
+
     /// 単位を設定
     pub fn with_unit(mut self, unit: String) -> Self {
         self.unit = unit;
         self
     }
-    
+
     /// ソースを設定
     pub fn with_source(mut self, source: String) -> Self {
         self.source = Some(source);
         self
     }
-    
+
     /// 計算方法を設定
     pub fn with_calculation(mut self, calculation: String) -> Self {
         self.calculation = Some(calculation);
@@ -163,13 +163,13 @@ impl Vote {
             additional_properties: HashMap::new(),
         }
     }
-    
+
     /// 理由を設定
     pub fn with_reason(mut self, reason: String) -> Self {
         self.reason = Some(reason);
         self
     }
-    
+
     /// メタデータを設定
     pub fn with_metadata(mut self, metadata: HashMap<String, serde_json::Value>) -> Self {
         self.metadata = Some(metadata);
@@ -181,31 +181,31 @@ impl Vote {
 pub trait VotingSystem {
     /// 投票を追加
     fn add_vote(&mut self, voter: String, vote: Vote) -> Result<(), Error>;
-    
+
     /// 投票結果を計算
     fn calculate_result(&self) -> Result<VotingResult, Error>;
-    
+
     /// 投票が可決されたか確認
     fn is_passed(&self) -> Result<bool, Error>;
-    
+
     /// 投票が終了したか確認
     fn is_finished(&self) -> Result<bool, Error>;
-    
+
     /// 投票期間を取得
     fn get_voting_period(&self) -> VotingPeriod;
-    
+
     /// 投票戦略を取得
     fn get_voting_strategy(&self) -> VotingStrategy;
-    
+
     /// 投票を取得
     fn get_votes(&self) -> HashMap<String, Vote>;
-    
+
     /// 投票者を取得
     fn get_voters(&self) -> Vec<String>;
-    
+
     /// 投票数を取得
     fn get_vote_count(&self) -> u64;
-    
+
     /// 投票パワーを取得
     fn get_total_voting_power(&self) -> u64;
 }
@@ -256,56 +256,57 @@ impl VotingSystem for SimpleVotingSystem {
         if self.is_finished()? {
             return Err(Error::InvalidState("Voting period has ended".to_string()));
         }
-        
+
         // 投票を追加
         self.votes.insert(voter, vote);
-        
+
         Ok(())
     }
-    
+
     fn calculate_result(&self) -> Result<VotingResult, Error> {
         let mut total_votes = 0;
         let mut yes_votes = 0;
         let mut no_votes = 0;
         let mut abstain_votes = 0;
-        
+
         // 投票を集計
         for (_, vote) in &self.votes {
             match vote.vote_type {
                 VoteType::Yes => {
                     yes_votes += vote.power.value;
-                },
+                }
                 VoteType::No => {
                     no_votes += vote.power.value;
-                },
+                }
                 VoteType::Abstain => {
                     abstain_votes += vote.power.value;
-                },
+                }
             }
-            
+
             total_votes += vote.power.value;
         }
-        
+
         // 投票結果を作成
         let approval_ratio = if total_votes > 0 {
             yes_votes as f64 / total_votes as f64
         } else {
             0.0
         };
-        
+
         let participation_ratio = if self.total_voting_power > 0 {
             total_votes as f64 / self.total_voting_power as f64
         } else {
             0.0
         };
-        
+
         let quorum_reached = participation_ratio >= self.quorum;
         let threshold_reached = approval_ratio >= self.threshold;
         let min_votes_reached = self.votes.len() as u64 >= self.min_votes;
         let min_participation_reached = participation_ratio >= self.min_participation;
-        
-        let passed = quorum_reached && threshold_reached && min_votes_reached && min_participation_reached;
-        
+
+        let passed =
+            quorum_reached && threshold_reached && min_votes_reached && min_participation_reached;
+
         Ok(VotingResult {
             total_votes,
             yes_votes,
@@ -321,45 +322,43 @@ impl VotingSystem for SimpleVotingSystem {
             additional_properties: HashMap::new(),
         })
     }
-    
+
     fn is_passed(&self) -> Result<bool, Error> {
         let result = self.calculate_result()?;
         Ok(result.passed)
     }
-    
+
     fn is_finished(&self) -> Result<bool, Error> {
         match &self.voting_period {
             VotingPeriod::Duration(duration) => {
                 // 実際の実装では、投票開始時刻を保存して、それからの経過時間をチェックする
                 // ここでは簡易的に常にfalseを返す
                 Ok(false)
-            },
-            VotingPeriod::EndTime(end_time) => {
-                Ok(Utc::now() > *end_time)
-            },
+            }
+            VotingPeriod::EndTime(end_time) => Ok(Utc::now() > *end_time),
         }
     }
-    
+
     fn get_voting_period(&self) -> VotingPeriod {
         self.voting_period.clone()
     }
-    
+
     fn get_voting_strategy(&self) -> VotingStrategy {
         VotingStrategy::Simple
     }
-    
+
     fn get_votes(&self) -> HashMap<String, Vote> {
         self.votes.clone()
     }
-    
+
     fn get_voters(&self) -> Vec<String> {
         self.votes.keys().cloned().collect()
     }
-    
+
     fn get_vote_count(&self) -> u64 {
         self.votes.len() as u64
     }
-    
+
     fn get_total_voting_power(&self) -> u64 {
         self.total_voting_power
     }

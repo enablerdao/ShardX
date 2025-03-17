@@ -1,14 +1,16 @@
+use chrono::{DateTime, Utc};
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
-use log::{debug, error, info, warn};
 
 use crate::error::Error;
-use crate::transaction::{Transaction, TransactionStatus, TransactionType};
+use crate::shard::cross_shard::{
+    CrossShardTransaction, CrossShardTransactionManager, CrossShardTransactionState,
+};
 use crate::shard::{ShardId, ShardManager};
-use crate::shard::cross_shard::{CrossShardTransaction, CrossShardTransactionState, CrossShardTransactionManager};
+use crate::transaction::{Transaction, TransactionStatus, TransactionType};
 
 /// バッチ状態
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -61,8 +63,11 @@ impl TransactionBatch {
         destination_shard: ShardId,
     ) -> Self {
         let now = Utc::now();
-        let id = format!("batch-{}", crate::crypto::hash(&format!("{:?}-{}", transactions, now)));
-        
+        let id = format!(
+            "batch-{}",
+            crate::crypto::hash(&format!("{:?}-{}", transactions, now))
+        );
+
         Self {
             id,
             transactions,
@@ -77,40 +82,42 @@ impl TransactionBatch {
             metadata: HashMap::new(),
         }
     }
-    
+
     /// トランザクション数を取得
     pub fn transaction_count(&self) -> usize {
         self.transactions.len() + self.cross_shard_transactions.len()
     }
-    
+
     /// 全てのトランザクションが完了しているかどうかを確認
     pub fn is_complete(&self) -> bool {
         // 通常トランザクションの確認
         let normal_complete = self.transactions.iter().all(|tx| {
             tx.status == TransactionStatus::Confirmed || tx.status == TransactionStatus::Failed
         });
-        
+
         // クロスシャードトランザクションの確認
         let cross_shard_complete = self.cross_shard_transactions.iter().all(|tx| {
-            tx.state == CrossShardTransactionState::Completed || tx.state == CrossShardTransactionState::TimedOut
+            tx.state == CrossShardTransactionState::Completed
+                || tx.state == CrossShardTransactionState::TimedOut
         });
-        
+
         normal_complete && cross_shard_complete
     }
-    
+
     /// 全てのトランザクションが成功しているかどうかを確認
     pub fn is_successful(&self) -> bool {
         // 通常トランザクションの確認
-        let normal_success = self.transactions.iter().all(|tx| {
-            tx.status == TransactionStatus::Confirmed
-        });
-        
+        let normal_success = self
+            .transactions
+            .iter()
+            .all(|tx| tx.status == TransactionStatus::Confirmed);
+
         // クロスシャードトランザクションの確認
-        let cross_shard_success = self.cross_shard_transactions.iter().all(|tx| {
-            tx.state == CrossShardTransactionState::Completed && 
-            tx.error.is_none()
-        });
-        
+        let cross_shard_success = self
+            .cross_shard_transactions
+            .iter()
+            .all(|tx| tx.state == CrossShardTransactionState::Completed && tx.error.is_none());
+
         normal_success && cross_shard_success
     }
 }
@@ -156,7 +163,8 @@ pub struct BatchProcessor {
     /// 保留中のトランザクション
     pending_transactions: Arc<Mutex<HashMap<ShardId, VecDeque<Transaction>>>>,
     /// 保留中のクロスシャードトランザクション
-    pending_cross_shard_transactions: Arc<Mutex<HashMap<(ShardId, ShardId), VecDeque<CrossShardTransaction>>>>,
+    pending_cross_shard_transactions:
+        Arc<Mutex<HashMap<(ShardId, ShardId), VecDeque<CrossShardTransaction>>>>,
     /// バッチ
     batches: Arc<RwLock<HashMap<String, TransactionBatch>>>,
     /// 最終バッチ処理時刻
@@ -180,30 +188,38 @@ impl BatchProcessor {
             last_batch_time: Arc::new(Mutex::new(HashMap::new())),
         }
     }
-    
+
     /// トランザクションを追加
     pub fn add_transaction(&self, transaction: Transaction) -> Result<(), Error> {
         let shard_id = transaction.shard_id.clone();
-        
+
         let mut pending_transactions = self.pending_transactions.lock().unwrap();
-        let queue = pending_transactions.entry(shard_id).or_insert_with(VecDeque::new);
+        let queue = pending_transactions
+            .entry(shard_id)
+            .or_insert_with(VecDeque::new);
         queue.push_back(transaction);
-        
+
         Ok(())
     }
-    
+
     /// クロスシャードトランザクションを追加
-    pub fn add_cross_shard_transaction(&self, transaction: CrossShardTransaction) -> Result<(), Error> {
+    pub fn add_cross_shard_transaction(
+        &self,
+        transaction: CrossShardTransaction,
+    ) -> Result<(), Error> {
         let source_shard = transaction.source_shard.clone();
         let destination_shard = transaction.destination_shard.clone();
-        
-        let mut pending_cross_shard_transactions = self.pending_cross_shard_transactions.lock().unwrap();
-        let queue = pending_cross_shard_transactions.entry((source_shard, destination_shard)).or_insert_with(VecDeque::new);
+
+        let mut pending_cross_shard_transactions =
+            self.pending_cross_shard_transactions.lock().unwrap();
+        let queue = pending_cross_shard_transactions
+            .entry((source_shard, destination_shard))
+            .or_insert_with(VecDeque::new);
         queue.push_back(transaction);
-        
+
         Ok(())
     }
-    
+
     /// バッチを作成
     pub fn create_batch(
         &self,
@@ -212,13 +228,16 @@ impl BatchProcessor {
     ) -> Result<Option<TransactionBatch>, Error> {
         // 保留中のトランザクションを取得
         let mut pending_transactions = self.pending_transactions.lock().unwrap();
-        let mut pending_cross_shard_transactions = self.pending_cross_shard_transactions.lock().unwrap();
-        
+        let mut pending_cross_shard_transactions =
+            self.pending_cross_shard_transactions.lock().unwrap();
+
         // 同一シャード内のトランザクション
         let normal_transactions = if source_shard == destination_shard {
-            let queue = pending_transactions.entry(source_shard.clone()).or_insert_with(VecDeque::new);
+            let queue = pending_transactions
+                .entry(source_shard.clone())
+                .or_insert_with(VecDeque::new);
             let count = std::cmp::min(queue.len(), self.config.max_batch_size);
-            
+
             // 最小バッチサイズに満たない場合は待機
             if count < self.config.min_batch_size {
                 // 最大待機時間を超えた場合は処理
@@ -231,25 +250,30 @@ impl BatchProcessor {
                     }
                 }
             }
-            
+
             // トランザクションを取得
-            (0..count).filter_map(|_| queue.pop_front()).collect::<Vec<_>>()
+            (0..count)
+                .filter_map(|_| queue.pop_front())
+                .collect::<Vec<_>>()
         } else {
             Vec::new()
         };
-        
+
         // クロスシャードトランザクション
         let key = (source_shard.clone(), destination_shard.clone());
-        let cross_shard_transactions = if let Some(queue) = pending_cross_shard_transactions.get_mut(&key) {
-            let remaining = self.config.max_batch_size - normal_transactions.len();
-            let count = std::cmp::min(queue.len(), remaining);
-            
-            // トランザクションを取得
-            (0..count).filter_map(|_| queue.pop_front()).collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        };
-        
+        let cross_shard_transactions =
+            if let Some(queue) = pending_cross_shard_transactions.get_mut(&key) {
+                let remaining = self.config.max_batch_size - normal_transactions.len();
+                let count = std::cmp::min(queue.len(), remaining);
+
+                // トランザクションを取得
+                (0..count)
+                    .filter_map(|_| queue.pop_front())
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            };
+
         // バッチを作成
         let total_count = normal_transactions.len() + cross_shard_transactions.len();
         if total_count > 0 {
@@ -259,29 +283,29 @@ impl BatchProcessor {
                 source_shard.clone(),
                 destination_shard.clone(),
             );
-            
+
             // バッチを保存
             let mut batches = self.batches.write().unwrap();
             batches.insert(batch.id.clone(), batch.clone());
-            
+
             // 最終バッチ処理時刻を更新
             let mut last_batch_time = self.last_batch_time.lock().unwrap();
             last_batch_time.insert(key, Instant::now());
-            
+
             Ok(Some(batch))
         } else {
             Ok(None)
         }
     }
-    
+
     /// バッチを処理
     pub fn process_batch(&self, batch_id: &str) -> Result<TransactionBatch, Error> {
         // バッチを取得
         let mut batches = self.batches.write().unwrap();
-        let batch = batches.get_mut(batch_id).ok_or_else(|| {
-            Error::NotFound(format!("バッチ {} が見つかりません", batch_id))
-        })?;
-        
+        let batch = batches
+            .get_mut(batch_id)
+            .ok_or_else(|| Error::NotFound(format!("バッチ {} が見つかりません", batch_id)))?;
+
         // 状態をチェック
         if batch.state != BatchState::Created {
             return Err(Error::InvalidState(format!(
@@ -289,69 +313,75 @@ impl BatchProcessor {
                 format!("{:?}", batch.state)
             )));
         }
-        
+
         // 状態を更新
         batch.state = BatchState::Processing;
         batch.updated_at = Utc::now();
-        
+
         // 通常トランザクションを処理
         for tx in &batch.transactions {
             // 実際の実装では、シャードにトランザクションを送信
             // ここでは簡易的な実装として、ログ出力のみ
             info!("バッチ {} のトランザクション {} を処理中", batch_id, tx.id);
         }
-        
+
         // クロスシャードトランザクションを処理
         for tx in &batch.cross_shard_transactions {
             // 実際の実装では、クロスシャードトランザクションマネージャーにトランザクションを送信
             // ここでは簡易的な実装として、ログ出力のみ
-            info!("バッチ {} のクロスシャードトランザクション {} を処理中", batch_id, tx.id);
+            info!(
+                "バッチ {} のクロスシャードトランザクション {} を処理中",
+                batch_id, tx.id
+            );
         }
-        
+
         // 状態を更新
         batch.state = BatchState::Completed;
         batch.updated_at = Utc::now();
         batch.completed_at = Some(Utc::now());
-        
+
         Ok(batch.clone())
     }
-    
+
     /// バッチを取得
     pub fn get_batch(&self, batch_id: &str) -> Result<TransactionBatch, Error> {
         let batches = self.batches.read().unwrap();
-        let batch = batches.get(batch_id).ok_or_else(|| {
-            Error::NotFound(format!("バッチ {} が見つかりません", batch_id))
-        })?;
-        
+        let batch = batches
+            .get(batch_id)
+            .ok_or_else(|| Error::NotFound(format!("バッチ {} が見つかりません", batch_id)))?;
+
         Ok(batch.clone())
     }
-    
+
     /// 全バッチを取得
     pub fn get_all_batches(&self) -> Vec<TransactionBatch> {
         let batches = self.batches.read().unwrap();
         batches.values().cloned().collect()
     }
-    
+
     /// 保留中のバッチを取得
     pub fn get_pending_batches(&self) -> Vec<TransactionBatch> {
         let batches = self.batches.read().unwrap();
-        batches.values()
-            .filter(|batch| batch.state == BatchState::Created || batch.state == BatchState::Processing)
+        batches
+            .values()
+            .filter(|batch| {
+                batch.state == BatchState::Created || batch.state == BatchState::Processing
+            })
             .cloned()
             .collect()
     }
-    
+
     /// 自動バッチ処理を実行
     pub fn run_auto_batching(&self) -> Result<Vec<TransactionBatch>, Error> {
         if !self.config.auto_batching {
             return Ok(Vec::new());
         }
-        
+
         let mut processed_batches = Vec::new();
-        
+
         // 全シャードの組み合わせを取得
         let shard_pairs = self.get_shard_pairs()?;
-        
+
         // 各シャードペアに対してバッチを作成・処理
         for (source_shard, destination_shard) in shard_pairs {
             if let Some(batch) = self.create_batch(&source_shard, &destination_shard)? {
@@ -359,14 +389,14 @@ impl BatchProcessor {
                 processed_batches.push(processed_batch);
             }
         }
-        
+
         Ok(processed_batches)
     }
-    
+
     /// シャードペアを取得
     fn get_shard_pairs(&self) -> Result<Vec<(ShardId, ShardId)>, Error> {
         let mut pairs = HashSet::new();
-        
+
         // 通常トランザクションのシャードペア
         {
             let pending_transactions = self.pending_transactions.lock().unwrap();
@@ -376,20 +406,23 @@ impl BatchProcessor {
                 }
             }
         }
-        
+
         // クロスシャードトランザクションのシャードペア
         {
-            let pending_cross_shard_transactions = self.pending_cross_shard_transactions.lock().unwrap();
-            for ((source_shard, destination_shard), queue) in pending_cross_shard_transactions.iter() {
+            let pending_cross_shard_transactions =
+                self.pending_cross_shard_transactions.lock().unwrap();
+            for ((source_shard, destination_shard), queue) in
+                pending_cross_shard_transactions.iter()
+            {
                 if !queue.is_empty() {
                     pairs.insert((source_shard.clone(), destination_shard.clone()));
                 }
             }
         }
-        
+
         Ok(pairs.into_iter().collect())
     }
-    
+
     /// 設定を更新
     pub fn update_config(&mut self, config: BatchProcessorConfig) {
         self.config = config;

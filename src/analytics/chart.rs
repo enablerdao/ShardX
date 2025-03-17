@@ -1,11 +1,11 @@
+use chrono::{DateTime, Duration, Utc};
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
-use log::{debug, error, info, warn};
 
+use crate::analytics::metrics::{MetricType, MetricValue, MetricsCollector};
 use crate::error::Error;
-use crate::analytics::metrics::{MetricsCollector, MetricType, MetricValue};
 
 /// チャートデータ
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -226,10 +226,10 @@ impl ChartGenerator {
     /// 新しいチャート生成器を作成
     pub fn new(metrics_collector: Arc<MetricsCollector>, options: Option<ChartOptions>) -> Self {
         let default_options = options.unwrap_or_default();
-        
+
         // カラーパレットを初期化
         let mut color_palettes = HashMap::new();
-        
+
         // デフォルトパレット
         color_palettes.insert(
             "default".to_string(),
@@ -246,7 +246,7 @@ impl ChartGenerator {
                 "#bab0ab".to_string(),
             ],
         );
-        
+
         // ダークパレット
         color_palettes.insert(
             "dark".to_string(),
@@ -263,7 +263,7 @@ impl ChartGenerator {
                 "#17becf".to_string(),
             ],
         );
-        
+
         // パステルパレット
         color_palettes.insert(
             "pastel".to_string(),
@@ -280,34 +280,37 @@ impl ChartGenerator {
                 "#b9f2f0".to_string(),
             ],
         );
-        
+
         Self {
             metrics_collector,
             default_options,
             color_palettes,
         }
     }
-    
+
     /// トランザクション処理速度チャートを生成
-    pub fn generate_transaction_throughput_chart(&self, options: Option<ChartOptions>) -> Result<ChartData, Error> {
+    pub fn generate_transaction_throughput_chart(
+        &self,
+        options: Option<ChartOptions>,
+    ) -> Result<ChartData, Error> {
         let options = options.unwrap_or_else(|| self.default_options.clone());
-        
+
         // メトリクスからデータを取得
         let metrics = self.metrics_collector.get_metrics(
             MetricType::TransactionThroughput,
             self.get_time_range(&options)?,
             self.get_aggregation_interval(&options)?,
         )?;
-        
+
         // カテゴリを作成（時間ラベル）
         let categories = self.create_time_categories(&options)?;
-        
+
         // データセットを作成
         let mut datasets = Vec::new();
-        
+
         // 全体のスループット
         let mut total_data = vec![0.0; categories.len()];
-        
+
         // メトリクスからデータを抽出
         for (timestamp, value) in metrics {
             if let MetricValue::Throughput(tps) = value {
@@ -319,7 +322,7 @@ impl ChartGenerator {
                 }
             }
         }
-        
+
         // データセットを追加
         datasets.push(Dataset {
             label: "トランザクション処理速度 (TPS)".to_string(),
@@ -332,7 +335,7 @@ impl ChartGenerator {
             order: Some(1),
             hidden: false,
         });
-        
+
         // チャートデータを作成
         let chart_data = ChartData {
             chart_type: ChartType::Line,
@@ -346,30 +349,33 @@ impl ChartGenerator {
             generated_at: Utc::now(),
             metadata: HashMap::new(),
         };
-        
+
         Ok(chart_data)
     }
-    
+
     /// メモリ使用量チャートを生成
-    pub fn generate_memory_usage_chart(&self, options: Option<ChartOptions>) -> Result<ChartData, Error> {
+    pub fn generate_memory_usage_chart(
+        &self,
+        options: Option<ChartOptions>,
+    ) -> Result<ChartData, Error> {
         let options = options.unwrap_or_else(|| self.default_options.clone());
-        
+
         // メトリクスからデータを取得
         let metrics = self.metrics_collector.get_metrics(
             MetricType::MemoryUsage,
             self.get_time_range(&options)?,
             self.get_aggregation_interval(&options)?,
         )?;
-        
+
         // カテゴリを作成（時間ラベル）
         let categories = self.create_time_categories(&options)?;
-        
+
         // データセットを作成
         let mut datasets = Vec::new();
-        
+
         // メモリ使用量データ
         let mut memory_data = vec![0.0; categories.len()];
-        
+
         // メトリクスからデータを抽出
         for (timestamp, value) in metrics {
             if let MetricValue::Memory(bytes) = value {
@@ -382,7 +388,7 @@ impl ChartGenerator {
                 }
             }
         }
-        
+
         // データセットを追加
         datasets.push(Dataset {
             label: "メモリ使用量 (MB)".to_string(),
@@ -395,7 +401,7 @@ impl ChartGenerator {
             order: Some(1),
             hidden: false,
         });
-        
+
         // チャートデータを作成
         let chart_data = ChartData {
             chart_type: ChartType::Area,
@@ -409,34 +415,37 @@ impl ChartGenerator {
             generated_at: Utc::now(),
             metadata: HashMap::new(),
         };
-        
+
         Ok(chart_data)
     }
-    
+
     /// トランザクションレイテンシチャートを生成
-    pub fn generate_transaction_latency_chart(&self, options: Option<ChartOptions>) -> Result<ChartData, Error> {
+    pub fn generate_transaction_latency_chart(
+        &self,
+        options: Option<ChartOptions>,
+    ) -> Result<ChartData, Error> {
         let options = options.unwrap_or_else(|| self.default_options.clone());
-        
+
         // メトリクスからデータを取得
         let metrics = self.metrics_collector.get_metrics(
             MetricType::TransactionLatency,
             self.get_time_range(&options)?,
             self.get_aggregation_interval(&options)?,
         )?;
-        
+
         // カテゴリを作成（時間ラベル）
         let categories = self.create_time_categories(&options)?;
-        
+
         // データセットを作成
         let mut datasets = Vec::new();
-        
+
         // 平均レイテンシデータ
         let mut avg_latency_data = vec![0.0; categories.len()];
         // 最大レイテンシデータ
         let mut max_latency_data = vec![0.0; categories.len()];
         // 最小レイテンシデータ
         let mut min_latency_data = vec![0.0; categories.len()];
-        
+
         // メトリクスからデータを抽出
         for (timestamp, value) in metrics {
             if let MetricValue::Latency { avg, max, min } = value {
@@ -450,7 +459,7 @@ impl ChartGenerator {
                 }
             }
         }
-        
+
         // 平均レイテンシデータセットを追加
         datasets.push(Dataset {
             label: "平均レイテンシ (ms)".to_string(),
@@ -463,7 +472,7 @@ impl ChartGenerator {
             order: Some(1),
             hidden: false,
         });
-        
+
         // 最大レイテンシデータセットを追加
         datasets.push(Dataset {
             label: "最大レイテンシ (ms)".to_string(),
@@ -476,7 +485,7 @@ impl ChartGenerator {
             order: Some(2),
             hidden: false,
         });
-        
+
         // 最小レイテンシデータセットを追加
         datasets.push(Dataset {
             label: "最小レイテンシ (ms)".to_string(),
@@ -489,7 +498,7 @@ impl ChartGenerator {
             order: Some(3),
             hidden: true, // デフォルトでは非表示
         });
-        
+
         // チャートデータを作成
         let chart_data = ChartData {
             chart_type: ChartType::Line,
@@ -503,37 +512,43 @@ impl ChartGenerator {
             generated_at: Utc::now(),
             metadata: HashMap::new(),
         };
-        
+
         Ok(chart_data)
     }
-    
+
     /// シャード負荷チャートを生成
-    pub fn generate_shard_load_chart(&self, options: Option<ChartOptions>) -> Result<ChartData, Error> {
+    pub fn generate_shard_load_chart(
+        &self,
+        options: Option<ChartOptions>,
+    ) -> Result<ChartData, Error> {
         let options = options.unwrap_or_else(|| self.default_options.clone());
-        
+
         // メトリクスからデータを取得
         let metrics = self.metrics_collector.get_metrics(
             MetricType::ShardLoad,
             self.get_time_range(&options)?,
             self.get_aggregation_interval(&options)?,
         )?;
-        
+
         // シャードIDのリストを取得
         let shard_ids = self.metrics_collector.get_shard_ids()?;
-        
+
         // カテゴリを作成（シャードID）
-        let categories = shard_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>();
-        
+        let categories = shard_ids
+            .iter()
+            .map(|id| id.to_string())
+            .collect::<Vec<_>>();
+
         // データセットを作成
         let mut datasets = Vec::new();
-        
+
         // 現在の負荷データ
         let mut current_load_data = vec![0.0; categories.len()];
-        
+
         // メトリクスからデータを抽出（最新のデータのみ使用）
         let mut latest_timestamp = Utc::now() - Duration::days(365); // 1年前を初期値とする
         let mut latest_metrics = HashMap::new();
-        
+
         for (timestamp, value) in metrics {
             if timestamp > latest_timestamp {
                 latest_timestamp = timestamp;
@@ -542,14 +557,14 @@ impl ChartGenerator {
                 }
             }
         }
-        
+
         // 最新のデータを使用してチャートデータを作成
         for (i, shard_id) in shard_ids.iter().enumerate() {
             if let Some(load) = latest_metrics.get(shard_id) {
                 current_load_data[i] = *load;
             }
         }
-        
+
         // データセットを追加
         datasets.push(Dataset {
             label: "シャード負荷 (%)".to_string(),
@@ -562,7 +577,7 @@ impl ChartGenerator {
             order: Some(1),
             hidden: false,
         });
-        
+
         // チャートデータを作成
         let chart_data = ChartData {
             chart_type: ChartType::Bar,
@@ -576,37 +591,43 @@ impl ChartGenerator {
             generated_at: Utc::now(),
             metadata: HashMap::new(),
         };
-        
+
         Ok(chart_data)
     }
-    
+
     /// トランザクションタイプ分布チャートを生成
-    pub fn generate_transaction_type_distribution_chart(&self, options: Option<ChartOptions>) -> Result<ChartData, Error> {
+    pub fn generate_transaction_type_distribution_chart(
+        &self,
+        options: Option<ChartOptions>,
+    ) -> Result<ChartData, Error> {
         let options = options.unwrap_or_else(|| self.default_options.clone());
-        
+
         // メトリクスからデータを取得
         let metrics = self.metrics_collector.get_metrics(
             MetricType::TransactionTypeDistribution,
             self.get_time_range(&options)?,
             self.get_aggregation_interval(&options)?,
         )?;
-        
+
         // トランザクションタイプのリストを取得
         let transaction_types = self.metrics_collector.get_transaction_types()?;
-        
+
         // カテゴリを作成（トランザクションタイプ）
-        let categories = transaction_types.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>();
-        
+        let categories = transaction_types
+            .iter()
+            .map(|t| format!("{:?}", t))
+            .collect::<Vec<_>>();
+
         // データセットを作成
         let mut datasets = Vec::new();
-        
+
         // 分布データ
         let mut distribution_data = vec![0.0; categories.len()];
-        
+
         // メトリクスからデータを抽出（最新のデータのみ使用）
         let mut latest_timestamp = Utc::now() - Duration::days(365); // 1年前を初期値とする
         let mut latest_metrics = HashMap::new();
-        
+
         for (timestamp, value) in metrics {
             if timestamp > latest_timestamp {
                 latest_timestamp = timestamp;
@@ -615,14 +636,14 @@ impl ChartGenerator {
                 }
             }
         }
-        
+
         // 最新のデータを使用してチャートデータを作成
         for (i, tx_type) in transaction_types.iter().enumerate() {
             if let Some(percentage) = latest_metrics.get(&format!("{:?}", tx_type)) {
                 distribution_data[i] = *percentage;
             }
         }
-        
+
         // データセットを追加
         datasets.push(Dataset {
             label: "トランザクションタイプ分布 (%)".to_string(),
@@ -635,7 +656,7 @@ impl ChartGenerator {
             order: Some(1),
             hidden: false,
         });
-        
+
         // チャートデータを作成
         let chart_data = ChartData {
             chart_type: ChartType::Pie,
@@ -649,10 +670,10 @@ impl ChartGenerator {
             generated_at: Utc::now(),
             metadata: HashMap::new(),
         };
-        
+
         Ok(chart_data)
     }
-    
+
     /// カスタムチャートを生成
     pub fn generate_custom_chart(
         &self,
@@ -662,21 +683,21 @@ impl ChartGenerator {
         options: Option<ChartOptions>,
     ) -> Result<ChartData, Error> {
         let options = options.unwrap_or_else(|| self.default_options.clone());
-        
+
         // メトリクスからデータを取得
         let metrics = self.metrics_collector.get_metrics(
             metric_type.clone(),
             self.get_time_range(&options)?,
             self.get_aggregation_interval(&options)?,
         )?;
-        
+
         // カテゴリとデータセットを作成
         let (categories, datasets) = match metric_type {
             MetricType::Custom(name) => {
                 // カスタムメトリクスの場合は時間ベースのカテゴリを使用
                 let categories = self.create_time_categories(&options)?;
                 let mut data = vec![0.0; categories.len()];
-                
+
                 // メトリクスからデータを抽出
                 for (timestamp, value) in metrics {
                     if let MetricValue::Custom(val) = value {
@@ -688,7 +709,7 @@ impl ChartGenerator {
                         }
                     }
                 }
-                
+
                 // データセットを作成
                 let dataset = Dataset {
                     label: name,
@@ -701,14 +722,14 @@ impl ChartGenerator {
                     order: Some(1),
                     hidden: false,
                 };
-                
+
                 (categories, vec![dataset])
-            },
+            }
             _ => {
                 // その他のメトリクスタイプの場合はデフォルト実装を使用
                 let categories = self.create_time_categories(&options)?;
                 let mut data = vec![0.0; categories.len()];
-                
+
                 // メトリクスからデータを抽出
                 for (timestamp, value) in metrics {
                     if let Some(val) = self.extract_metric_value(&value) {
@@ -720,7 +741,7 @@ impl ChartGenerator {
                         }
                     }
                 }
-                
+
                 // データセットを作成
                 let dataset = Dataset {
                     label: format!("{:?}", metric_type),
@@ -733,11 +754,11 @@ impl ChartGenerator {
                     order: Some(1),
                     hidden: false,
                 };
-                
+
                 (categories, vec![dataset])
             }
         };
-        
+
         // チャートデータを作成
         let chart_data = ChartData {
             chart_type,
@@ -751,42 +772,43 @@ impl ChartGenerator {
             generated_at: Utc::now(),
             metadata: HashMap::new(),
         };
-        
+
         Ok(chart_data)
     }
-    
+
     /// 時間範囲を取得
-    fn get_time_range(&self, options: &ChartOptions) -> Result<(DateTime<Utc>, DateTime<Utc>), Error> {
+    fn get_time_range(
+        &self,
+        options: &ChartOptions,
+    ) -> Result<(DateTime<Utc>, DateTime<Utc>), Error> {
         let now = Utc::now();
-        
+
         match &options.time_range {
             Some(TimeRange::LastHours(hours)) => {
                 let start = now - Duration::hours(*hours as i64);
                 Ok((start, now))
-            },
+            }
             Some(TimeRange::LastDays(days)) => {
                 let start = now - Duration::days(*days as i64);
                 Ok((start, now))
-            },
+            }
             Some(TimeRange::LastWeeks(weeks)) => {
                 let start = now - Duration::weeks(*weeks as i64);
                 Ok((start, now))
-            },
+            }
             Some(TimeRange::LastMonths(months)) => {
                 let start = now - Duration::days(30 * *months as i64);
                 Ok((start, now))
-            },
-            Some(TimeRange::Custom(start, end)) => {
-                Ok((*start, *end))
-            },
+            }
+            Some(TimeRange::Custom(start, end)) => Ok((*start, *end)),
             None => {
                 // デフォルトは24時間
                 let start = now - Duration::hours(24);
                 Ok((start, now))
-            },
+            }
         }
     }
-    
+
     /// 集計間隔を取得
     fn get_aggregation_interval(&self, options: &ChartOptions) -> Result<Duration, Error> {
         match &options.aggregation_interval {
@@ -799,15 +821,15 @@ impl ChartGenerator {
             None => Ok(Duration::hours(1)), // デフォルトは1時間
         }
     }
-    
+
     /// 時間カテゴリを作成
     fn create_time_categories(&self, options: &ChartOptions) -> Result<Vec<String>, Error> {
         let (start, end) = self.get_time_range(options)?;
         let interval = self.get_aggregation_interval(options)?;
-        
+
         let mut categories = Vec::new();
         let mut current = start;
-        
+
         while current <= end {
             let format = match interval {
                 d if d <= Duration::minutes(1) => "%H:%M:%S",
@@ -816,29 +838,34 @@ impl ChartGenerator {
                 d if d <= Duration::weeks(1) => "%m-%d",
                 _ => "%Y-%m-%d",
             };
-            
+
             categories.push(current.format(format).to_string());
             current = current + interval;
         }
-        
+
         Ok(categories)
     }
-    
+
     /// タイムスタンプからインデックスを計算
-    fn timestamp_to_index(&self, timestamp: DateTime<Utc>, options: &ChartOptions) -> Result<Option<usize>, Error> {
+    fn timestamp_to_index(
+        &self,
+        timestamp: DateTime<Utc>,
+        options: &ChartOptions,
+    ) -> Result<Option<usize>, Error> {
         let (start, end) = self.get_time_range(options)?;
         let interval = self.get_aggregation_interval(options)?;
-        
+
         if timestamp < start || timestamp > end {
             return Ok(None);
         }
-        
+
         let diff = timestamp - start;
-        let index = (diff.num_milliseconds() as f64 / interval.num_milliseconds() as f64).floor() as usize;
-        
+        let index =
+            (diff.num_milliseconds() as f64 / interval.num_milliseconds() as f64).floor() as usize;
+
         Ok(Some(index))
     }
-    
+
     /// メトリック値を抽出
     fn extract_metric_value(&self, value: &MetricValue) -> Option<f64> {
         match value {
@@ -850,11 +877,11 @@ impl ChartGenerator {
             _ => None,
         }
     }
-    
+
     /// 色を取得
     fn get_color(&self, index: usize, options: &ChartOptions) -> String {
         let theme = options.color_theme.as_deref().unwrap_or("default");
-        
+
         if let Some(palette) = self.color_palettes.get(theme) {
             palette[index % palette.len()].clone()
         } else {
@@ -862,11 +889,11 @@ impl ChartGenerator {
             self.color_palettes.get("default").unwrap()[index % 10].clone()
         }
     }
-    
+
     /// 塗りつぶし色を取得
     fn get_fill_color(&self, index: usize, options: &ChartOptions) -> String {
         let color = self.get_color(index, options);
-        
+
         // 透明度を追加
         if color.starts_with('#') && color.len() == 7 {
             format!("{}80", color) // 50%の透明度を追加
@@ -874,11 +901,11 @@ impl ChartGenerator {
             color
         }
     }
-    
+
     /// 複数の色を取得
     fn get_multi_colors(&self, options: &ChartOptions) -> Vec<String> {
         let theme = options.color_theme.as_deref().unwrap_or("default");
-        
+
         if let Some(palette) = self.color_palettes.get(theme) {
             palette.clone()
         } else {

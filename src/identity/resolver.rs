@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::error::Error;
-use crate::identity::did::{DID, DIDDocument, DIDMethod};
+use crate::identity::did::{DIDDocument, DIDMethod, DID};
 
 /// リゾルバオプション
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,19 +84,23 @@ pub struct ResolverMetadata {
 pub trait Resolver {
     /// DIDを解決
     fn resolve(&self, did: &DID) -> Result<ResolverResult, Error>;
-    
+
     /// DIDを解決（オプション付き）
-    fn resolve_with_options(&self, did: &DID, options: ResolverOptions) -> Result<ResolverResult, Error>;
-    
+    fn resolve_with_options(
+        &self,
+        did: &DID,
+        options: ResolverOptions,
+    ) -> Result<ResolverResult, Error>;
+
     /// DIDメソッドをサポートしているか確認
     fn supports_method(&self, method: &str) -> bool;
-    
+
     /// サポートしているDIDメソッドのリストを取得
     fn supported_methods(&self) -> Vec<String>;
-    
+
     /// DIDメソッドを追加
     fn add_method(&mut self, method: Box<dyn DIDMethod>);
-    
+
     /// DIDメソッドを削除
     fn remove_method(&mut self, method_name: &str) -> bool;
 }
@@ -120,50 +124,56 @@ impl UniversalResolver {
             default_options: ResolverOptions::default(),
         }
     }
-    
+
     /// デフォルトオプションを設定
     pub fn set_default_options(&mut self, options: ResolverOptions) {
         self.default_options = options;
     }
-    
+
     /// キャッシュをクリア
     pub fn clear_cache(&mut self) {
         self.cache.clear();
     }
-    
+
     /// キャッシュから取得
     fn get_from_cache(&self, did: &DID, options: &ResolverOptions) -> Option<(DIDDocument, bool)> {
-        let use_cache = options.use_cache.unwrap_or(self.default_options.use_cache.unwrap_or(true));
-        
+        let use_cache = options
+            .use_cache
+            .unwrap_or(self.default_options.use_cache.unwrap_or(true));
+
         if !use_cache {
             return None;
         }
-        
+
         let cache_key = did.to_string();
-        
+
         if let Some((document, expires)) = self.cache.get(&cache_key) {
             let now = Utc::now();
-            
+
             if now < *expires {
                 return Some((document.clone(), true));
             }
         }
-        
+
         None
     }
-    
+
     /// キャッシュに保存
     fn store_in_cache(&mut self, did: &DID, document: DIDDocument, options: &ResolverOptions) {
-        let use_cache = options.use_cache.unwrap_or(self.default_options.use_cache.unwrap_or(true));
-        
+        let use_cache = options
+            .use_cache
+            .unwrap_or(self.default_options.use_cache.unwrap_or(true));
+
         if !use_cache {
             return;
         }
-        
+
         let cache_key = did.to_string();
-        let ttl = options.cache_ttl_seconds.unwrap_or(self.default_options.cache_ttl_seconds.unwrap_or(3600));
+        let ttl = options
+            .cache_ttl_seconds
+            .unwrap_or(self.default_options.cache_ttl_seconds.unwrap_or(3600));
         let expires = Utc::now() + chrono::Duration::seconds(ttl as i64);
-        
+
         self.cache.insert(cache_key, (document, expires));
     }
 }
@@ -172,37 +182,40 @@ impl Resolver for UniversalResolver {
     fn resolve(&self, did: &DID) -> Result<ResolverResult, Error> {
         self.resolve_with_options(did, self.default_options.clone())
     }
-    
-    fn resolve_with_options(&self, did: &DID, options: ResolverOptions) -> Result<ResolverResult, Error> {
+
+    fn resolve_with_options(
+        &self,
+        did: &DID,
+        options: ResolverOptions,
+    ) -> Result<ResolverResult, Error> {
         let start_time = std::time::Instant::now();
         let method_name = did.method.clone();
-        
+
         // キャッシュをチェック
-        let (document, cache_hit) = if let Some((document, cache_hit)) = self.get_from_cache(did, &options) {
-            (Some(document), Some(cache_hit))
-        } else {
-            // メソッドを取得
-            let method = self.methods.get(&method_name).ok_or_else(|| {
-                Error::NotFound(format!("DID method not found: {}", method_name))
-            })?;
-            
-            // DIDを解決
-            match method.resolve(did) {
-                Ok(document) => {
-                    // キャッシュに保存
-                    let mut resolver = self.clone();
-                    resolver.store_in_cache(did, document.clone(), &options);
-                    
-                    (Some(document), Some(false))
-                },
-                Err(e) => {
-                    (None, None)
+        let (document, cache_hit) =
+            if let Some((document, cache_hit)) = self.get_from_cache(did, &options) {
+                (Some(document), Some(cache_hit))
+            } else {
+                // メソッドを取得
+                let method = self.methods.get(&method_name).ok_or_else(|| {
+                    Error::NotFound(format!("DID method not found: {}", method_name))
+                })?;
+
+                // DIDを解決
+                match method.resolve(did) {
+                    Ok(document) => {
+                        // キャッシュに保存
+                        let mut resolver = self.clone();
+                        resolver.store_in_cache(did, document.clone(), &options);
+
+                        (Some(document), Some(false))
+                    }
+                    Err(e) => (None, None),
                 }
-            }
-        };
-        
+            };
+
         let resolution_time_ms = start_time.elapsed().as_millis() as u64;
-        
+
         // メタデータを作成
         let metadata = ResolverMetadata {
             resolved_at: Utc::now(),
@@ -214,30 +227,30 @@ impl Resolver for UniversalResolver {
             resolution_time_ms: Some(resolution_time_ms),
             additional_properties: HashMap::new(),
         };
-        
+
         // 結果を作成
         let result = ResolverResult {
             did_document: document,
             metadata,
             error: None,
         };
-        
+
         Ok(result)
     }
-    
+
     fn supports_method(&self, method: &str) -> bool {
         self.methods.contains_key(method)
     }
-    
+
     fn supported_methods(&self) -> Vec<String> {
         self.methods.keys().cloned().collect()
     }
-    
+
     fn add_method(&mut self, method: Box<dyn DIDMethod>) {
         let method_name = method.name().to_string();
         self.methods.insert(method_name, method);
     }
-    
+
     fn remove_method(&mut self, method_name: &str) -> bool {
         self.methods.remove(method_name).is_some()
     }

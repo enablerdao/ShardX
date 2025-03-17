@@ -1,6 +1,6 @@
 use crate::error::Error;
-use sha2::{Digest, Sha256};
 use blake3::Hasher as Blake3;
+use sha2::{Digest, Sha256};
 use std::fmt;
 
 /// ハッシュアルゴリズム
@@ -216,7 +216,7 @@ mod tests {
         let hash1 = Hasher::sha256(b"hello world");
         let hash2 = Hasher::sha256(b"hello world");
         let hash3 = Hasher::sha256(b"different");
-        
+
         assert_eq!(hash1, hash2);
         assert_ne!(hash1, hash3);
     }
@@ -228,7 +228,7 @@ mod tests {
             empty_sha256.to_hex(),
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         );
-        
+
         let empty_blake3 = Hasher::blake3(b"");
         assert_eq!(empty_blake3.value().len(), 32);
     }
@@ -237,11 +237,11 @@ mod tests {
     fn test_large_data() {
         // 1MBのデータを生成
         let large_data = vec![0u8; 1024 * 1024];
-        
+
         // ハッシュを計算
         let sha256_hash = Hasher::sha256(&large_data);
         let blake3_hash = Hasher::blake3(&large_data);
-        
+
         // ハッシュ値の長さを検証
         assert_eq!(sha256_hash.value().len(), 32);
         assert_eq!(blake3_hash.value().len(), 32);

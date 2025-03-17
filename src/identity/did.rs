@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
+use crate::crypto::{hash, PublicKey, Signature};
 use crate::error::Error;
-use crate::crypto::{PublicKey, Signature, hash};
 
 /// 分散型識別子（DID）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -35,51 +35,57 @@ impl DID {
             fragment: None,
         }
     }
-    
+
     /// 文字列からDIDを解析
     pub fn parse(did_str: &str) -> Result<Self, Error> {
         // DIDスキームをチェック
         if !did_str.starts_with("did:") {
-            return Err(Error::InvalidInput(format!("Invalid DID scheme: {}", did_str)));
+            return Err(Error::InvalidInput(format!(
+                "Invalid DID scheme: {}",
+                did_str
+            )));
         }
-        
+
         // DIDの各部分を解析
         let parts: Vec<&str> = did_str.splitn(4, ':').collect();
         if parts.len() < 3 {
-            return Err(Error::InvalidInput(format!("Invalid DID format: {}", did_str)));
+            return Err(Error::InvalidInput(format!(
+                "Invalid DID format: {}",
+                did_str
+            )));
         }
-        
+
         let scheme = parts[0].to_string();
         let method = parts[1].to_string();
         let mut id = parts[2].to_string();
-        
+
         let mut path = None;
         let mut query = None;
         let mut fragment = None;
-        
+
         // パス、クエリ、フラグメントを解析
         if parts.len() > 3 {
             let rest = parts[3];
-            
+
             // フラグメントを解析
             let fragment_parts: Vec<&str> = rest.split('#').collect();
             if fragment_parts.len() > 1 {
                 fragment = Some(fragment_parts[1].to_string());
             }
-            
+
             // クエリを解析
             let query_parts: Vec<&str> = fragment_parts[0].split('?').collect();
             if query_parts.len() > 1 {
                 query = Some(query_parts[1].to_string());
             }
-            
+
             // パスを解析
             let path_parts: Vec<&str> = query_parts[0].split('/').collect();
             if path_parts.len() > 1 {
                 path = Some(format!("/{}", path_parts[1..].join("/")));
             }
         }
-        
+
         Ok(Self {
             scheme,
             method,
@@ -89,73 +95,78 @@ impl DID {
             fragment,
         })
     }
-    
+
     /// DIDを文字列に変換
     pub fn to_string(&self) -> String {
         let mut result = format!("{}:{}:{}", self.scheme, self.method, self.id);
-        
+
         if let Some(path) = &self.path {
             result.push_str(path);
         }
-        
+
         if let Some(query) = &self.query {
             result.push_str(&format!("?{}", query));
         }
-        
+
         if let Some(fragment) = &self.fragment {
             result.push_str(&format!("#{}", fragment));
         }
-        
+
         result
     }
-    
+
     /// DIDのURLを作成
-    pub fn to_url(&self, path: Option<&str>, query: Option<&str>, fragment: Option<&str>) -> String {
+    pub fn to_url(
+        &self,
+        path: Option<&str>,
+        query: Option<&str>,
+        fragment: Option<&str>,
+    ) -> String {
         let mut result = format!("{}:{}:{}", self.scheme, self.method, self.id);
-        
+
         if let Some(path) = path {
             result.push_str(&format!("/{}", path));
         } else if let Some(path) = &self.path {
             result.push_str(path);
         }
-        
+
         if let Some(query) = query {
             result.push_str(&format!("?{}", query));
         } else if let Some(query) = &self.query {
             result.push_str(&format!("?{}", query));
         }
-        
+
         if let Some(fragment) = fragment {
             result.push_str(&format!("#{}", fragment));
         } else if let Some(fragment) = &self.fragment {
             result.push_str(&format!("#{}", fragment));
         }
-        
+
         result
     }
-    
+
     /// DIDのメソッド固有識別子を取得
     pub fn method_specific_id(&self) -> &str {
         &self.id
     }
-    
+
     /// DIDのメソッドを取得
     pub fn method_name(&self) -> &str {
         &self.method
     }
-    
+
     /// DIDのフラグメントを設定
     pub fn with_fragment(mut self, fragment: String) -> Self {
         self.fragment = Some(fragment);
         self
     }
-    
+
     /// DIDのパスを設定
     pub fn with_path(mut self, path: String) -> Self {
         self.path = Some(path);
         self
     }
-    
+
     /// DIDのクエリを設定
     pub fn with_query(mut self, query: String) -> Self {
         self.query = Some(query);
@@ -173,19 +184,19 @@ impl ToString for DID {
 pub trait DIDMethod {
     /// メソッド名を取得
     fn name(&self) -> &str;
-    
+
     /// DIDを生成
     fn generate(&self, options: Option<HashMap<String, String>>) -> Result<DID, Error>;
-    
+
     /// DIDを検証
     fn validate(&self, did: &DID) -> Result<bool, Error>;
-    
+
     /// DIDドキュメントを解決
     fn resolve(&self, did: &DID) -> Result<DIDDocument, Error>;
-    
+
     /// DIDドキュメントを更新
     fn update(&self, did: &DID, document: &DIDDocument) -> Result<(), Error>;
-    
+
     /// DIDを無効化
     fn deactivate(&self, did: &DID) -> Result<(), Error>;
 }
@@ -194,16 +205,20 @@ pub trait DIDMethod {
 pub trait DIDResolver {
     /// DIDドキュメントを解決
     fn resolve(&self, did: &DID) -> Result<DIDDocument, Error>;
-    
+
     /// DIDドキュメントを解決（オプション付き）
-    fn resolve_with_options(&self, did: &DID, options: HashMap<String, String>) -> Result<DIDDocument, Error>;
-    
+    fn resolve_with_options(
+        &self,
+        did: &DID,
+        options: HashMap<String, String>,
+    ) -> Result<DIDDocument, Error>;
+
     /// DIDドキュメントのメタデータを解決
     fn resolve_metadata(&self, did: &DID) -> Result<HashMap<String, String>, Error>;
-    
+
     /// DIDメソッドをサポートしているか確認
     fn supports_method(&self, method: &str) -> bool;
-    
+
     /// サポートしているDIDメソッドのリストを取得
     fn supported_methods(&self) -> Vec<String>;
 }
@@ -232,10 +247,16 @@ pub struct DIDDocument {
     #[serde(rename = "keyAgreement", skip_serializing_if = "Option::is_none")]
     pub key_agreement: Option<Vec<String>>,
     /// 機能呼び出し
-    #[serde(rename = "capabilityInvocation", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "capabilityInvocation",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub capability_invocation: Option<Vec<String>>,
     /// 機能委任
-    #[serde(rename = "capabilityDelegation", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "capabilityDelegation",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub capability_delegation: Option<Vec<String>>,
     /// サービス
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -274,51 +295,51 @@ impl DIDDocument {
             additional_properties: HashMap::new(),
         }
     }
-    
+
     /// 検証メソッドを追加
     pub fn add_verification_method(&mut self, method: DIDVerificationMethod) {
         if self.verification_method.is_none() {
             self.verification_method = Some(Vec::new());
         }
-        
+
         if let Some(methods) = &mut self.verification_method {
             methods.push(method);
         }
     }
-    
+
     /// 認証を追加
     pub fn add_authentication(&mut self, auth: DIDAuthentication) {
         if self.authentication.is_none() {
             self.authentication = Some(Vec::new());
         }
-        
+
         if let Some(auths) = &mut self.authentication {
             auths.push(auth);
         }
     }
-    
+
     /// サービスを追加
     pub fn add_service(&mut self, service: DIDService) {
         if self.service.is_none() {
             self.service = Some(Vec::new());
         }
-        
+
         if let Some(services) = &mut self.service {
             services.push(service);
         }
     }
-    
+
     /// 証明を追加
     pub fn add_proof(&mut self, proof: DIDProof) {
         if self.proof.is_none() {
             self.proof = Some(Vec::new());
         }
-        
+
         if let Some(proofs) = &mut self.proof {
             proofs.push(proof);
         }
     }
-    
+
     /// 検証メソッドを取得
     pub fn get_verification_method(&self, id: &str) -> Option<&DIDVerificationMethod> {
         if let Some(methods) = &self.verification_method {
@@ -327,7 +348,7 @@ impl DIDDocument {
             None
         }
     }
-    
+
     /// 認証を取得
     pub fn get_authentication(&self, id: &str) -> Option<&DIDAuthentication> {
         if let Some(auths) = &self.authentication {
@@ -339,7 +360,7 @@ impl DIDDocument {
             None
         }
     }
-    
+
     /// サービスを取得
     pub fn get_service(&self, id: &str) -> Option<&DIDService> {
         if let Some(services) = &self.service {
@@ -348,7 +369,7 @@ impl DIDDocument {
             None
         }
     }
-    
+
     /// 証明を取得
     pub fn get_proof(&self, type_: &str) -> Option<&DIDProof> {
         if let Some(proofs) = &self.proof {
@@ -357,7 +378,7 @@ impl DIDDocument {
             None
         }
     }
-    
+
     /// 更新日時を更新
     pub fn update_timestamp(&mut self) {
         self.updated = Some(Utc::now());

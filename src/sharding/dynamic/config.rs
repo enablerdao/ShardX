@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// 動的シャーディング設定
@@ -180,15 +180,15 @@ impl Default for DynamicShardingConfig {
             enable_shard_rebalancing: true,
             enable_shard_optimization: true,
             enable_hotspot_detection: true,
-            metrics_collection_interval_ms: 10000, // 10秒
-            shard_split_timeout_seconds: 300, // 5分
-            shard_merge_timeout_seconds: 600, // 10分
-            shard_relocation_timeout_seconds: 1800, // 30分
-            shard_rebalance_timeout_seconds: 3600, // 1時間
+            metrics_collection_interval_ms: 10000,    // 10秒
+            shard_split_timeout_seconds: 300,         // 5分
+            shard_merge_timeout_seconds: 600,         // 10分
+            shard_relocation_timeout_seconds: 1800,   // 30分
+            shard_rebalance_timeout_seconds: 3600,    // 1時間
             shard_optimization_timeout_seconds: 1800, // 30分
-            rebalance_threshold: 0.2, // 20%の不均衡
-            optimization_threshold: 0.3, // 30%の最適化スコア
-            min_rebalance_interval_seconds: 3600, // 1時間
+            rebalance_threshold: 0.2,                 // 20%の不均衡
+            optimization_threshold: 0.3,              // 30%の最適化スコア
+            min_rebalance_interval_seconds: 3600,     // 1時間
             min_optimization_interval_seconds: 86400, // 1日
             metadata: HashMap::new(),
         }
@@ -198,13 +198,13 @@ impl Default for DynamicShardingConfig {
 impl Default for ShardSplitPolicy {
     fn default() -> Self {
         Self {
-            load_threshold: 0.8, // 80%の負荷
+            load_threshold: 0.8,                // 80%の負荷
             data_size_threshold: 1_073_741_824, // 1GB
-            key_count_threshold: 1_000_000, // 100万キー
+            key_count_threshold: 1_000_000,     // 100万キー
             split_strategy: SplitStrategyType::KeyRange,
             max_splits_per_interval: 5,
             min_shard_size_after_split: 104_857_600, // 100MB
-            min_key_count_after_split: 100_000, // 10万キー
+            min_key_count_after_split: 100_000,      // 10万キー
             metadata: HashMap::new(),
         }
     }
@@ -213,13 +213,13 @@ impl Default for ShardSplitPolicy {
 impl Default for ShardMergePolicy {
     fn default() -> Self {
         Self {
-            load_threshold: 0.2, // 20%の負荷
+            load_threshold: 0.2,              // 20%の負荷
             data_size_threshold: 104_857_600, // 100MB
-            key_count_threshold: 100_000, // 10万キー
+            key_count_threshold: 100_000,     // 10万キー
             merge_strategy: MergeStrategyType::Adjacent,
             max_merges_per_interval: 3,
             max_shard_size_after_merge: 1_073_741_824, // 1GB
-            max_key_count_after_merge: 1_000_000, // 100万キー
+            max_key_count_after_merge: 1_000_000,      // 100万キー
             metadata: HashMap::new(),
         }
     }
@@ -228,7 +228,7 @@ impl Default for ShardMergePolicy {
 impl Default for RebalancePolicy {
     fn default() -> Self {
         Self {
-            load_imbalance_threshold: 0.2, // 20%の不均衡
+            load_imbalance_threshold: 0.2,      // 20%の不均衡
             data_size_imbalance_threshold: 0.3, // 30%の不均衡
             rebalance_strategy: RebalanceStrategyType::Hybrid,
             max_shard_moves_per_rebalance: 10,
@@ -241,12 +241,12 @@ impl Default for RebalancePolicy {
 impl Default for HotspotDetectionConfig {
     fn default() -> Self {
         Self {
-            load_hotspot_threshold: 0.9, // 90%の負荷
-            data_size_hotspot_threshold: 0.8, // 80%のデータサイズ
-            key_skew_hotspot_threshold: 0.7, // 70%のキー分布の偏り
+            load_hotspot_threshold: 0.9,        // 90%の負荷
+            data_size_hotspot_threshold: 0.8,   // 80%のデータサイズ
+            key_skew_hotspot_threshold: 0.7,    // 70%のキー分布の偏り
             access_skew_hotspot_threshold: 0.8, // 80%のアクセス分布の偏り
-            detection_window_seconds: 300, // 5分
-            detection_sensitivity: 0.8, // 80%の感度
+            detection_window_seconds: 300,      // 5分
+            detection_sensitivity: 0.8,         // 80%の感度
             metadata: HashMap::new(),
         }
     }
@@ -255,11 +255,11 @@ impl Default for HotspotDetectionConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_default_config() {
         let config = DynamicShardingConfig::default();
-        
+
         // 基本設定
         assert!(config.enable_shard_splitting);
         assert!(config.enable_shard_merging);
@@ -267,7 +267,7 @@ mod tests {
         assert!(config.enable_shard_rebalancing);
         assert!(config.enable_shard_optimization);
         assert!(config.enable_hotspot_detection);
-        
+
         // 間隔設定
         assert_eq!(config.metrics_collection_interval_ms, 10000);
         assert_eq!(config.shard_split_timeout_seconds, 300);
@@ -275,18 +275,18 @@ mod tests {
         assert_eq!(config.shard_relocation_timeout_seconds, 1800);
         assert_eq!(config.shard_rebalance_timeout_seconds, 3600);
         assert_eq!(config.shard_optimization_timeout_seconds, 1800);
-        
+
         // 閾値設定
         assert_eq!(config.rebalance_threshold, 0.2);
         assert_eq!(config.optimization_threshold, 0.3);
         assert_eq!(config.min_rebalance_interval_seconds, 3600);
         assert_eq!(config.min_optimization_interval_seconds, 86400);
     }
-    
+
     #[test]
     fn test_shard_split_policy() {
         let policy = ShardSplitPolicy::default();
-        
+
         assert_eq!(policy.load_threshold, 0.8);
         assert_eq!(policy.data_size_threshold, 1_073_741_824);
         assert_eq!(policy.key_count_threshold, 1_000_000);
@@ -295,11 +295,11 @@ mod tests {
         assert_eq!(policy.min_shard_size_after_split, 104_857_600);
         assert_eq!(policy.min_key_count_after_split, 100_000);
     }
-    
+
     #[test]
     fn test_shard_merge_policy() {
         let policy = ShardMergePolicy::default();
-        
+
         assert_eq!(policy.load_threshold, 0.2);
         assert_eq!(policy.data_size_threshold, 104_857_600);
         assert_eq!(policy.key_count_threshold, 100_000);
@@ -308,22 +308,22 @@ mod tests {
         assert_eq!(policy.max_shard_size_after_merge, 1_073_741_824);
         assert_eq!(policy.max_key_count_after_merge, 1_000_000);
     }
-    
+
     #[test]
     fn test_rebalance_policy() {
         let policy = RebalancePolicy::default();
-        
+
         assert_eq!(policy.load_imbalance_threshold, 0.2);
         assert_eq!(policy.data_size_imbalance_threshold, 0.3);
         assert_eq!(policy.rebalance_strategy, RebalanceStrategyType::Hybrid);
         assert_eq!(policy.max_shard_moves_per_rebalance, 10);
         assert_eq!(policy.max_data_move_size_per_rebalance, 10_737_418_240);
     }
-    
+
     #[test]
     fn test_hotspot_detection_config() {
         let config = HotspotDetectionConfig::default();
-        
+
         assert_eq!(config.load_hotspot_threshold, 0.9);
         assert_eq!(config.data_size_hotspot_threshold, 0.8);
         assert_eq!(config.key_skew_hotspot_threshold, 0.7);

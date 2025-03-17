@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// レイヤー2設定
@@ -291,8 +291,8 @@ impl Default for Layer2Config {
             sync_config: SyncConfig::default(),
             challenge_config: ChallengeConfig::default(),
             batch_config: BatchConfig::default(),
-            sync_interval_ms: 10000, // 10秒
-            batch_interval_ms: 60000, // 1分
+            sync_interval_ms: 10000,       // 10秒
+            batch_interval_ms: 60000,      // 1分
             challenge_interval_ms: 300000, // 5分
             metadata: HashMap::new(),
         }
@@ -310,8 +310,8 @@ impl Default for RollupConfig {
             verification_mode: VerificationMode::Optimistic,
             batch_size: 100,
             challenge_period_seconds: 604800, // 1週間
-            max_transaction_size: 65536, // 64KB
-            max_batch_size: 1048576, // 1MB
+            max_transaction_size: 65536,      // 64KB
+            max_batch_size: 1048576,          // 1MB
             gas_limit: 10000000,
             gas_price: 1000000000, // 1 Gwei
             metadata: HashMap::new(),
@@ -327,7 +327,7 @@ impl Default for SidechainConfig {
             description: "Default sidechain configuration".to_string(),
             consensus_algorithm: ConsensusAlgorithm::ProofOfAuthority,
             block_time_seconds: 5,
-            max_block_size: 1048576, // 1MB
+            max_block_size: 1048576,     // 1MB
             max_transaction_size: 65536, // 64KB
             gas_limit: 10000000,
             gas_price: 1000000000, // 1 Gwei
@@ -345,8 +345,8 @@ impl Default for PlasmaConfig {
             description: "Default plasma configuration".to_string(),
             plasma_type: PlasmaType::MVP,
             block_time_seconds: 15,
-            max_block_size: 1048576, // 1MB
-            max_transaction_size: 65536, // 64KB
+            max_block_size: 1048576,          // 1MB
+            max_transaction_size: 65536,      // 64KB
             withdrawal_delay_seconds: 604800, // 1週間
             challenge_period_seconds: 604800, // 1週間
             metadata: HashMap::new(),
@@ -363,10 +363,10 @@ impl Default for ValidatorConfig {
             consensus_algorithm: ConsensusAlgorithm::ProofOfStake,
             validator_count: 5,
             min_stake_amount: 1000000000000000000, // 1 ETH
-            reward_rate: 0.05, // 5%
+            reward_rate: 0.05,                     // 5%
             slashing_conditions: SlashingConditions {
-                double_signing_penalty_percentage: 100, // 100%
-                offline_penalty_percentage: 10, // 10%
+                double_signing_penalty_percentage: 100,     // 100%
+                offline_penalty_percentage: 10,             // 10%
                 malicious_behavior_penalty_percentage: 100, // 100%
             },
             metadata: HashMap::new(),
@@ -397,9 +397,9 @@ impl Default for ChallengeConfig {
                 ChallengeType::InvalidProof,
                 ChallengeType::DataAvailability,
             ],
-            challenge_period_seconds: 604800, // 1週間
+            challenge_period_seconds: 604800,           // 1週間
             challenge_bond_amount: 1000000000000000000, // 1 ETH
-            challenge_reward_rate: 0.1, // 10%
+            challenge_reward_rate: 0.1,                 // 10%
             metadata: HashMap::new(),
         }
     }
@@ -409,7 +409,7 @@ impl Default for BatchConfig {
     fn default() -> Self {
         Self {
             batch_size: 100,
-            max_batch_size: 1048576, // 1MB
+            max_batch_size: 1048576,     // 1MB
             batch_interval_seconds: 600, // 10分
             batch_submission_gas_limit: 1000000,
             metadata: HashMap::new(),
@@ -420,21 +420,21 @@ impl Default for BatchConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_default_layer2_config() {
         let config = Layer2Config::default();
-        
+
         // 基本設定
         assert_eq!(config.sync_interval_ms, 10000);
         assert_eq!(config.batch_interval_ms, 60000);
         assert_eq!(config.challenge_interval_ms, 300000);
     }
-    
+
     #[test]
     fn test_rollup_config() {
         let config = RollupConfig::default();
-        
+
         assert_eq!(config.id, "default_rollup");
         assert_eq!(config.name, "Default Rollup");
         assert_eq!(config.rollup_type, RollupType::Optimistic);
@@ -447,14 +447,17 @@ mod tests {
         assert_eq!(config.gas_limit, 10000000);
         assert_eq!(config.gas_price, 1000000000);
     }
-    
+
     #[test]
     fn test_sidechain_config() {
         let config = SidechainConfig::default();
-        
+
         assert_eq!(config.id, "default_sidechain");
         assert_eq!(config.name, "Default Sidechain");
-        assert_eq!(config.consensus_algorithm, ConsensusAlgorithm::ProofOfAuthority);
+        assert_eq!(
+            config.consensus_algorithm,
+            ConsensusAlgorithm::ProofOfAuthority
+        );
         assert_eq!(config.block_time_seconds, 5);
         assert_eq!(config.max_block_size, 1048576);
         assert_eq!(config.max_transaction_size, 65536);
@@ -462,11 +465,11 @@ mod tests {
         assert_eq!(config.gas_price, 1000000000);
         assert_eq!(config.validator_count, 5);
     }
-    
+
     #[test]
     fn test_plasma_config() {
         let config = PlasmaConfig::default();
-        
+
         assert_eq!(config.id, "default_plasma");
         assert_eq!(config.name, "Default Plasma");
         assert_eq!(config.plasma_type, PlasmaType::MVP);
@@ -476,52 +479,70 @@ mod tests {
         assert_eq!(config.withdrawal_delay_seconds, 604800);
         assert_eq!(config.challenge_period_seconds, 604800);
     }
-    
+
     #[test]
     fn test_validator_config() {
         let config = ValidatorConfig::default();
-        
+
         assert_eq!(config.id, "default_validator");
         assert_eq!(config.name, "Default Validator");
         assert_eq!(config.consensus_algorithm, ConsensusAlgorithm::ProofOfStake);
         assert_eq!(config.validator_count, 5);
         assert_eq!(config.min_stake_amount, 1000000000000000000);
         assert_eq!(config.reward_rate, 0.05);
-        assert_eq!(config.slashing_conditions.double_signing_penalty_percentage, 100);
+        assert_eq!(
+            config.slashing_conditions.double_signing_penalty_percentage,
+            100
+        );
         assert_eq!(config.slashing_conditions.offline_penalty_percentage, 10);
-        assert_eq!(config.slashing_conditions.malicious_behavior_penalty_percentage, 100);
+        assert_eq!(
+            config
+                .slashing_conditions
+                .malicious_behavior_penalty_percentage,
+            100
+        );
     }
-    
+
     #[test]
     fn test_sync_config() {
         let config = SyncConfig::default();
-        
+
         assert_eq!(config.sync_mode, SyncMode::Fast);
         assert_eq!(config.max_sync_blocks, 1000);
         assert_eq!(config.sync_timeout_seconds, 300);
         assert_eq!(config.sync_interval_seconds, 60);
         assert_eq!(config.sync_peer_count, 3);
     }
-    
+
     #[test]
     fn test_challenge_config() {
         let config = ChallengeConfig::default();
-        
+
         assert_eq!(config.challenge_types.len(), 5);
-        assert!(config.challenge_types.contains(&ChallengeType::InvalidTransaction));
-        assert!(config.challenge_types.contains(&ChallengeType::InvalidStateTransition));
-        assert!(config.challenge_types.contains(&ChallengeType::InvalidBlock));
-        assert!(config.challenge_types.contains(&ChallengeType::InvalidProof));
-        assert!(config.challenge_types.contains(&ChallengeType::DataAvailability));
+        assert!(config
+            .challenge_types
+            .contains(&ChallengeType::InvalidTransaction));
+        assert!(config
+            .challenge_types
+            .contains(&ChallengeType::InvalidStateTransition));
+        assert!(config
+            .challenge_types
+            .contains(&ChallengeType::InvalidBlock));
+        assert!(config
+            .challenge_types
+            .contains(&ChallengeType::InvalidProof));
+        assert!(config
+            .challenge_types
+            .contains(&ChallengeType::DataAvailability));
         assert_eq!(config.challenge_period_seconds, 604800);
         assert_eq!(config.challenge_bond_amount, 1000000000000000000);
         assert_eq!(config.challenge_reward_rate, 0.1);
     }
-    
+
     #[test]
     fn test_batch_config() {
         let config = BatchConfig::default();
-        
+
         assert_eq!(config.batch_size, 100);
         assert_eq!(config.max_batch_size, 1048576);
         assert_eq!(config.batch_interval_seconds, 600);

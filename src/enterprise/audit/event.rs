@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
 
@@ -115,14 +115,14 @@ impl AuditEvent {
             metadata: metadata.unwrap_or_else(|| Value::Object(serde_json::Map::new())),
         }
     }
-    
+
     /// メタデータを追加
     pub fn add_metadata(&mut self, key: &str, value: Value) {
         if let Value::Object(ref mut map) = self.metadata {
             map.insert(key.to_string(), value);
         }
     }
-    
+
     /// メタデータを取得
     pub fn get_metadata(&self, key: &str) -> Option<&Value> {
         if let Value::Object(ref map) = self.metadata {
@@ -131,15 +131,18 @@ impl AuditEvent {
             None
         }
     }
-    
+
     /// 成功したかどうかを確認
     pub fn is_success(&self) -> bool {
         self.result == "success" || self.result == "succeeded" || self.result == "allowed"
     }
-    
+
     /// 失敗したかどうかを確認
     pub fn is_failure(&self) -> bool {
-        self.result == "failure" || self.result == "failed" || self.result == "denied" || self.result == "error"
+        self.result == "failure"
+            || self.result == "failed"
+            || self.result == "denied"
+            || self.result == "error"
     }
 }
 
@@ -194,7 +197,7 @@ impl fmt::Display for EventTarget {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_audit_event_creation() {
         let event = AuditEvent::new(
@@ -209,26 +212,26 @@ mod tests {
                 "user_agent": "Mozilla/5.0",
             })),
         );
-        
+
         assert_eq!(event.id, "EVENT-123");
         assert_eq!(event.event_type, AuditEventType::Authentication);
         assert_eq!(event.action, "login");
         assert_eq!(event.result, "success");
-        
+
         match event.source {
             EventSource::User(ref user) => assert_eq!(user, "user123"),
             _ => panic!("Expected User source"),
         }
-        
+
         match event.target {
             EventTarget::Resource(ref resource) => assert_eq!(resource, "login-service"),
             _ => panic!("Expected Resource target"),
         }
-        
+
         assert_eq!(event.metadata["ip_address"], "192.168.1.1");
         assert_eq!(event.metadata["user_agent"], "Mozilla/5.0");
     }
-    
+
     #[test]
     fn test_audit_event_metadata() {
         let mut event = AuditEvent::new(
@@ -240,17 +243,23 @@ mod tests {
             "success",
             None,
         );
-        
+
         // メタデータを追加
         event.add_metadata("ip_address", serde_json::json!("192.168.1.1"));
         event.add_metadata("user_agent", serde_json::json!("Mozilla/5.0"));
-        
+
         // メタデータを取得
-        assert_eq!(event.get_metadata("ip_address").unwrap(), &serde_json::json!("192.168.1.1"));
-        assert_eq!(event.get_metadata("user_agent").unwrap(), &serde_json::json!("Mozilla/5.0"));
+        assert_eq!(
+            event.get_metadata("ip_address").unwrap(),
+            &serde_json::json!("192.168.1.1")
+        );
+        assert_eq!(
+            event.get_metadata("user_agent").unwrap(),
+            &serde_json::json!("Mozilla/5.0")
+        );
         assert_eq!(event.get_metadata("non_existent"), None);
     }
-    
+
     #[test]
     fn test_audit_event_status() {
         let success_event = AuditEvent::new(
@@ -262,7 +271,7 @@ mod tests {
             "success",
             None,
         );
-        
+
         let failure_event = AuditEvent::new(
             "EVENT-124",
             AuditEventType::Authentication,
@@ -272,14 +281,14 @@ mod tests {
             "failed",
             None,
         );
-        
+
         assert!(success_event.is_success());
         assert!(!success_event.is_failure());
-        
+
         assert!(!failure_event.is_success());
         assert!(failure_event.is_failure());
     }
-    
+
     #[test]
     fn test_event_type_display() {
         assert_eq!(AuditEventType::Authentication.to_string(), "Authentication");
@@ -288,34 +297,73 @@ mod tests {
         assert_eq!(AuditEventType::SystemChange.to_string(), "SystemChange");
         assert_eq!(AuditEventType::UserActivity.to_string(), "UserActivity");
         assert_eq!(AuditEventType::SecurityEvent.to_string(), "SecurityEvent");
-        assert_eq!(AuditEventType::ComplianceEvent.to_string(), "ComplianceEvent");
+        assert_eq!(
+            AuditEventType::ComplianceEvent.to_string(),
+            "ComplianceEvent"
+        );
         assert_eq!(AuditEventType::ResourceEvent.to_string(), "ResourceEvent");
         assert_eq!(AuditEventType::NetworkEvent.to_string(), "NetworkEvent");
-        assert_eq!(AuditEventType::ApplicationEvent.to_string(), "ApplicationEvent");
+        assert_eq!(
+            AuditEventType::ApplicationEvent.to_string(),
+            "ApplicationEvent"
+        );
         assert_eq!(AuditEventType::DatabaseEvent.to_string(), "DatabaseEvent");
         assert_eq!(AuditEventType::APIEvent.to_string(), "APIEvent");
         assert_eq!(AuditEventType::AccessControl.to_string(), "AccessControl");
         assert_eq!(AuditEventType::Other.to_string(), "Other");
     }
-    
+
     #[test]
     fn test_event_source_display() {
-        assert_eq!(EventSource::User("user123".to_string()).to_string(), "User(user123)");
+        assert_eq!(
+            EventSource::User("user123".to_string()).to_string(),
+            "User(user123)"
+        );
         assert_eq!(EventSource::System.to_string(), "System");
-        assert_eq!(EventSource::Service("auth".to_string()).to_string(), "Service(auth)");
-        assert_eq!(EventSource::Application("web".to_string()).to_string(), "Application(web)");
-        assert_eq!(EventSource::Device("mobile".to_string()).to_string(), "Device(mobile)");
-        assert_eq!(EventSource::External("api".to_string()).to_string(), "External(api)");
+        assert_eq!(
+            EventSource::Service("auth".to_string()).to_string(),
+            "Service(auth)"
+        );
+        assert_eq!(
+            EventSource::Application("web".to_string()).to_string(),
+            "Application(web)"
+        );
+        assert_eq!(
+            EventSource::Device("mobile".to_string()).to_string(),
+            "Device(mobile)"
+        );
+        assert_eq!(
+            EventSource::External("api".to_string()).to_string(),
+            "External(api)"
+        );
     }
-    
+
     #[test]
     fn test_event_target_display() {
-        assert_eq!(EventTarget::Resource("login".to_string()).to_string(), "Resource(login)");
-        assert_eq!(EventTarget::User("user123".to_string()).to_string(), "User(user123)");
+        assert_eq!(
+            EventTarget::Resource("login".to_string()).to_string(),
+            "Resource(login)"
+        );
+        assert_eq!(
+            EventTarget::User("user123".to_string()).to_string(),
+            "User(user123)"
+        );
         assert_eq!(EventTarget::System.to_string(), "System");
-        assert_eq!(EventTarget::Service("auth".to_string()).to_string(), "Service(auth)");
-        assert_eq!(EventTarget::Application("web".to_string()).to_string(), "Application(web)");
-        assert_eq!(EventTarget::Data("user_data".to_string()).to_string(), "Data(user_data)");
-        assert_eq!(EventTarget::Network("internal".to_string()).to_string(), "Network(internal)");
+        assert_eq!(
+            EventTarget::Service("auth".to_string()).to_string(),
+            "Service(auth)"
+        );
+        assert_eq!(
+            EventTarget::Application("web".to_string()).to_string(),
+            "Application(web)"
+        );
+        assert_eq!(
+            EventTarget::Data("user_data".to_string()).to_string(),
+            "Data(user_data)"
+        );
+        assert_eq!(
+            EventTarget::Network("internal".to_string()).to_string(),
+            "Network(internal)"
+        );
     }
 }

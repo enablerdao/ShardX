@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// 状態チャネル設定
@@ -202,14 +202,14 @@ impl Default for ChannelConfig {
             update_config: UpdateConfig::default(),
             watcher_config: WatcherConfig::default(),
             routing_config: RoutingConfig::default(),
-            default_timeout_seconds: 600, // 10分
+            default_timeout_seconds: 600,    // 10分
             default_expiry_seconds: 2592000, // 30日
             default_min_payment: 1,
             default_max_payment: 1000000000, // 10億
-            default_fee_rate: 0.001, // 0.1%
-            update_interval_ms: 1000, // 1秒
-            watcher_interval_ms: 60000, // 1分
-            routing_interval_ms: 300000, // 5分
+            default_fee_rate: 0.001,         // 0.1%
+            update_interval_ms: 1000,        // 1秒
+            watcher_interval_ms: 60000,      // 1分
+            routing_interval_ms: 300000,     // 5分
             metadata: HashMap::new(),
         }
     }
@@ -231,9 +231,9 @@ impl Default for NetworkConfig {
 impl Default for DisputeConfig {
     fn default() -> Self {
         Self {
-            dispute_timeout_seconds: 86400, // 1日
+            dispute_timeout_seconds: 86400,             // 1日
             dispute_resolution_timeout_seconds: 172800, // 2日
-            dispute_evidence_period_seconds: 43200, // 12時間
+            dispute_evidence_period_seconds: 43200,     // 12時間
             dispute_resolution_strategy: DisputeResolutionStrategy::SignedState,
             metadata: HashMap::new(),
         }
@@ -244,7 +244,7 @@ impl Default for UpdateConfig {
     fn default() -> Self {
         Self {
             update_timeout_ms: 5000, // 5秒
-            max_update_size: 65536, // 64KB
+            max_update_size: 65536,  // 64KB
             max_update_batch_size: 100,
             update_retry_count: 3,
             update_retry_interval_ms: 1000, // 1秒
@@ -256,9 +256,9 @@ impl Default for UpdateConfig {
 impl Default for WatcherConfig {
     fn default() -> Self {
         Self {
-            watcher_timeout_ms: 10000, // 10秒
+            watcher_timeout_ms: 10000,        // 10秒
             channel_check_interval_ms: 60000, // 1分
-            fraud_detection_threshold: 0.8, // 80%
+            fraud_detection_threshold: 0.8,   // 80%
             fraud_response_strategy: FraudResponseStrategy::StartDispute,
             metadata: HashMap::new(),
         }
@@ -271,7 +271,7 @@ impl Default for RoutingConfig {
             routing_strategy: RoutingStrategy::Balanced,
             max_route_length: 5,
             min_channel_capacity: 1000,
-            max_fee_rate: 0.01, // 1%
+            max_fee_rate: 0.01,              // 1%
             route_cache_expiry_seconds: 300, // 5分
             metadata: HashMap::new(),
         }
@@ -281,11 +281,11 @@ impl Default for RoutingConfig {
 impl Default for ChannelParams {
     fn default() -> Self {
         Self {
-            timeout_seconds: 600, // 10分
+            timeout_seconds: 600,    // 10分
             expiry_seconds: 2592000, // 30日
             min_payment: 1,
             max_payment: 1000000000, // 10億
-            fee_rate: 0.001, // 0.1%
+            fee_rate: 0.001,         // 0.1%
             metadata: HashMap::new(),
         }
     }
@@ -299,7 +299,7 @@ impl Default for ChannelPolicy {
             min_channel_capacity: 1000,
             max_payment_size: 1000000000, // 10億
             min_payment_size: 1,
-            max_fee_rate: 0.01, // 1%
+            max_fee_rate: 0.01,   // 1%
             min_fee_rate: 0.0001, // 0.01%
             metadata: HashMap::new(),
         }
@@ -309,11 +309,11 @@ impl Default for ChannelPolicy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_default_channel_config() {
         let config = ChannelConfig::default();
-        
+
         // 基本設定
         assert_eq!(config.default_timeout_seconds, 600);
         assert_eq!(config.default_expiry_seconds, 2592000);
@@ -324,75 +324,81 @@ mod tests {
         assert_eq!(config.watcher_interval_ms, 60000);
         assert_eq!(config.routing_interval_ms, 300000);
     }
-    
+
     #[test]
     fn test_network_config() {
         let config = NetworkConfig::default();
-        
+
         assert_eq!(config.max_hops, 5);
         assert_eq!(config.max_routes, 3);
         assert_eq!(config.max_route_search_time_ms, 5000);
         assert_eq!(config.max_route_search_attempts, 3);
         assert_eq!(config.route_search_timeout_ms, 10000);
     }
-    
+
     #[test]
     fn test_dispute_config() {
         let config = DisputeConfig::default();
-        
+
         assert_eq!(config.dispute_timeout_seconds, 86400);
         assert_eq!(config.dispute_resolution_timeout_seconds, 172800);
         assert_eq!(config.dispute_evidence_period_seconds, 43200);
-        assert_eq!(config.dispute_resolution_strategy, DisputeResolutionStrategy::SignedState);
+        assert_eq!(
+            config.dispute_resolution_strategy,
+            DisputeResolutionStrategy::SignedState
+        );
     }
-    
+
     #[test]
     fn test_update_config() {
         let config = UpdateConfig::default();
-        
+
         assert_eq!(config.update_timeout_ms, 5000);
         assert_eq!(config.max_update_size, 65536);
         assert_eq!(config.max_update_batch_size, 100);
         assert_eq!(config.update_retry_count, 3);
         assert_eq!(config.update_retry_interval_ms, 1000);
     }
-    
+
     #[test]
     fn test_watcher_config() {
         let config = WatcherConfig::default();
-        
+
         assert_eq!(config.watcher_timeout_ms, 10000);
         assert_eq!(config.channel_check_interval_ms, 60000);
         assert_eq!(config.fraud_detection_threshold, 0.8);
-        assert_eq!(config.fraud_response_strategy, FraudResponseStrategy::StartDispute);
+        assert_eq!(
+            config.fraud_response_strategy,
+            FraudResponseStrategy::StartDispute
+        );
     }
-    
+
     #[test]
     fn test_routing_config() {
         let config = RoutingConfig::default();
-        
+
         assert_eq!(config.routing_strategy, RoutingStrategy::Balanced);
         assert_eq!(config.max_route_length, 5);
         assert_eq!(config.min_channel_capacity, 1000);
         assert_eq!(config.max_fee_rate, 0.01);
         assert_eq!(config.route_cache_expiry_seconds, 300);
     }
-    
+
     #[test]
     fn test_channel_params() {
         let params = ChannelParams::default();
-        
+
         assert_eq!(params.timeout_seconds, 600);
         assert_eq!(params.expiry_seconds, 2592000);
         assert_eq!(params.min_payment, 1);
         assert_eq!(params.max_payment, 1000000000);
         assert_eq!(params.fee_rate, 0.001);
     }
-    
+
     #[test]
     fn test_channel_policy() {
         let policy = ChannelPolicy::default();
-        
+
         assert_eq!(policy.max_channels, 100);
         assert_eq!(policy.max_channel_capacity, 1000000000000);
         assert_eq!(policy.min_channel_capacity, 1000);

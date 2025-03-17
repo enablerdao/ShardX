@@ -1,7 +1,7 @@
 pub mod did;
+pub mod resolver;
 pub mod verifiable_credential;
 pub mod verifiable_presentation;
-pub mod resolver;
 // pub mod registry; // TODO: このモジュールが見つかりません
 // pub mod document; // TODO: このモジュールが見つかりません
 pub mod method;
@@ -18,22 +18,35 @@ pub mod issuer;
 // pub mod trust_framework; // TODO: このモジュールが見つかりません
 // pub mod governance; // TODO: このモジュールが見つかりません
 
-pub use did::{DID, DIDMethod, DIDResolver, DIDDocument, DIDService, DIDAuthentication, DIDVerificationMethod};
-pub use verifiable_credential::{VerifiableCredential, CredentialSubject, CredentialStatus, CredentialSchema, CredentialEvidence, CredentialProof};
-pub use verifiable_presentation::{VerifiablePresentation, PresentationProof};
-pub use resolver::{Resolver, ResolverOptions, ResolverResult, ResolverMetadata};
-pub use registry::{Registry, RegistryEntry, RegistryMetadata, RegistryOptions};
+pub use authentication::{
+    Authentication, AuthenticationMetadata, AuthenticationMethod, AuthenticationOptions,
+};
+pub use did::{
+    DIDAuthentication, DIDDocument, DIDMethod, DIDResolver, DIDService, DIDVerificationMethod, DID,
+};
 pub use document::{Document, DocumentMetadata, DocumentOptions};
-pub use method::{Method, MethodMetadata, MethodOptions};
-pub use service::{Service, ServiceEndpoint, ServiceMetadata, ServiceOptions};
-pub use authentication::{Authentication, AuthenticationMethod, AuthenticationMetadata, AuthenticationOptions};
-pub use verification::{Verification, VerificationMethod, VerificationMetadata, VerificationOptions};
-pub use revocation::{Revocation, RevocationList, RevocationStatus, RevocationMetadata, RevocationOptions};
-pub use key_management::{KeyManager, KeyPair, KeyType, KeyAlgorithm, KeyFormat, KeyMetadata, KeyOptions};
-pub use storage::{IdentityStorage, StorageOptions, StorageMetadata};
-pub use schema::{Schema, SchemaValidator, SchemaMetadata, SchemaOptions};
-pub use issuer::{Issuer, IssuerMetadata, IssuerOptions};
+pub use governance::{Governance, GovernanceMetadata, GovernanceOptions, GovernancePolicy};
 pub use holder::{Holder, HolderMetadata, HolderOptions};
+pub use issuer::{Issuer, IssuerMetadata, IssuerOptions};
+pub use key_management::{
+    KeyAlgorithm, KeyFormat, KeyManager, KeyMetadata, KeyOptions, KeyPair, KeyType,
+};
+pub use method::{Method, MethodMetadata, MethodOptions};
+pub use registry::{Registry, RegistryEntry, RegistryMetadata, RegistryOptions};
+pub use resolver::{Resolver, ResolverMetadata, ResolverOptions, ResolverResult};
+pub use revocation::{
+    Revocation, RevocationList, RevocationMetadata, RevocationOptions, RevocationStatus,
+};
+pub use schema::{Schema, SchemaMetadata, SchemaOptions, SchemaValidator};
+pub use service::{Service, ServiceEndpoint, ServiceMetadata, ServiceOptions};
+pub use storage::{IdentityStorage, StorageMetadata, StorageOptions};
+pub use trust_framework::{TrustAnchor, TrustFramework, TrustMetadata, TrustOptions};
+pub use verifiable_credential::{
+    CredentialEvidence, CredentialProof, CredentialSchema, CredentialStatus, CredentialSubject,
+    VerifiableCredential,
+};
+pub use verifiable_presentation::{PresentationProof, VerifiablePresentation};
+pub use verification::{
+    Verification, VerificationMetadata, VerificationMethod, VerificationOptions,
+};
 pub use verifier::{Verifier, VerifierMetadata, VerifierOptions};
-pub use trust_framework::{TrustFramework, TrustAnchor, TrustMetadata, TrustOptions};
-pub use governance::{Governance, GovernancePolicy, GovernanceMetadata, GovernanceOptions};

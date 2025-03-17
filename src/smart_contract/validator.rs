@@ -62,7 +62,11 @@ pub trait ValidationRule: Send + Sync {
     /// バリデーションを実行
     fn validate(&self, contract_code: &[u8]) -> Result<ValidationResult, ValidationError>;
     /// ABIを使用したバリデーションを実行
-    fn validate_with_abi(&self, contract_code: &[u8], abi: &ContractABI) -> Result<ValidationResult, ValidationError> {
+    fn validate_with_abi(
+        &self,
+        contract_code: &[u8],
+        abi: &ContractABI,
+    ) -> Result<ValidationResult, ValidationError> {
         // デフォルト実装はABIを無視して通常のバリデーションを実行
         self.validate(contract_code)
     }
@@ -79,7 +83,7 @@ pub trait ValidationRule: Send + Sync {
 impl ContractValidator {
     /// 新しいContractValidatorを作成
     pub fn new() -> Self {
-        Self { 
+        Self {
             rules: Vec::new(),
             name: "Default Validator".to_string(),
             version: "1.0.0".to_string(),
@@ -150,7 +154,11 @@ impl ContractValidator {
     }
 
     /// ABIを使用したバリデーションを実行
-    pub fn validate_with_abi(&self, contract_code: &[u8], abi: &ContractABI) -> Result<ValidationResult, Error> {
+    pub fn validate_with_abi(
+        &self,
+        contract_code: &[u8],
+        abi: &ContractABI,
+    ) -> Result<ValidationResult, Error> {
         let mut success = true;
         let mut warnings = Vec::new();
         let mut errors = Vec::new();
@@ -184,7 +192,11 @@ impl ContractValidator {
     }
 
     /// 特定のカテゴリのルールのみでバリデーションを実行
-    pub fn validate_by_category(&self, contract_code: &[u8], category: &str) -> Result<ValidationResult, Error> {
+    pub fn validate_by_category(
+        &self,
+        contract_code: &[u8],
+        category: &str,
+    ) -> Result<ValidationResult, Error> {
         let mut success = true;
         let mut warnings = Vec::new();
         let mut errors = Vec::new();
@@ -220,7 +232,11 @@ impl ContractValidator {
     }
 
     /// 特定の重要度以上のルールのみでバリデーションを実行
-    pub fn validate_by_severity(&self, contract_code: &[u8], min_severity: u8) -> Result<ValidationResult, Error> {
+    pub fn validate_by_severity(
+        &self,
+        contract_code: &[u8],
+        min_severity: u8,
+    ) -> Result<ValidationResult, Error> {
         let mut success = true;
         let mut warnings = Vec::new();
         let mut errors = Vec::new();
@@ -311,13 +327,16 @@ impl ValidationRule for SecurityRule {
         let mut metrics = HashMap::new();
 
         for pattern in &self.patterns {
-            if contract_code.windows(pattern.len()).any(|window| window == pattern.as_slice()) {
+            if contract_code
+                .windows(pattern.len())
+                .any(|window| window == pattern.as_slice())
+            {
                 success = false;
-                errors.push(format!(
-                    "Found forbidden pattern: {:?}",
-                    pattern
-                ));
-                metrics.insert("pattern_matches".to_string(), metrics.get("pattern_matches").unwrap_or(&0.0) + 1.0);
+                errors.push(format!("Found forbidden pattern: {:?}", pattern));
+                metrics.insert(
+                    "pattern_matches".to_string(),
+                    metrics.get("pattern_matches").unwrap_or(&0.0) + 1.0,
+                );
             }
         }
 
@@ -343,7 +362,13 @@ pub struct GasUsageRule {
 
 impl GasUsageRule {
     /// 新しいガス使用量ルールを作成
-    pub fn new(name: &str, description: &str, severity: u8, max_gas: u64, gas_per_byte: f64) -> Self {
+    pub fn new(
+        name: &str,
+        description: &str,
+        severity: u8,
+        max_gas: u64,
+        gas_per_byte: f64,
+    ) -> Self {
         Self {
             name: name.to_string(),
             description: description.to_string(),
@@ -389,7 +414,8 @@ impl ValidationRule for GasUsageRule {
         } else if estimated_gas > self.max_gas * 8 / 10 {
             warnings.push(format!(
                 "Estimated gas usage is approaching maximum: {} > {}",
-                estimated_gas, self.max_gas * 8 / 10
+                estimated_gas,
+                self.max_gas * 8 / 10
             ));
         }
 
@@ -457,7 +483,8 @@ impl ValidationRule for CodeSizeRule {
         } else if code_size > self.max_size * 8 / 10 {
             warnings.push(format!(
                 "Code size is approaching maximum: {} > {}",
-                code_size, self.max_size * 8 / 10
+                code_size,
+                self.max_size * 8 / 10
             ));
         }
 
@@ -517,7 +544,11 @@ mod tests {
             }
         }
 
-        fn validate_with_abi(&self, _contract_code: &[u8], _abi: &ContractABI) -> Result<ValidationResult, ValidationError> {
+        fn validate_with_abi(
+            &self,
+            _contract_code: &[u8],
+            _abi: &ContractABI,
+        ) -> Result<ValidationResult, ValidationError> {
             if self.should_succeed {
                 Ok(ValidationResult {
                     success: true,
