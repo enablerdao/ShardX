@@ -17,6 +17,9 @@
 # AMD64(Intel/AMD)とARM64(Apple Silicon M1/M2)の両方に対応
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
 
+# DockerHubで問題が発生した場合は、GitHub Packagesからイメージを取得
+docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:latest
+
 # 方法2: Docker Composeを使用（複数ノード構成）
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
