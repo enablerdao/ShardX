@@ -32,4 +32,5 @@ mod tests;
 pub use cross_chain::{BridgeConfig, ChainType, CrossChainBridge};
 
 // Re-export external crates for internal use
+#[cfg(feature = "snow")]
 pub(crate) use snow;
