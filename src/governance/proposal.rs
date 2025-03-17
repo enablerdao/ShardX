@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
+use chrono::{DateTime, Duration, Utc};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::error::Error;
-use crate::governance::voting::{Vote, VotingPower, VotingStrategy, VotingPeriod, VotingResult};
+use crate::governance::voting::{Vote, VotingPeriod, VotingPower, VotingResult, VotingStrategy};
 
 /// 提案タイプ
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -260,7 +260,7 @@ impl Proposal {
         author: String,
     ) -> Self {
         let now = Utc::now();
-        
+
         Self {
             id,
             title,
@@ -289,35 +289,36 @@ impl Proposal {
             execution_result: None,
             attachments: None,
             comments: None,
-            history: Some(vec![
-                ProposalHistory {
-                    timestamp: now,
-                    action: "create".to_string(),
-                    actor: "system".to_string(),
-                    previous_status: None,
-                    new_status: Some(ProposalStatus::Draft),
-                    description: Some("Proposal created".to_string()),
-                    additional_properties: HashMap::new(),
-                }
-            ]),
+            history: Some(vec![ProposalHistory {
+                timestamp: now,
+                action: "create".to_string(),
+                actor: "system".to_string(),
+                previous_status: None,
+                new_status: Some(ProposalStatus::Draft),
+                description: Some("Proposal created".to_string()),
+                additional_properties: HashMap::new(),
+            }]),
             related_proposals: None,
             additional_properties: HashMap::new(),
         }
     }
-    
+
     /// 提案を提出
     pub fn submit(&mut self) -> Result<(), Error> {
         if self.status != ProposalStatus::Draft {
-            return Err(Error::InvalidState(format!("Cannot submit proposal in state: {:?}", self.status)));
+            return Err(Error::InvalidState(format!(
+                "Cannot submit proposal in state: {:?}",
+                self.status
+            )));
         }
-        
+
         let now = Utc::now();
         let previous_status = self.status.clone();
-        
+
         self.status = ProposalStatus::Submitted;
         self.metadata.submitted_at = Some(now);
         self.metadata.updated_at = now;
-        
+
         // 履歴を追加
         if let Some(history) = &mut self.history {
             history.push(ProposalHistory {
@@ -330,30 +331,35 @@ impl Proposal {
                 additional_properties: HashMap::new(),
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// 投票を開始
     pub fn start_voting(&mut self) -> Result<(), Error> {
-        if self.status != ProposalStatus::Submitted && self.status != ProposalStatus::UnderConsideration {
-            return Err(Error::InvalidState(format!("Cannot start voting for proposal in state: {:?}", self.status)));
+        if self.status != ProposalStatus::Submitted
+            && self.status != ProposalStatus::UnderConsideration
+        {
+            return Err(Error::InvalidState(format!(
+                "Cannot start voting for proposal in state: {:?}",
+                self.status
+            )));
         }
-        
+
         let now = Utc::now();
         let previous_status = self.status.clone();
-        
+
         self.status = ProposalStatus::Voting;
         self.metadata.voting_started_at = Some(now);
         self.metadata.updated_at = now;
-        
+
         // 投票終了日時を計算
         if let Some(VotingPeriod::Duration(duration)) = &self.options.voting_period {
             self.metadata.voting_ended_at = Some(now + *duration);
         } else if let Some(VotingPeriod::EndTime(end_time)) = &self.options.voting_period {
             self.metadata.voting_ended_at = Some(*end_time);
         }
-        
+
         // 履歴を追加
         if let Some(history) = &mut self.history {
             history.push(ProposalHistory {
@@ -366,32 +372,35 @@ impl Proposal {
                 additional_properties: HashMap::new(),
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// 投票を追加
     pub fn add_vote(&mut self, voter: String, vote: Vote) -> Result<(), Error> {
         if self.status != ProposalStatus::Voting {
-            return Err(Error::InvalidState(format!("Cannot vote on proposal in state: {:?}", self.status)));
+            return Err(Error::InvalidState(format!(
+                "Cannot vote on proposal in state: {:?}",
+                self.status
+            )));
         }
-        
+
         // 投票期間をチェック
         if let Some(end_time) = self.metadata.voting_ended_at {
             if Utc::now() > end_time {
                 return Err(Error::InvalidState("Voting period has ended".to_string()));
             }
         }
-        
+
         // 投票を追加
         self.votes.insert(voter, vote);
         self.metadata.updated_at = Utc::now();
-        
+
         // 早期終了条件をチェック
         if let Some(true) = self.options.early_execution {
             if let Some(threshold) = self.options.early_execution_threshold {
                 self.calculate_voting_result()?;
-                
+
                 if let Some(result) = &self.voting_result {
                     if result.approval_ratio >= threshold {
                         self.end_voting()?;
@@ -399,73 +408,75 @@ impl Proposal {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 投票結果を計算
     pub fn calculate_voting_result(&mut self) -> Result<(), Error> {
         if self.votes.is_empty() {
             return Ok(());
         }
-        
+
         let mut total_votes = 0;
         let mut yes_votes = 0;
         let mut no_votes = 0;
         let mut abstain_votes = 0;
-        
+
         // 投票を集計
         for (_, vote) in &self.votes {
             match vote.vote_type {
                 crate::governance::voting::VoteType::Yes => {
                     yes_votes += vote.power.value;
-                },
+                }
                 crate::governance::voting::VoteType::No => {
                     no_votes += vote.power.value;
-                },
+                }
                 crate::governance::voting::VoteType::Abstain => {
                     abstain_votes += vote.power.value;
-                },
+                }
             }
-            
+
             total_votes += vote.power.value;
         }
-        
+
         // 投票結果を作成
         let approval_ratio = if total_votes > 0 {
             yes_votes as f64 / total_votes as f64
         } else {
             0.0
         };
-        
+
         let participation_ratio = 0.0; // 実際の実装では、総投票権に対する投票率を計算
-        
+
         let quorum_reached = if let Some(quorum) = self.options.quorum {
             participation_ratio >= quorum
         } else {
             true
         };
-        
+
         let threshold_reached = if let Some(threshold) = self.options.threshold {
             approval_ratio >= threshold
         } else {
             approval_ratio > 0.5
         };
-        
+
         let min_votes_reached = if let Some(min_votes) = self.options.min_votes {
             self.votes.len() as u64 >= min_votes
         } else {
             true
         };
-        
-        let min_participation_reached = if let Some(min_participation) = self.options.min_participation {
-            participation_ratio >= min_participation
-        } else {
-            true
-        };
-        
-        let passed = quorum_reached && threshold_reached && min_votes_reached && min_participation_reached;
-        
+
+        let min_participation_reached =
+            if let Some(min_participation) = self.options.min_participation {
+                participation_ratio >= min_participation
+            } else {
+                true
+            };
+
+        let passed =
+            quorum_reached && threshold_reached && min_votes_reached && min_participation_reached;
+
         self.voting_result = Some(VotingResult {
             total_votes,
             yes_votes,
@@ -480,22 +491,25 @@ impl Proposal {
             passed,
             additional_properties: HashMap::new(),
         });
-        
+
         Ok(())
     }
-    
+
     /// 投票を終了
     pub fn end_voting(&mut self) -> Result<(), Error> {
         if self.status != ProposalStatus::Voting {
-            return Err(Error::InvalidState(format!("Cannot end voting for proposal in state: {:?}", self.status)));
+            return Err(Error::InvalidState(format!(
+                "Cannot end voting for proposal in state: {:?}",
+                self.status
+            )));
         }
-        
+
         let now = Utc::now();
         let previous_status = self.status.clone();
-        
+
         // 投票結果を計算
         self.calculate_voting_result()?;
-        
+
         // 提案のステータスを更新
         if let Some(result) = &self.voting_result {
             if result.passed {
@@ -506,10 +520,10 @@ impl Proposal {
         } else {
             self.status = ProposalStatus::Rejected;
         }
-        
+
         self.metadata.voting_ended_at = Some(now);
         self.metadata.updated_at = now;
-        
+
         // 履歴を追加
         if let Some(history) = &mut self.history {
             history.push(ProposalHistory {
@@ -522,35 +536,41 @@ impl Proposal {
                 additional_properties: HashMap::new(),
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// 提案を実行
     pub fn execute(&mut self) -> Result<(), Error> {
         if self.status != ProposalStatus::Accepted {
-            return Err(Error::InvalidState(format!("Cannot execute proposal in state: {:?}", self.status)));
+            return Err(Error::InvalidState(format!(
+                "Cannot execute proposal in state: {:?}",
+                self.status
+            )));
         }
-        
+
         let now = Utc::now();
         let previous_status = self.status.clone();
-        
+
         // 遅延実行をチェック
         if let Some(true) = self.options.delayed_execution {
             if let Some(delay_seconds) = self.options.delayed_execution_seconds {
                 if let Some(voting_ended_at) = self.metadata.voting_ended_at {
                     let delay_end = voting_ended_at + Duration::seconds(delay_seconds as i64);
                     if now < delay_end {
-                        return Err(Error::InvalidState(format!("Execution is delayed until {}", delay_end)));
+                        return Err(Error::InvalidState(format!(
+                            "Execution is delayed until {}",
+                            delay_end
+                        )));
                     }
                 }
             }
         }
-        
+
         // 提案を実行
         self.status = ProposalStatus::Executing;
         self.metadata.updated_at = now;
-        
+
         // 履歴を追加
         if let Some(history) = &mut self.history {
             history.push(ProposalHistory {
@@ -563,34 +583,41 @@ impl Proposal {
                 additional_properties: HashMap::new(),
             });
         }
-        
+
         // 実際の実装では、提案タイプに応じた実行ロジックを実装
         // ここでは簡易的に成功したとみなす
         self.complete_execution(true, Some(serde_json::json!({"result": "success"})))
     }
-    
+
     /// 実行を完了
-    pub fn complete_execution(&mut self, success: bool, result: Option<serde_json::Value>) -> Result<(), Error> {
+    pub fn complete_execution(
+        &mut self,
+        success: bool,
+        result: Option<serde_json::Value>,
+    ) -> Result<(), Error> {
         if self.status != ProposalStatus::Executing {
-            return Err(Error::InvalidState(format!("Cannot complete execution for proposal in state: {:?}", self.status)));
+            return Err(Error::InvalidState(format!(
+                "Cannot complete execution for proposal in state: {:?}",
+                self.status
+            )));
         }
-        
+
         let now = Utc::now();
         let previous_status = self.status.clone();
-        
+
         // 実行結果を設定
         self.execution_result = result;
-        
+
         // 提案のステータスを更新
         if success {
             self.status = ProposalStatus::Executed;
         } else {
             self.status = ProposalStatus::Failed;
         }
-        
+
         self.metadata.executed_at = Some(now);
         self.metadata.updated_at = now;
-        
+
         // 履歴を追加
         if let Some(history) = &mut self.history {
             history.push(ProposalHistory {
@@ -599,26 +626,36 @@ impl Proposal {
                 actor: "system".to_string(),
                 previous_status: Some(previous_status),
                 new_status: Some(self.status.clone()),
-                description: Some(format!("Execution completed with status: {:?}", self.status)),
+                description: Some(format!(
+                    "Execution completed with status: {:?}",
+                    self.status
+                )),
                 additional_properties: HashMap::new(),
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// 提案をキャンセル
     pub fn cancel(&mut self, reason: Option<String>) -> Result<(), Error> {
-        if self.status == ProposalStatus::Executed || self.status == ProposalStatus::Failed || self.status == ProposalStatus::Cancelled || self.status == ProposalStatus::Expired {
-            return Err(Error::InvalidState(format!("Cannot cancel proposal in state: {:?}", self.status)));
+        if self.status == ProposalStatus::Executed
+            || self.status == ProposalStatus::Failed
+            || self.status == ProposalStatus::Cancelled
+            || self.status == ProposalStatus::Expired
+        {
+            return Err(Error::InvalidState(format!(
+                "Cannot cancel proposal in state: {:?}",
+                self.status
+            )));
         }
-        
+
         let now = Utc::now();
         let previous_status = self.status.clone();
-        
+
         self.status = ProposalStatus::Cancelled;
         self.metadata.updated_at = now;
-        
+
         // 履歴を追加
         if let Some(history) = &mut self.history {
             history.push(ProposalHistory {
@@ -631,14 +668,14 @@ impl Proposal {
                 additional_properties: HashMap::new(),
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// コメントを追加
     pub fn add_comment(&mut self, content: String, author: String) -> Result<(), Error> {
         let now = Utc::now();
-        
+
         let comment = Comment {
             id: format!("comment_{}", Utc::now().timestamp_nanos()),
             content,
@@ -649,92 +686,92 @@ impl Proposal {
             reactions: None,
             additional_properties: HashMap::new(),
         };
-        
+
         if self.comments.is_none() {
             self.comments = Some(Vec::new());
         }
-        
+
         if let Some(comments) = &mut self.comments {
             comments.push(comment);
         }
-        
+
         self.metadata.updated_at = now;
-        
+
         Ok(())
     }
-    
+
     /// 添付ファイルを追加
     pub fn add_attachment(&mut self, attachment: Attachment) -> Result<(), Error> {
         if self.attachments.is_none() {
             self.attachments = Some(Vec::new());
         }
-        
+
         if let Some(attachments) = &mut self.attachments {
             attachments.push(attachment);
         }
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// 関連提案を追加
     pub fn add_related_proposal(&mut self, proposal_id: String) -> Result<(), Error> {
         if self.related_proposals.is_none() {
             self.related_proposals = Some(Vec::new());
         }
-        
+
         if let Some(related_proposals) = &mut self.related_proposals {
             if !related_proposals.contains(&proposal_id) {
                 related_proposals.push(proposal_id);
             }
         }
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// タグを追加
     pub fn add_tag(&mut self, tag: String) -> Result<(), Error> {
         if !self.metadata.tags.contains(&tag) {
             self.metadata.tags.push(tag);
         }
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// カテゴリを設定
     pub fn set_category(&mut self, category: String) -> Result<(), Error> {
         self.metadata.category = Some(category);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// 優先度を設定
     pub fn set_priority(&mut self, priority: String) -> Result<(), Error> {
         self.metadata.priority = Some(priority);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// 難易度を設定
     pub fn set_difficulty(&mut self, difficulty: String) -> Result<(), Error> {
         self.metadata.difficulty = Some(difficulty);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// 影響度を設定
     pub fn set_impact(&mut self, impact: String) -> Result<(), Error> {
         self.metadata.impact = Some(impact);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
 }

@@ -14,19 +14,21 @@
 // mod policy; // TODO: このモジュールが見つかりません
 // mod vulnerability; // TODO: このモジュールが見つかりません
 
-pub use self::encryption::{EncryptionManager, EncryptionAlgorithm, EncryptionMode};
-pub use self::key_management::{KeyManager, KeyRotation, KeyBackup, HSMIntegration};
-pub use self::authentication::{AuthenticationManager, MFAProvider, AuthenticationMethod};
-pub use self::policy::{PolicyManager, SecurityPolicy, PolicyEnforcement};
-pub use self::vulnerability::{VulnerabilityManager, VulnerabilityScan, VulnerabilityReport};
+pub use self::authentication::{AuthenticationManager, AuthenticationMethod, MFAProvider};
+pub use self::encryption::{EncryptionAlgorithm, EncryptionManager, EncryptionMode};
+pub use self::key_management::{HSMIntegration, KeyBackup, KeyManager, KeyRotation};
+pub use self::policy::{PolicyEnforcement, PolicyManager, SecurityPolicy};
+pub use self::vulnerability::{VulnerabilityManager, VulnerabilityReport, VulnerabilityScan};
 
+use crate::enterprise::{
+    AuthenticationConfig, EncryptionConfig, KeyManagementConfig, SecurityConfig,
+};
 use crate::error::Error;
-use crate::enterprise::{SecurityConfig, EncryptionConfig, KeyManagementConfig, AuthenticationConfig};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use chrono::{DateTime, Utc};
 use log::{debug, error, info, warn};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 /// セキュリティ制御
@@ -237,12 +239,14 @@ pub struct EnterpriseSecurityManager {
 impl EnterpriseSecurityManager {
     /// 新しいEnterpriseSecurityManagerを作成
     pub fn new(config: SecurityConfig) -> Self {
-        let encryption_manager = encryption::EncryptionManager::new(config.encryption_config.clone());
+        let encryption_manager =
+            encryption::EncryptionManager::new(config.encryption_config.clone());
         let key_manager = key_management::KeyManager::new(config.key_management_config.clone());
-        let authentication_manager = authentication::AuthenticationManager::new(config.authentication_config.clone());
+        let authentication_manager =
+            authentication::AuthenticationManager::new(config.authentication_config.clone());
         let policy_manager = policy::PolicyManager::new(config.security_policies.clone());
         let vulnerability_manager = vulnerability::VulnerabilityManager::new();
-        
+
         let mut manager = Self {
             config,
             encryption_manager,
@@ -254,18 +258,18 @@ impl EnterpriseSecurityManager {
             security_audits: HashMap::new(),
             initialized: true,
         };
-        
+
         // デフォルトのセキュリティ制御を初期化
         manager.initialize_default_controls();
-        
+
         manager
     }
-    
+
     /// 初期化済みかどうかを確認
     pub fn is_initialized(&self) -> bool {
         self.initialized
     }
-    
+
     /// デフォルトのセキュリティ制御を初期化
     fn initialize_default_controls(&mut self) {
         // 管理的制御
@@ -276,7 +280,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Administrative,
             SecurityControlCriticality::High,
         );
-        
+
         self.add_security_control(
             "SEC-ADM-002",
             "Risk Assessment",
@@ -284,7 +288,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Administrative,
             SecurityControlCriticality::High,
         );
-        
+
         self.add_security_control(
             "SEC-ADM-003",
             "Security Awareness Training",
@@ -292,7 +296,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Administrative,
             SecurityControlCriticality::Medium,
         );
-        
+
         // 技術的制御
         self.add_security_control(
             "SEC-TEC-001",
@@ -301,7 +305,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Technical,
             SecurityControlCriticality::Critical,
         );
-        
+
         self.add_security_control(
             "SEC-TEC-002",
             "Encryption",
@@ -309,7 +313,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Technical,
             SecurityControlCriticality::Critical,
         );
-        
+
         self.add_security_control(
             "SEC-TEC-003",
             "Multi-Factor Authentication",
@@ -317,7 +321,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Technical,
             SecurityControlCriticality::High,
         );
-        
+
         self.add_security_control(
             "SEC-TEC-004",
             "Audit Logging",
@@ -325,7 +329,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Technical,
             SecurityControlCriticality::High,
         );
-        
+
         // 物理的制御
         self.add_security_control(
             "SEC-PHY-001",
@@ -334,7 +338,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Physical,
             SecurityControlCriticality::High,
         );
-        
+
         self.add_security_control(
             "SEC-PHY-002",
             "Environmental Controls",
@@ -342,7 +346,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Physical,
             SecurityControlCriticality::Medium,
         );
-        
+
         // 運用的制御
         self.add_security_control(
             "SEC-OPS-001",
@@ -351,7 +355,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Operational,
             SecurityControlCriticality::High,
         );
-        
+
         self.add_security_control(
             "SEC-OPS-002",
             "Change Management",
@@ -359,7 +363,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCategory::Operational,
             SecurityControlCriticality::Medium,
         );
-        
+
         self.add_security_control(
             "SEC-OPS-003",
             "Backup and Recovery",
@@ -368,7 +372,7 @@ impl EnterpriseSecurityManager {
             SecurityControlCriticality::High,
         );
     }
-    
+
     /// セキュリティ制御を追加
     fn add_security_control(
         &mut self,
@@ -390,35 +394,39 @@ impl EnterpriseSecurityManager {
             reviewed_by: None,
             metadata: HashMap::new(),
         };
-        
+
         self.security_controls.insert(id.to_string(), control);
     }
-    
+
     /// データを暗号化
     pub fn encrypt_data(&self, data: &[u8], context: Option<&str>) -> Result<Vec<u8>, Error> {
         self.encryption_manager.encrypt(data, context)
     }
-    
+
     /// データを復号
-    pub fn decrypt_data(&self, encrypted_data: &[u8], context: Option<&str>) -> Result<Vec<u8>, Error> {
+    pub fn decrypt_data(
+        &self,
+        encrypted_data: &[u8],
+        context: Option<&str>,
+    ) -> Result<Vec<u8>, Error> {
         self.encryption_manager.decrypt(encrypted_data, context)
     }
-    
+
     /// キーをローテーション
     pub fn rotate_keys(&mut self) -> Result<(), Error> {
         self.key_manager.rotate_keys()
     }
-    
+
     /// キーをバックアップ
     pub fn backup_keys(&self, backup_path: &str) -> Result<(), Error> {
         self.key_manager.backup_keys(backup_path)
     }
-    
+
     /// キーを復元
     pub fn restore_keys(&mut self, backup_path: &str) -> Result<(), Error> {
         self.key_manager.restore_keys(backup_path)
     }
-    
+
     /// 認証を検証
     pub fn verify_authentication(
         &self,
@@ -426,29 +434,34 @@ impl EnterpriseSecurityManager {
         password: &str,
         mfa_code: Option<&str>,
     ) -> Result<bool, Error> {
-        self.authentication_manager.verify_authentication(user_id, password, mfa_code)
+        self.authentication_manager
+            .verify_authentication(user_id, password, mfa_code)
     }
-    
+
     /// MFAを有効化
-    pub fn enable_mfa(&mut self, user_id: &str, mfa_type: authentication::MFAType) -> Result<String, Error> {
+    pub fn enable_mfa(
+        &mut self,
+        user_id: &str,
+        mfa_type: authentication::MFAType,
+    ) -> Result<String, Error> {
         self.authentication_manager.enable_mfa(user_id, mfa_type)
     }
-    
+
     /// MFAを無効化
     pub fn disable_mfa(&mut self, user_id: &str) -> Result<(), Error> {
         self.authentication_manager.disable_mfa(user_id)
     }
-    
+
     /// セキュリティポリシーを適用
     pub fn apply_policy(&mut self, policy_id: &str, target: &str) -> Result<(), Error> {
         self.policy_manager.apply_policy(policy_id, target)
     }
-    
+
     /// セキュリティポリシーを検証
     pub fn verify_policy_compliance(&self, policy_id: &str, target: &str) -> Result<bool, Error> {
         self.policy_manager.verify_compliance(policy_id, target)
     }
-    
+
     /// 脆弱性スキャンを実行
     pub fn run_vulnerability_scan(
         &mut self,
@@ -457,27 +470,35 @@ impl EnterpriseSecurityManager {
     ) -> Result<String, Error> {
         self.vulnerability_manager.run_scan(target, scan_type)
     }
-    
+
     /// 脆弱性レポートを取得
-    pub fn get_vulnerability_report(&self, scan_id: &str) -> Result<vulnerability::VulnerabilityReport, Error> {
+    pub fn get_vulnerability_report(
+        &self,
+        scan_id: &str,
+    ) -> Result<vulnerability::VulnerabilityReport, Error> {
         self.vulnerability_manager.get_report(scan_id)
     }
-    
+
     /// セキュリティ制御を取得
     pub fn get_security_control(&self, control_id: &str) -> Result<SecurityControl, Error> {
-        self.security_controls.get(control_id)
+        self.security_controls
+            .get(control_id)
             .cloned()
             .ok_or_else(|| Error::NotFound(format!("Security control not found: {}", control_id)))
     }
-    
+
     /// セキュリティ制御リストを取得
-    pub fn get_security_controls(&self, category: Option<SecurityControlCategory>) -> Vec<SecurityControl> {
-        self.security_controls.values()
+    pub fn get_security_controls(
+        &self,
+        category: Option<SecurityControlCategory>,
+    ) -> Vec<SecurityControl> {
+        self.security_controls
+            .values()
             .filter(|c| category.as_ref().map_or(true, |cat| c.category == *cat))
             .cloned()
             .collect()
     }
-    
+
     /// セキュリティ制御ステータスを更新
     pub fn update_security_control_status(
         &mut self,
@@ -486,17 +507,18 @@ impl EnterpriseSecurityManager {
         verification_status: VerificationStatus,
         reviewer: &str,
     ) -> Result<(), Error> {
-        let control = self.security_controls.get_mut(control_id)
-            .ok_or_else(|| Error::NotFound(format!("Security control not found: {}", control_id)))?;
-        
+        let control = self.security_controls.get_mut(control_id).ok_or_else(|| {
+            Error::NotFound(format!("Security control not found: {}", control_id))
+        })?;
+
         control.implementation_status = implementation_status;
         control.verification_status = verification_status;
         control.last_reviewed_at = Some(Utc::now());
         control.reviewed_by = Some(reviewer.to_string());
-        
+
         Ok(())
     }
-    
+
     /// セキュリティ監査を作成
     pub fn create_security_audit(
         &mut self,
@@ -508,10 +530,10 @@ impl EnterpriseSecurityManager {
     ) -> Result<String, Error> {
         // 監査IDを生成
         let audit_id = format!("AUDIT-{}", Uuid::new_v4());
-        
+
         // 現在時刻を取得
         let now = Utc::now();
-        
+
         // 監査を作成
         let audit = SecurityAudit {
             id: audit_id.clone(),
@@ -526,15 +548,15 @@ impl EnterpriseSecurityManager {
             results: Vec::new(),
             metadata: HashMap::new(),
         };
-        
+
         // 監査を保存
         self.security_audits.insert(audit_id.clone(), audit);
-        
+
         info!("Security audit created: {} ({})", name, audit_id);
-        
+
         Ok(audit_id)
     }
-    
+
     /// セキュリティ監査結果を追加
     pub fn add_security_audit_result(
         &mut self,
@@ -549,22 +571,30 @@ impl EnterpriseSecurityManager {
         remediation_owner: Option<&str>,
     ) -> Result<String, Error> {
         // 監査を取得
-        let audit = self.security_audits.get_mut(audit_id)
+        let audit = self
+            .security_audits
+            .get_mut(audit_id)
             .ok_or_else(|| Error::NotFound(format!("Security audit not found: {}", audit_id)))?;
-        
+
         // 監査ステータスをチェック
         if audit.status != SecurityAuditStatus::InProgress {
-            return Err(Error::InvalidState(format!("Security audit is not in progress: {}", audit_id)));
+            return Err(Error::InvalidState(format!(
+                "Security audit is not in progress: {}",
+                audit_id
+            )));
         }
-        
+
         // 制御が存在するかチェック
         if !self.security_controls.contains_key(control_id) {
-            return Err(Error::NotFound(format!("Security control not found: {}", control_id)));
+            return Err(Error::NotFound(format!(
+                "Security control not found: {}",
+                control_id
+            )));
         }
-        
+
         // 結果IDを生成
         let result_id = format!("RESULT-{}", Uuid::new_v4());
-        
+
         // 結果を作成
         let result = SecurityAuditResult {
             id: result_id.clone(),
@@ -578,59 +608,72 @@ impl EnterpriseSecurityManager {
             remediation_owner: remediation_owner.map(|o| o.to_string()),
             metadata: HashMap::new(),
         };
-        
+
         // 結果を追加
         audit.results.push(result);
-        
-        info!("Security audit result added: {} for control {}", result_id, control_id);
-        
+
+        info!(
+            "Security audit result added: {} for control {}",
+            result_id, control_id
+        );
+
         Ok(result_id)
     }
-    
+
     /// セキュリティ監査を完了
     pub fn complete_security_audit(&mut self, audit_id: &str) -> Result<(), Error> {
         // 監査を取得
-        let audit = self.security_audits.get_mut(audit_id)
+        let audit = self
+            .security_audits
+            .get_mut(audit_id)
             .ok_or_else(|| Error::NotFound(format!("Security audit not found: {}", audit_id)))?;
-        
+
         // 監査ステータスをチェック
         if audit.status != SecurityAuditStatus::InProgress {
-            return Err(Error::InvalidState(format!("Security audit is not in progress: {}", audit_id)));
+            return Err(Error::InvalidState(format!(
+                "Security audit is not in progress: {}",
+                audit_id
+            )));
         }
-        
+
         // 監査を完了
         audit.status = SecurityAuditStatus::Completed;
         audit.end_time = Some(Utc::now());
-        
+
         info!("Security audit completed: {}", audit_id);
-        
+
         Ok(())
     }
-    
+
     /// セキュリティ監査を取得
     pub fn get_security_audit(&self, audit_id: &str) -> Result<SecurityAudit, Error> {
-        self.security_audits.get(audit_id)
+        self.security_audits
+            .get(audit_id)
             .cloned()
             .ok_or_else(|| Error::NotFound(format!("Security audit not found: {}", audit_id)))
     }
-    
+
     /// セキュリティ監査リストを取得
     pub fn get_security_audits(&self, status: Option<SecurityAuditStatus>) -> Vec<SecurityAudit> {
-        self.security_audits.values()
+        self.security_audits
+            .values()
             .filter(|a| status.as_ref().map_or(true, |s| a.status == *s))
             .cloned()
             .collect()
     }
-    
+
     /// 設定を更新
     pub fn update_config(&mut self, config: SecurityConfig) {
         self.config = config.clone();
-        self.encryption_manager.update_config(config.encryption_config);
+        self.encryption_manager
+            .update_config(config.encryption_config);
         self.key_manager.update_config(config.key_management_config);
-        self.authentication_manager.update_config(config.authentication_config);
-        self.policy_manager.update_policies(config.security_policies);
+        self.authentication_manager
+            .update_config(config.authentication_config);
+        self.policy_manager
+            .update_policies(config.security_policies);
     }
-    
+
     /// 設定を取得
     pub fn get_config(&self) -> &SecurityConfig {
         &self.config
@@ -640,83 +683,101 @@ impl EnterpriseSecurityManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_security_manager_initialization() {
         let config = SecurityConfig::default();
         let manager = EnterpriseSecurityManager::new(config);
-        
+
         assert!(manager.is_initialized());
-        
+
         // デフォルトのセキュリティ制御が初期化されていることを確認
         let controls = manager.get_security_controls(None);
         assert!(!controls.is_empty());
-        
+
         // 管理的制御をチェック
-        let admin_controls = manager.get_security_controls(Some(SecurityControlCategory::Administrative));
+        let admin_controls =
+            manager.get_security_controls(Some(SecurityControlCategory::Administrative));
         assert!(!admin_controls.is_empty());
-        
+
         // 技術的制御をチェック
         let tech_controls = manager.get_security_controls(Some(SecurityControlCategory::Technical));
         assert!(!tech_controls.is_empty());
-        
+
         // 物理的制御をチェック
         let phys_controls = manager.get_security_controls(Some(SecurityControlCategory::Physical));
         assert!(!phys_controls.is_empty());
-        
+
         // 運用的制御をチェック
-        let ops_controls = manager.get_security_controls(Some(SecurityControlCategory::Operational));
+        let ops_controls =
+            manager.get_security_controls(Some(SecurityControlCategory::Operational));
         assert!(!ops_controls.is_empty());
     }
-    
+
     #[test]
     fn test_security_control_update() {
         let config = SecurityConfig::default();
         let mut manager = EnterpriseSecurityManager::new(config);
-        
+
         // セキュリティ制御を取得
         let control_id = "SEC-TEC-001"; // Access Control
         let control = manager.get_security_control(control_id).unwrap();
-        
+
         // 初期ステータスを確認
-        assert_eq!(control.implementation_status, ImplementationStatus::NotImplemented);
+        assert_eq!(
+            control.implementation_status,
+            ImplementationStatus::NotImplemented
+        );
         assert_eq!(control.verification_status, VerificationStatus::NotVerified);
         assert!(control.last_reviewed_at.is_none());
         assert!(control.reviewed_by.is_none());
-        
+
         // ステータスを更新
-        manager.update_security_control_status(
-            control_id,
-            ImplementationStatus::Implemented,
-            VerificationStatus::Verified,
-            "security-admin",
-        ).unwrap();
-        
+        manager
+            .update_security_control_status(
+                control_id,
+                ImplementationStatus::Implemented,
+                VerificationStatus::Verified,
+                "security-admin",
+            )
+            .unwrap();
+
         // 更新後のステータスを確認
         let updated_control = manager.get_security_control(control_id).unwrap();
-        assert_eq!(updated_control.implementation_status, ImplementationStatus::Implemented);
-        assert_eq!(updated_control.verification_status, VerificationStatus::Verified);
+        assert_eq!(
+            updated_control.implementation_status,
+            ImplementationStatus::Implemented
+        );
+        assert_eq!(
+            updated_control.verification_status,
+            VerificationStatus::Verified
+        );
         assert!(updated_control.last_reviewed_at.is_some());
-        assert_eq!(updated_control.reviewed_by, Some("security-admin".to_string()));
+        assert_eq!(
+            updated_control.reviewed_by,
+            Some("security-admin".to_string())
+        );
     }
-    
+
     #[test]
     fn test_security_audit() {
         let config = SecurityConfig::default();
         let mut manager = EnterpriseSecurityManager::new(config);
-        
+
         // 監査を作成
-        let audit_id = manager.create_security_audit(
-            "Annual Security Audit",
-            "Comprehensive security audit of all controls",
-            SecurityAuditType::Internal,
-            "security-auditor",
-            "all-systems",
-        ).unwrap();
-        
+        let audit_id = manager
+            .create_security_audit(
+                "Annual Security Audit",
+                "Comprehensive security audit of all controls",
+                SecurityAuditType::Internal,
+                "security-auditor",
+                "all-systems",
+            )
+            .unwrap();
+
         // 監査を取得
         let audit = manager.get_security_audit(&audit_id).unwrap();
-        
+
         // 監査をチェック
         assert_eq!(audit.name, "Annual Security Audit");
         assert_eq!(audit.audit_type, SecurityAuditType::Internal);
@@ -724,31 +785,36 @@ mod tests {
         assert_eq!(audit.auditor, "security-auditor");
         assert_eq!(audit.target, "all-systems");
         assert!(audit.results.is_empty());
-        
+
         // 監査結果を追加
-        let result_id = manager.add_security_audit_result(
-            &audit_id,
-            "SEC-TEC-001", // Access Control
-            SecurityAuditResultStatus::Pass,
-            "Access control mechanisms are properly implemented",
-            Some("Access control logs and configuration review"),
-            SecurityAuditResultSeverity::High,
-            None,
-            None,
-            None,
-        ).unwrap();
-        
+        let result_id = manager
+            .add_security_audit_result(
+                &audit_id,
+                "SEC-TEC-001", // Access Control
+                SecurityAuditResultStatus::Pass,
+                "Access control mechanisms are properly implemented",
+                Some("Access control logs and configuration review"),
+                SecurityAuditResultSeverity::High,
+                None,
+                None,
+                None,
+            )
+            .unwrap();
+
         // 監査を完了
         manager.complete_security_audit(&audit_id).unwrap();
-        
+
         // 完了した監査を取得
         let completed_audit = manager.get_security_audit(&audit_id).unwrap();
-        
+
         // 監査をチェック
         assert_eq!(completed_audit.status, SecurityAuditStatus::Completed);
         assert!(completed_audit.end_time.is_some());
         assert_eq!(completed_audit.results.len(), 1);
         assert_eq!(completed_audit.results[0].control_id, "SEC-TEC-001");
-        assert_eq!(completed_audit.results[0].status, SecurityAuditResultStatus::Pass);
+        assert_eq!(
+            completed_audit.results[0].status,
+            SecurityAuditResultStatus::Pass
+        );
     }
 }

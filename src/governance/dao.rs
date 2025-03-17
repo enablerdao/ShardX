@@ -1,14 +1,14 @@
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::error::Error;
-use crate::governance::proposal::{Proposal, ProposalType, ProposalStatus, ProposalOptions};
-use crate::governance::voting::{VotingStrategy, VotingPeriod, Vote};
-use crate::governance::treasury::{Treasury, Asset};
-use crate::governance::role::{Role, RoleAssignment};
 use crate::governance::policy::{Policy, PolicyRule};
+use crate::governance::proposal::{Proposal, ProposalOptions, ProposalStatus, ProposalType};
+use crate::governance::role::{Role, RoleAssignment};
+use crate::governance::treasury::{Asset, Treasury};
+use crate::governance::voting::{Vote, VotingPeriod, VotingStrategy};
 
 /// DAOタイプ
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -230,14 +230,9 @@ pub struct DAO {
 
 impl DAO {
     /// 新しいDAOを作成
-    pub fn new(
-        id: String,
-        name: String,
-        description: String,
-        dao_type: DAOType,
-    ) -> Self {
+    pub fn new(id: String, name: String, description: String, dao_type: DAOType) -> Self {
         let now = Utc::now();
-        
+
         Self {
             id: id.clone(),
             dao_type,
@@ -263,36 +258,39 @@ impl DAO {
             additional_properties: HashMap::new(),
         }
     }
-    
+
     /// メンバーを追加
     pub fn add_member(&mut self, member: DAOMember) -> Result<(), Error> {
         if self.members.contains_key(&member.id) {
-            return Err(Error::AlreadyExists(format!("Member already exists: {}", member.id)));
+            return Err(Error::AlreadyExists(format!(
+                "Member already exists: {}",
+                member.id
+            )));
         }
-        
+
         self.members.insert(member.id.clone(), member);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// メンバーを削除
     pub fn remove_member(&mut self, member_id: &str) -> Result<(), Error> {
         if !self.members.contains_key(member_id) {
             return Err(Error::NotFound(format!("Member not found: {}", member_id)));
         }
-        
+
         self.members.remove(member_id);
         self.metadata.updated_at = Utc::now();
-        
+
         // ロールからメンバーを削除
         for (_, role) in self.roles.iter_mut() {
             role.members.retain(|id| id != member_id);
         }
-        
+
         Ok(())
     }
-    
+
     /// 提案を作成
     pub fn create_proposal(
         &mut self,
@@ -306,39 +304,52 @@ impl DAO {
         if !self.members.contains_key(&author) {
             return Err(Error::NotFound(format!("Member not found: {}", author)));
         }
-        
+
         // 提案作成要件をチェック
         let member = self.members.get(&author).unwrap();
-        
+
         if let Some(token_requirement) = self.options.proposal_token_requirement {
             if member.tokens < token_requirement {
-                return Err(Error::InvalidState(format!("Insufficient tokens to create proposal: {} < {}", member.tokens, token_requirement)));
+                return Err(Error::InvalidState(format!(
+                    "Insufficient tokens to create proposal: {} < {}",
+                    member.tokens, token_requirement
+                )));
             }
         }
-        
+
         if let Some(role_requirements) = &self.options.proposal_role_requirement {
-            let has_required_role = role_requirements.iter().any(|role| member.roles.contains(role));
+            let has_required_role = role_requirements
+                .iter()
+                .any(|role| member.roles.contains(role));
             if !has_required_role {
-                return Err(Error::InvalidState(format!("Member does not have required role to create proposal")));
+                return Err(Error::InvalidState(format!(
+                    "Member does not have required role to create proposal"
+                )));
             }
         }
-        
+
         if let Some(reputation_requirement) = self.options.proposal_reputation_requirement {
             if member.reputation < reputation_requirement {
-                return Err(Error::InvalidState(format!("Insufficient reputation to create proposal: {} < {}", member.reputation, reputation_requirement)));
+                return Err(Error::InvalidState(format!(
+                    "Insufficient reputation to create proposal: {} < {}",
+                    member.reputation, reputation_requirement
+                )));
             }
         }
-        
+
         if let Some(days_requirement) = self.options.proposal_membership_days_requirement {
             let membership_days = (Utc::now() - member.joined_at).num_days();
             if membership_days < days_requirement as i64 {
-                return Err(Error::InvalidState(format!("Insufficient membership duration to create proposal: {} < {}", membership_days, days_requirement)));
+                return Err(Error::InvalidState(format!(
+                    "Insufficient membership duration to create proposal: {} < {}",
+                    membership_days, days_requirement
+                )));
             }
         }
-        
+
         // 提案IDを生成
         let proposal_id = format!("proposal_{}", Utc::now().timestamp_nanos());
-        
+
         // 提案オプションを設定
         let proposal_options = options.unwrap_or_else(|| {
             ProposalOptions {
@@ -357,7 +368,7 @@ impl DAO {
                 additional_properties: HashMap::new(),
             }
         });
-        
+
         // 提案を作成
         let proposal = Proposal::new(
             proposal_id.clone(),
@@ -366,89 +377,102 @@ impl DAO {
             proposal_type,
             author,
         );
-        
+
         // 提案を保存
         self.proposals.insert(proposal_id.clone(), proposal);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(proposal_id)
     }
-    
+
     /// 提案を取得
     pub fn get_proposal(&self, proposal_id: &str) -> Result<&Proposal, Error> {
-        self.proposals.get(proposal_id).ok_or_else(|| {
-            Error::NotFound(format!("Proposal not found: {}", proposal_id))
-        })
+        self.proposals
+            .get(proposal_id)
+            .ok_or_else(|| Error::NotFound(format!("Proposal not found: {}", proposal_id)))
     }
-    
+
     /// 提案を取得（可変）
     pub fn get_proposal_mut(&mut self, proposal_id: &str) -> Result<&mut Proposal, Error> {
-        self.proposals.get_mut(proposal_id).ok_or_else(|| {
-            Error::NotFound(format!("Proposal not found: {}", proposal_id))
-        })
+        self.proposals
+            .get_mut(proposal_id)
+            .ok_or_else(|| Error::NotFound(format!("Proposal not found: {}", proposal_id)))
     }
-    
+
     /// 提案に投票
-    pub fn vote_on_proposal(&mut self, proposal_id: &str, voter_id: &str, vote: Vote) -> Result<(), Error> {
+    pub fn vote_on_proposal(
+        &mut self,
+        proposal_id: &str,
+        voter_id: &str,
+        vote: Vote,
+    ) -> Result<(), Error> {
         // メンバーをチェック
         if !self.members.contains_key(voter_id) {
             return Err(Error::NotFound(format!("Member not found: {}", voter_id)));
         }
-        
+
         // 提案を取得
         let proposal = self.get_proposal_mut(proposal_id)?;
-        
+
         // 投票を追加
         proposal.add_vote(voter_id.to_string(), vote)?;
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// 提案を実行
     pub fn execute_proposal(&mut self, proposal_id: &str) -> Result<(), Error> {
         // 提案を取得
         let proposal = self.get_proposal_mut(proposal_id)?;
-        
+
         // 提案を実行
         proposal.execute()?;
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// ロールを作成
     pub fn create_role(&mut self, role: DAORole) -> Result<(), Error> {
         if self.roles.contains_key(&role.id) {
-            return Err(Error::AlreadyExists(format!("Role already exists: {}", role.id)));
+            return Err(Error::AlreadyExists(format!(
+                "Role already exists: {}",
+                role.id
+            )));
         }
-        
+
         self.roles.insert(role.id.clone(), role);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// ロールを削除
     pub fn delete_role(&mut self, role_id: &str) -> Result<(), Error> {
         if !self.roles.contains_key(role_id) {
             return Err(Error::NotFound(format!("Role not found: {}", role_id)));
         }
-        
+
         // 子ロールをチェック
         let has_children = self.roles.values().any(|role| {
-            role.parent_role.as_ref().map_or(false, |parent| parent == role_id)
+            role.parent_role
+                .as_ref()
+                .map_or(false, |parent| parent == role_id)
         });
-        
+
         if has_children {
-            return Err(Error::InvalidState(format!("Cannot delete role with children: {}", role_id)));
+            return Err(Error::InvalidState(format!(
+                "Cannot delete role with children: {}",
+                role_id
+            )));
         }
-        
+
         // ロールを削除
         self.roles.remove(role_id);
-        
+
         // 親ロールから子ロール参照を削除
         for (_, role) in self.roles.iter_mut() {
             if let Some(parent) = &role.parent_role {
@@ -456,131 +480,140 @@ impl DAO {
                     role.parent_role = None;
                 }
             }
-            
+
             role.child_roles.retain(|id| id != role_id);
         }
-        
+
         // メンバーからロールを削除
         for (_, member) in self.members.iter_mut() {
             member.roles.retain(|id| id != role_id);
         }
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// ロールを割り当て
     pub fn assign_role(&mut self, member_id: &str, role_id: &str) -> Result<(), Error> {
         // メンバーをチェック
         if !self.members.contains_key(member_id) {
             return Err(Error::NotFound(format!("Member not found: {}", member_id)));
         }
-        
+
         // ロールをチェック
         if !self.roles.contains_key(role_id) {
             return Err(Error::NotFound(format!("Role not found: {}", role_id)));
         }
-        
+
         // ロールを割り当て
         let member = self.members.get_mut(member_id).unwrap();
         if !member.roles.contains(&role_id.to_string()) {
             member.roles.push(role_id.to_string());
         }
-        
+
         // ロールにメンバーを追加
         let role = self.roles.get_mut(role_id).unwrap();
         if !role.members.contains(&member_id.to_string()) {
             role.members.push(member_id.to_string());
         }
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// ロールを解除
     pub fn revoke_role(&mut self, member_id: &str, role_id: &str) -> Result<(), Error> {
         // メンバーをチェック
         if !self.members.contains_key(member_id) {
             return Err(Error::NotFound(format!("Member not found: {}", member_id)));
         }
-        
+
         // ロールをチェック
         if !self.roles.contains_key(role_id) {
             return Err(Error::NotFound(format!("Role not found: {}", role_id)));
         }
-        
+
         // ロールを解除
         let member = self.members.get_mut(member_id).unwrap();
         member.roles.retain(|id| id != role_id);
-        
+
         // ロールからメンバーを削除
         let role = self.roles.get_mut(role_id).unwrap();
         role.members.retain(|id| id != member_id);
-        
+
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// ポリシーを作成
     pub fn create_policy(&mut self, policy: Policy) -> Result<(), Error> {
         if self.policies.contains_key(&policy.id) {
-            return Err(Error::AlreadyExists(format!("Policy already exists: {}", policy.id)));
+            return Err(Error::AlreadyExists(format!(
+                "Policy already exists: {}",
+                policy.id
+            )));
         }
-        
+
         self.policies.insert(policy.id.clone(), policy);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// ポリシーを削除
     pub fn delete_policy(&mut self, policy_id: &str) -> Result<(), Error> {
         if !self.policies.contains_key(policy_id) {
             return Err(Error::NotFound(format!("Policy not found: {}", policy_id)));
         }
-        
+
         self.policies.remove(policy_id);
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// 資産を追加
     pub fn add_asset(&mut self, asset: Asset) -> Result<(), Error> {
         self.treasury.add_asset(asset)?;
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// 資産を送金
     pub fn transfer_asset(&mut self, asset_id: &str, to: &str, amount: u64) -> Result<(), Error> {
         self.treasury.transfer(asset_id, to, amount)?;
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// メンバーの投票権を計算
     pub fn calculate_voting_power(&self, member_id: &str) -> Result<u64, Error> {
-        let member = self.members.get(member_id).ok_or_else(|| {
-            Error::NotFound(format!("Member not found: {}", member_id))
-        })?;
-        
+        let member = self
+            .members
+            .get(member_id)
+            .ok_or_else(|| Error::NotFound(format!("Member not found: {}", member_id)))?;
+
         // 実際の実装では、投票戦略に応じた投票権計算ロジックを実装
         // ここでは簡易的にトークン保有量を返す
         Ok(member.tokens)
     }
-    
+
     /// メンバーが権限を持っているか確認
-    pub fn has_permission(&self, member_id: &str, permission: &DAOPermission) -> Result<bool, Error> {
-        let member = self.members.get(member_id).ok_or_else(|| {
-            Error::NotFound(format!("Member not found: {}", member_id))
-        })?;
-        
+    pub fn has_permission(
+        &self,
+        member_id: &str,
+        permission: &DAOPermission,
+    ) -> Result<bool, Error> {
+        let member = self
+            .members
+            .get(member_id)
+            .ok_or_else(|| Error::NotFound(format!("Member not found: {}", member_id)))?;
+
         // メンバーのロールをチェック
         for role_id in &member.roles {
             if let Some(role) = self.roles.get(role_id) {
@@ -589,56 +622,66 @@ impl DAO {
                 }
             }
         }
-        
+
         Ok(false)
     }
-    
+
     /// メンバーの評判を更新
     pub fn update_reputation(&mut self, member_id: &str, reputation: u64) -> Result<(), Error> {
-        let member = self.members.get_mut(member_id).ok_or_else(|| {
-            Error::NotFound(format!("Member not found: {}", member_id))
-        })?;
-        
+        let member = self
+            .members
+            .get_mut(member_id)
+            .ok_or_else(|| Error::NotFound(format!("Member not found: {}", member_id)))?;
+
         member.reputation = reputation;
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// メンバーのトークンを更新
     pub fn update_tokens(&mut self, member_id: &str, tokens: u64) -> Result<(), Error> {
-        let member = self.members.get_mut(member_id).ok_or_else(|| {
-            Error::NotFound(format!("Member not found: {}", member_id))
-        })?;
-        
+        let member = self
+            .members
+            .get_mut(member_id)
+            .ok_or_else(|| Error::NotFound(format!("Member not found: {}", member_id)))?;
+
         member.tokens = tokens;
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// メンバーの委任先を設定
-    pub fn set_delegate(&mut self, member_id: &str, delegate_id: Option<String>) -> Result<(), Error> {
-        let member = self.members.get_mut(member_id).ok_or_else(|| {
-            Error::NotFound(format!("Member not found: {}", member_id))
-        })?;
-        
+    pub fn set_delegate(
+        &mut self,
+        member_id: &str,
+        delegate_id: Option<String>,
+    ) -> Result<(), Error> {
+        let member = self
+            .members
+            .get_mut(member_id)
+            .ok_or_else(|| Error::NotFound(format!("Member not found: {}", member_id)))?;
+
         // 委任先をチェック
         if let Some(delegate_id) = &delegate_id {
             if !self.members.contains_key(delegate_id) {
-                return Err(Error::NotFound(format!("Delegate not found: {}", delegate_id)));
+                return Err(Error::NotFound(format!(
+                    "Delegate not found: {}",
+                    delegate_id
+                )));
             }
-            
+
             // 循環委任をチェック
             let mut current_delegate = delegate_id;
             let mut visited = vec![member_id.to_string()];
-            
+
             while let Some(delegate) = self.members.get(current_delegate) {
                 if let Some(next_delegate) = &delegate.delegate {
                     if visited.contains(next_delegate) {
                         return Err(Error::InvalidState(format!("Circular delegation detected")));
                     }
-                    
+
                     visited.push(next_delegate.clone());
                     current_delegate = next_delegate;
                 } else {
@@ -646,28 +689,28 @@ impl DAO {
                 }
             }
         }
-        
+
         member.delegate = delegate_id;
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// DAOの設定を更新
     pub fn update_options(&mut self, options: DAOOptions) -> Result<(), Error> {
         self.options = options;
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     /// DAOのメタデータを更新
     pub fn update_metadata(&mut self, metadata: DAOMetadata) -> Result<(), Error> {
         let created_at = self.metadata.created_at;
         self.metadata = metadata;
         self.metadata.created_at = created_at;
         self.metadata.updated_at = Utc::now();
-        
+
         Ok(())
     }
 }

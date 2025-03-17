@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// オフチェーン計算設定
@@ -280,10 +280,10 @@ impl Default for OffchainConfig {
             incentive_config: IncentiveConfig::default(),
             registry_config: RegistryConfig::default(),
             protocol_config: ProtocolConfig::default(),
-            scheduler_interval_ms: 1000, // 1秒
-            executor_interval_ms: 1000, // 1秒
-            verifier_interval_ms: 5000, // 5秒
-            incentive_interval_ms: 60000, // 1分
+            scheduler_interval_ms: 1000,     // 1秒
+            executor_interval_ms: 1000,      // 1秒
+            verifier_interval_ms: 5000,      // 5秒
+            incentive_interval_ms: 60000,    // 1分
             node_monitor_interval_ms: 30000, // 30秒
             metadata: HashMap::new(),
         }
@@ -295,7 +295,7 @@ impl Default for ComputeNodeConfig {
         Self {
             max_nodes: 1000,
             min_nodes: 3,
-            heartbeat_timeout_ms: 30000, // 30秒
+            heartbeat_timeout_ms: 30000,    // 30秒
             registration_timeout_ms: 60000, // 1分
             max_task_assignments: 10,
             min_reputation_score: 0.7, // 70%
@@ -308,11 +308,11 @@ impl Default for TaskConfig {
     fn default() -> Self {
         Self {
             max_tasks: 10000,
-            max_task_size: 10485760, // 10MB
-            max_input_data_size: 104857600, // 100MB
+            max_task_size: 10485760,         // 10MB
+            max_input_data_size: 104857600,  // 100MB
             max_output_data_size: 104857600, // 100MB
             default_task_timeout_ms: 300000, // 5分
-            max_task_timeout_ms: 3600000, // 1時間
+            max_task_timeout_ms: 3600000,    // 1時間
             max_retry_count: 3,
             metadata: HashMap::new(),
         }
@@ -337,10 +337,7 @@ impl Default for VerifierConfig {
 impl Default for ProverConfig {
     fn default() -> Self {
         Self {
-            proof_types: vec![
-                ProofType::ZeroKnowledge,
-                ProofType::SNARKs,
-            ],
+            proof_types: vec![ProofType::ZeroKnowledge, ProofType::SNARKs],
             proof_generation_timeout_ms: 300000, // 5分
             proof_generation_threads: 2,
             proof_cache_size: 100,
@@ -359,7 +356,7 @@ impl Default for ExecutorConfig {
             execution_timeout_ms: 300000, // 5分
             execution_threads: 8,
             max_memory_usage_mb: 4096, // 4GB
-            max_cpu_usage: 0.8, // 80%
+            max_cpu_usage: 0.8,        // 80%
             metadata: HashMap::new(),
         }
     }
@@ -371,7 +368,7 @@ impl Default for SchedulerConfig {
         priority_weights.insert("high".to_string(), 3.0);
         priority_weights.insert("medium".to_string(), 2.0);
         priority_weights.insert("low".to_string(), 1.0);
-        
+
         Self {
             scheduling_strategy: SchedulingStrategy::PriorityBased,
             max_batch_size: 100,
@@ -388,7 +385,7 @@ impl Default for IncentiveConfig {
             reward_model: RewardModel::ResourceUsageBased,
             base_reward_rate: 1.0,
             bonus_reward_rate: 0.2, // 20%
-            penalty_rate: 0.5, // 50%
+            penalty_rate: 0.5,      // 50%
             min_reward: 1,
             max_reward: 1000000,
             metadata: HashMap::new(),
@@ -401,7 +398,7 @@ impl Default for RegistryConfig {
         Self {
             max_registry_size: 10000,
             registry_update_interval_ms: 60000, // 1分
-            registry_cache_expiry_ms: 300000, // 5分
+            registry_cache_expiry_ms: 300000,   // 5分
             metadata: HashMap::new(),
         }
     }
@@ -412,8 +409,8 @@ impl Default for ProtocolConfig {
         Self {
             protocol_version: "1.0.0".to_string(),
             max_message_size: 10485760, // 10MB
-            message_timeout_ms: 30000, // 30秒
-            retry_interval_ms: 5000, // 5秒
+            message_timeout_ms: 30000,  // 30秒
+            retry_interval_ms: 5000,    // 5秒
             max_retry_count: 3,
             metadata: HashMap::new(),
         }
@@ -423,11 +420,11 @@ impl Default for ProtocolConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_default_offchain_config() {
         let config = OffchainConfig::default();
-        
+
         // 基本設定
         assert_eq!(config.scheduler_interval_ms, 1000);
         assert_eq!(config.executor_interval_ms, 1000);
@@ -435,11 +432,11 @@ mod tests {
         assert_eq!(config.incentive_interval_ms, 60000);
         assert_eq!(config.node_monitor_interval_ms, 30000);
     }
-    
+
     #[test]
     fn test_compute_node_config() {
         let config = ComputeNodeConfig::default();
-        
+
         assert_eq!(config.max_nodes, 1000);
         assert_eq!(config.min_nodes, 3);
         assert_eq!(config.heartbeat_timeout_ms, 30000);
@@ -447,11 +444,11 @@ mod tests {
         assert_eq!(config.max_task_assignments, 10);
         assert_eq!(config.min_reputation_score, 0.7);
     }
-    
+
     #[test]
     fn test_task_config() {
         let config = TaskConfig::default();
-        
+
         assert_eq!(config.max_tasks, 10000);
         assert_eq!(config.max_task_size, 10485760);
         assert_eq!(config.max_input_data_size, 104857600);
@@ -460,23 +457,27 @@ mod tests {
         assert_eq!(config.max_task_timeout_ms, 3600000);
         assert_eq!(config.max_retry_count, 3);
     }
-    
+
     #[test]
     fn test_verifier_config() {
         let config = VerifierConfig::default();
-        
+
         assert_eq!(config.verification_methods.len(), 2);
-        assert!(config.verification_methods.contains(&VerificationMethod::Reexecution));
-        assert!(config.verification_methods.contains(&VerificationMethod::MultiPartyVerification));
+        assert!(config
+            .verification_methods
+            .contains(&VerificationMethod::Reexecution));
+        assert!(config
+            .verification_methods
+            .contains(&VerificationMethod::MultiPartyVerification));
         assert_eq!(config.verification_timeout_ms, 60000);
         assert_eq!(config.verification_threads, 4);
         assert_eq!(config.verification_cache_size, 1000);
     }
-    
+
     #[test]
     fn test_prover_config() {
         let config = ProverConfig::default();
-        
+
         assert_eq!(config.proof_types.len(), 2);
         assert!(config.proof_types.contains(&ProofType::ZeroKnowledge));
         assert!(config.proof_types.contains(&ProofType::SNARKs));
@@ -484,25 +485,32 @@ mod tests {
         assert_eq!(config.proof_generation_threads, 2);
         assert_eq!(config.proof_cache_size, 100);
     }
-    
+
     #[test]
     fn test_executor_config() {
         let config = ExecutorConfig::default();
-        
+
         assert_eq!(config.execution_environments.len(), 2);
-        assert!(config.execution_environments.contains(&ExecutionEnvironment::Docker));
-        assert!(config.execution_environments.contains(&ExecutionEnvironment::WebAssembly));
+        assert!(config
+            .execution_environments
+            .contains(&ExecutionEnvironment::Docker));
+        assert!(config
+            .execution_environments
+            .contains(&ExecutionEnvironment::WebAssembly));
         assert_eq!(config.execution_timeout_ms, 300000);
         assert_eq!(config.execution_threads, 8);
         assert_eq!(config.max_memory_usage_mb, 4096);
         assert_eq!(config.max_cpu_usage, 0.8);
     }
-    
+
     #[test]
     fn test_scheduler_config() {
         let config = SchedulerConfig::default();
-        
-        assert_eq!(config.scheduling_strategy, SchedulingStrategy::PriorityBased);
+
+        assert_eq!(
+            config.scheduling_strategy,
+            SchedulingStrategy::PriorityBased
+        );
         assert_eq!(config.max_batch_size, 100);
         assert_eq!(config.max_queue_length, 1000);
         assert_eq!(config.priority_weights.len(), 3);
@@ -510,11 +518,11 @@ mod tests {
         assert_eq!(config.priority_weights.get("medium"), Some(&2.0));
         assert_eq!(config.priority_weights.get("low"), Some(&1.0));
     }
-    
+
     #[test]
     fn test_incentive_config() {
         let config = IncentiveConfig::default();
-        
+
         assert_eq!(config.reward_model, RewardModel::ResourceUsageBased);
         assert_eq!(config.base_reward_rate, 1.0);
         assert_eq!(config.bonus_reward_rate, 0.2);
@@ -522,20 +530,20 @@ mod tests {
         assert_eq!(config.min_reward, 1);
         assert_eq!(config.max_reward, 1000000);
     }
-    
+
     #[test]
     fn test_registry_config() {
         let config = RegistryConfig::default();
-        
+
         assert_eq!(config.max_registry_size, 10000);
         assert_eq!(config.registry_update_interval_ms, 60000);
         assert_eq!(config.registry_cache_expiry_ms, 300000);
     }
-    
+
     #[test]
     fn test_protocol_config() {
         let config = ProtocolConfig::default();
-        
+
         assert_eq!(config.protocol_version, "1.0.0");
         assert_eq!(config.max_message_size, 10485760);
         assert_eq!(config.message_timeout_ms, 30000);
