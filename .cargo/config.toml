@@ -1,6 +1,6 @@
 [build]
-# 並列ジョブ数を設定
-jobs = 4
+# 並列ジョブ数を設定（GitHub Actionsの2コアCPUに最適化）
+jobs = 2
 
 # リンカーの最適化
 rustflags = [
