@@ -1,0 +1,44 @@
+# replit.toml configuration for ShardX
+
+# Run command
+run = "cargo run --release"
+
+# Hidden files
+hidden = [".git", "target"]
+
+# Entry point
+entrypoint = "src/main.rs"
+
+# Environment variables
+[env]
+RUST_LOG = "info"
+INITIAL_SHARDS = "32"
+PORT = "54868"
+WEB_PORT = "54867"
+NODE_ID = "replit_node"
+RUST_BACKTRACE = "1"
+
+# Nix configuration
+[nix]
+channel = "stable-22_11"
+
+# Packager configuration
+[packager]
+language = "rust"
+
+[packager.features]
+packageSearch = true
+
+# Language configuration
+[languages.rust]
+pattern = "**/*.rs"
+
+[languages.rust.languageServer]
+start = ["rust-analyzer"]
+
+# Deployment configuration
+[deployment]
+run = ["sh", "-c", "cargo run --release"]
+deploymentTarget = "cloudrun"
+ignorePorts = false
+deploymentTarget = "cloudrun"

@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod integration_tests {
-    use shardx::transaction::{Transaction, TransactionStatus};
-    use shardx::crypto::{HashManager, SignatureManager};
-    use shardx::sharding::{ShardManager, ShardId};
-    use shardx::parallel::WorkStealingScheduler;
-    use shardx::storage::MemoryStorage;
-    use std::sync::{Arc, Mutex};
-    use std::time::{Duration, Instant};
     use rayon::prelude::*;
+    use shardx::crypto::{HashManager, SignatureManager};
+    use shardx::parallel::WorkStealingScheduler;
+    use shardx::sharding::{ShardId, ShardManager};
+    use shardx::storage::MemoryStorage;
+    use shardx::transaction::{Transaction, TransactionStatus};
+    use std::sync::{Arc, Mutex};
     use std::thread;
+    use std::time::{Duration, Instant};
 
     // テスト用のトランザクションを生成
     fn create_test_transaction(id: &str, payload_size: usize) -> Transaction {
@@ -31,7 +31,11 @@ mod integration_tests {
     }
 
     // 署名付きトランザクションを生成
-    fn create_signed_transaction(id: &str, payload_size: usize, signature_manager: &mut SignatureManager) -> Transaction {
+    fn create_signed_transaction(
+        id: &str,
+        payload_size: usize,
+        signature_manager: &mut SignatureManager,
+    ) -> Transaction {
         let mut tx = create_test_transaction(id, payload_size);
         signature_manager.sign_transaction(&mut tx).unwrap();
         tx
@@ -50,7 +54,7 @@ mod integration_tests {
 
         // 処理するトランザクション数
         let tx_count = 10000;
-        
+
         // トランザクションを生成
         let transactions: Vec<Transaction> = (0..tx_count)
             .map(|i| create_signed_transaction(&format!("tx_{}", i), 100, &mut signature_manager))
@@ -63,13 +67,13 @@ mod integration_tests {
         let results = scheduler.process_batch(transactions.clone(), |tx| {
             // 1. ハッシュ計算
             let tx_hash = hash_manager.hash_transaction(&tx);
-            
+
             // 2. 署名検証
             signature_manager.verify_transaction(&tx)?;
-            
+
             // 3. ストレージに保存
             storage.put("transactions", &tx.id, &bincode::serialize(&tx).unwrap())?;
-            
+
             Ok(())
         });
 
@@ -105,7 +109,7 @@ mod integration_tests {
 
         // 処理するトランザクション数
         let tx_count = 10000;
-        
+
         // トランザクションを生成
         let transactions: Vec<Transaction> = (0..tx_count)
             .map(|i| create_signed_transaction(&format!("tx_{}", i), 100, &mut signature_manager))
@@ -139,13 +143,13 @@ mod integration_tests {
                 let processed = scheduler.process_batch(txs.clone(), |tx| {
                     // 1. ハッシュ計算
                     let tx_hash = hash_manager.hash_transaction(&tx);
-                    
+
                     // 2. 署名検証
                     signature_manager.verify_transaction(&tx)?;
-                    
+
                     // 3. ストレージに保存
                     storage.put("transactions", &tx.id, &bincode::serialize(&tx).unwrap())?;
-                    
+
                     Ok(())
                 });
 
@@ -183,11 +187,13 @@ mod integration_tests {
 
         // 異なる負荷でのパフォーマンスを測定
         let loads = vec![100, 1000, 10000];
-        
+
         for &load in &loads {
             // トランザクションを生成
             let transactions: Vec<Transaction> = (0..load)
-                .map(|i| create_signed_transaction(&format!("tx_{}", i), 100, &mut signature_manager))
+                .map(|i| {
+                    create_signed_transaction(&format!("tx_{}", i), 100, &mut signature_manager)
+                })
                 .collect();
 
             // 処理開始時間を記録
@@ -197,13 +203,13 @@ mod integration_tests {
             let results = scheduler.process_batch(transactions.clone(), |tx| {
                 // 1. ハッシュ計算
                 let tx_hash = hash_manager.hash_transaction(&tx);
-                
+
                 // 2. 署名検証
                 signature_manager.verify_transaction(&tx)?;
-                
+
                 // 3. ストレージに保存
                 storage.put("transactions", &tx.id, &bincode::serialize(&tx).unwrap())?;
-                
+
                 Ok(())
             });
 
@@ -215,7 +221,7 @@ mod integration_tests {
             let success_count = results.iter().filter(|r| r.is_ok()).count();
 
             println!("負荷 {}: 処理時間: {:?}, TPS: {:.2}", load, elapsed, tps);
-            
+
             // すべてのトランザクションが正常に処理されたことを確認
             assert_eq!(success_count, load);
         }
@@ -228,10 +234,10 @@ mod integration_tests {
         let hash_manager = HashManager::new(num_cpus::get());
         let mut signature_manager = SignatureManager::new();
         signature_manager.generate_keypair().unwrap();
-        
+
         // 処理するトランザクション数
         let tx_count = 5000;
-        
+
         // トランザクションを生成
         let transactions: Vec<Transaction> = (0..tx_count)
             .map(|i| create_signed_transaction(&format!("tx_{}", i), 100, &mut signature_manager))
@@ -239,12 +245,12 @@ mod integration_tests {
 
         // 異なるスレッド数でのパフォーマンスを測定
         let thread_counts = vec![1, 2, 4, 8, num_cpus::get()];
-        
+
         for &threads in &thread_counts {
             // スケジューラを作成
             let scheduler = WorkStealingScheduler::new();
             scheduler.set_cpu_limit(100); // 最大CPU使用率を設定
-            
+
             // 処理開始時間を記録
             let start_time = Instant::now();
 
@@ -252,13 +258,13 @@ mod integration_tests {
             let results = scheduler.process_batch(transactions.clone(), |tx| {
                 // 1. ハッシュ計算
                 let tx_hash = hash_manager.hash_transaction(&tx);
-                
+
                 // 2. 署名検証
                 signature_manager.verify_transaction(&tx)?;
-                
+
                 // 3. シミュレートされた処理時間
                 thread::sleep(Duration::from_micros(10));
-                
+
                 Ok(())
             });
 
@@ -266,7 +272,10 @@ mod integration_tests {
             let elapsed = start_time.elapsed();
             let tps = tx_count as f64 / elapsed.as_secs_f64();
 
-            println!("スレッド数 {}: 処理時間: {:?}, TPS: {:.2}", threads, elapsed, tps);
+            println!(
+                "スレッド数 {}: 処理時間: {:?}, TPS: {:.2}",
+                threads, elapsed, tps
+            );
         }
     }
 
@@ -275,33 +284,35 @@ mod integration_tests {
     fn test_hash_large_data_performance() {
         // 初期化
         let hash_manager = HashManager::new(num_cpus::get());
-        
+
         // 異なるサイズのデータでのパフォーマンスを測定
         let sizes = vec![1024, 1024 * 1024, 10 * 1024 * 1024];
-        
+
         for &size in &sizes {
             // テストデータを生成
             let data = vec![0u8; size];
-            
+
             // 処理開始時間を記録
             let start_time = Instant::now();
 
             // 通常のハッシュ計算
             let hash1 = hash_manager.hash_data(&data);
-            
+
             let elapsed1 = start_time.elapsed();
-            
+
             // 処理開始時間を記録
             let start_time = Instant::now();
-            
+
             // 並列ハッシュ計算
             let hash2 = hash_manager.hash_large_data(&data);
-            
+
             let elapsed2 = start_time.elapsed();
-            
-            println!("データサイズ {}: 通常ハッシュ: {:?}, 並列ハッシュ: {:?}", 
-                     size, elapsed1, elapsed2);
-            
+
+            println!(
+                "データサイズ {}: 通常ハッシュ: {:?}, 並列ハッシュ: {:?}",
+                size, elapsed1, elapsed2
+            );
+
             // ハッシュ値が一致することを確認
             assert_eq!(hash1, hash2);
         }

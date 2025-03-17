@@ -1,11 +1,11 @@
+use log::{debug, error, info, warn};
+use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
 use std::thread;
 use std::time::{Duration, Instant};
-use std::collections::{HashMap, VecDeque};
-use log::{debug, error, info, warn};
 
 /// 非同期ランタイム設定
 #[derive(Debug, Clone)]
@@ -53,7 +53,7 @@ impl TaskPriority {
     pub fn level(&self) -> usize {
         *self as usize
     }
-    
+
     /// 整数から優先度を取得
     pub fn from_level(level: usize) -> Self {
         match level {
@@ -120,7 +120,7 @@ impl Wake for TaskWaker {
         let mut task_queue = self.task_queue.lock().unwrap();
         task_queue.wake_task(self.task_id);
     }
-    
+
     fn wake_by_ref(self: &Arc<Self>) {
         let mut task_queue = self.task_queue.lock().unwrap();
         task_queue.wake_task(self.task_id);
@@ -157,7 +157,7 @@ impl TaskQueue {
         let priority_queues = (0..config.priority_levels)
             .map(|_| VecDeque::new())
             .collect();
-        
+
         Self {
             next_task_id: 1,
             tasks: HashMap::new(),
@@ -171,7 +171,7 @@ impl TaskQueue {
             max_retries: config.max_task_retries,
         }
     }
-    
+
     /// タスクを追加
     fn add_task<F>(&mut self, priority: TaskPriority, future: F, dependencies: Vec<u64>) -> u64
     where
@@ -182,10 +182,10 @@ impl TaskQueue {
             error!("Task queue is full, cannot add more tasks");
             return 0;
         }
-        
+
         let task_id = self.next_task_id;
         self.next_task_id += 1;
-        
+
         let info = TaskInfo {
             id: task_id,
             priority,
@@ -195,15 +195,15 @@ impl TaskQueue {
             execution_count: 0,
             dependencies,
         };
-        
+
         let task = Task {
             info,
             future: Box::pin(future),
             waker: None,
         };
-        
+
         self.tasks.insert(task_id, task);
-        
+
         // 依存関係がない場合はキューに追加
         if dependencies.is_empty() {
             let priority_level = priority.level();
@@ -213,10 +213,10 @@ impl TaskQueue {
                 self.priority_queues[0].push_back(task_id);
             }
         }
-        
+
         task_id
     }
-    
+
     /// 次のタスクを取得
     fn next_task(&mut self) -> Option<(u64, &mut Task)> {
         // 優先度の高いキューから順に取得
@@ -224,24 +224,23 @@ impl TaskQueue {
             if let Some(task_id) = self.priority_queues[priority].pop_front() {
                 if let Some(task) = self.tasks.get_mut(&task_id) {
                     // 依存関係をチェック
-                    let dependencies_completed = task.info.dependencies.iter()
-                        .all(|dep_id| {
-                            if let Some(dep_task) = self.tasks.get(dep_id) {
-                                dep_task.info.state == TaskState::Completed
-                            } else {
-                                true // 依存タスクが存在しない場合は完了とみなす
-                            }
-                        });
-                    
+                    let dependencies_completed = task.info.dependencies.iter().all(|dep_id| {
+                        if let Some(dep_task) = self.tasks.get(dep_id) {
+                            dep_task.info.state == TaskState::Completed
+                        } else {
+                            true // 依存タスクが存在しない場合は完了とみなす
+                        }
+                    });
+
                     if dependencies_completed {
                         // タスクを実行中に設定
                         task.info.state = TaskState::Running;
                         task.info.last_executed_at = Some(Instant::now());
                         task.info.execution_count += 1;
-                        
+
                         // 実行中のタスクに追加
                         self.running_tasks.insert(task_id, Instant::now());
-                        
+
                         return Some((task_id, task));
                     } else {
                         // 依存関係が完了していない場合は後ろに戻す
@@ -250,10 +249,10 @@ impl TaskQueue {
                 }
             }
         }
-        
+
         None
     }
-    
+
     /// タスクを起こす
     fn wake_task(&mut self, task_id: u64) {
         if let Some(task) = self.tasks.get_mut(&task_id) {
@@ -261,20 +260,19 @@ impl TaskQueue {
                 // タスクが実行中の場合は何もしない
                 return;
             }
-            
+
             // タスクを待機中に設定
             task.info.state = TaskState::Pending;
-            
+
             // 依存関係をチェック
-            let dependencies_completed = task.info.dependencies.iter()
-                .all(|dep_id| {
-                    if let Some(dep_task) = self.tasks.get(dep_id) {
-                        dep_task.info.state == TaskState::Completed
-                    } else {
-                        true // 依存タスクが存在しない場合は完了とみなす
-                    }
-                });
-            
+            let dependencies_completed = task.info.dependencies.iter().all(|dep_id| {
+                if let Some(dep_task) = self.tasks.get(dep_id) {
+                    dep_task.info.state == TaskState::Completed
+                } else {
+                    true // 依存タスクが存在しない場合は完了とみなす
+                }
+            });
+
             if dependencies_completed {
                 // 依存関係が完了している場合はキューに追加
                 let priority_level = task.info.priority.level();
@@ -286,14 +284,14 @@ impl TaskQueue {
             }
         }
     }
-    
+
     /// タスクを完了
     fn complete_task(&mut self, task_id: u64) {
         if let Some(task) = self.tasks.get_mut(&task_id) {
             task.info.state = TaskState::Completed;
             self.running_tasks.remove(&task_id);
             self.completed_tasks.push_back(task_id);
-            
+
             // 依存タスクを起こす
             for (id, task) in self.tasks.iter() {
                 if task.info.dependencies.contains(&task_id) {
@@ -302,7 +300,7 @@ impl TaskQueue {
             }
         }
     }
-    
+
     /// タスクを失敗
     fn fail_task(&mut self, task_id: u64) {
         if let Some(task) = self.tasks.get_mut(&task_id) {
@@ -324,28 +322,30 @@ impl TaskQueue {
             }
         }
     }
-    
+
     /// タイムアウトしたタスクをチェック
     fn check_timeouts(&mut self) {
         let now = Instant::now();
-        let timed_out_tasks: Vec<u64> = self.running_tasks.iter()
+        let timed_out_tasks: Vec<u64> = self
+            .running_tasks
+            .iter()
             .filter(|(_, start_time)| now.duration_since(**start_time) > self.max_execution_time)
             .map(|(task_id, _)| *task_id)
             .collect();
-        
+
         for task_id in timed_out_tasks {
             warn!("Task {} timed out", task_id);
             self.fail_task(task_id);
         }
     }
-    
+
     /// キューをクリーンアップ
     fn cleanup(&mut self) {
         // 完了したタスクを削除
         while let Some(task_id) = self.completed_tasks.pop_front() {
             self.tasks.remove(&task_id);
         }
-        
+
         // 失敗したタスクを削除
         while let Some(task_id) = self.failed_tasks.pop_front() {
             self.tasks.remove(&task_id);
@@ -373,41 +373,41 @@ impl AsyncRuntime {
         let config = config.unwrap_or_default();
         let task_queue = Arc::new(Mutex::new(TaskQueue::new(&config)));
         let running = Arc::new(Mutex::new(true));
-        
+
         // ワーカースレッドを作成
         let mut worker_threads = Vec::with_capacity(config.worker_threads);
-        
+
         for i in 0..config.worker_threads {
             let task_queue = task_queue.clone();
             let running = running.clone();
-            
+
             let handle = thread::spawn(move || {
                 info!("Worker thread {} started", i);
-                
+
                 while *running.lock().unwrap() {
                     // タスクを実行
                     let result = Self::execute_task(task_queue.clone());
-                    
+
                     if !result {
                         // タスクがない場合は少し待機
                         thread::sleep(Duration::from_millis(1));
                     }
                 }
-                
+
                 info!("Worker thread {} stopped", i);
             });
-            
+
             worker_threads.push(handle);
         }
-        
+
         // スケジューラスレッドを作成
         let task_queue_scheduler = task_queue.clone();
         let running_scheduler = running.clone();
         let scheduler_interval = Duration::from_millis(config.scheduler_interval_ms);
-        
+
         let scheduler_thread = thread::spawn(move || {
             info!("Scheduler thread started");
-            
+
             while *running_scheduler.lock().unwrap() {
                 // タイムアウトをチェック
                 {
@@ -415,14 +415,14 @@ impl AsyncRuntime {
                     task_queue.check_timeouts();
                     task_queue.cleanup();
                 }
-                
+
                 // 少し待機
                 thread::sleep(scheduler_interval);
             }
-            
+
             info!("Scheduler thread stopped");
         });
-        
+
         Self {
             task_queue,
             _worker_threads: worker_threads,
@@ -431,32 +431,32 @@ impl AsyncRuntime {
             config,
         }
     }
-    
+
     /// タスクを実行
     fn execute_task(task_queue: Arc<Mutex<TaskQueue>>) -> bool {
         // タスクを取得
         let (task_id, mut task) = {
             let mut task_queue = task_queue.lock().unwrap();
-            
+
             if let Some((id, task)) = task_queue.next_task() {
                 (id, task.clone())
             } else {
                 return false;
             }
         };
-        
+
         // ウェイカーを作成
         let waker = {
             let task_waker = Arc::new(TaskWaker {
                 task_id,
                 task_queue: task_queue.clone(),
             });
-            
+
             Waker::from(task_waker)
         };
-        
+
         let mut context = Context::from_waker(&waker);
-        
+
         // フューチャーを実行
         match task.future.as_mut().poll(&mut context) {
             Poll::Ready(()) => {
@@ -471,7 +471,7 @@ impl AsyncRuntime {
             }
         }
     }
-    
+
     /// タスクを追加
     pub fn spawn<F>(&self, future: F) -> u64
     where
@@ -479,44 +479,49 @@ impl AsyncRuntime {
     {
         self.spawn_with_priority(future, TaskPriority::Normal, Vec::new())
     }
-    
+
     /// 優先度付きでタスクを追加
-    pub fn spawn_with_priority<F>(&self, future: F, priority: TaskPriority, dependencies: Vec<u64>) -> u64
+    pub fn spawn_with_priority<F>(
+        &self,
+        future: F,
+        priority: TaskPriority,
+        dependencies: Vec<u64>,
+    ) -> u64
     where
         F: Future<Output = ()> + Send + 'static,
     {
         let mut task_queue = self.task_queue.lock().unwrap();
         task_queue.add_task(priority, future, dependencies)
     }
-    
+
     /// ランタイムを停止
     pub fn shutdown(&self) {
         info!("Shutting down async runtime");
-        
+
         // 実行中フラグをfalseに設定
         let mut running = self.running.lock().unwrap();
         *running = false;
     }
-    
+
     /// タスクの状態を取得
     pub fn get_task_state(&self, task_id: u64) -> Option<TaskState> {
         let task_queue = self.task_queue.lock().unwrap();
-        
+
         task_queue.tasks.get(&task_id).map(|task| task.info.state)
     }
-    
+
     /// タスクの数を取得
     pub fn get_task_count(&self) -> (usize, usize, usize, usize) {
         let task_queue = self.task_queue.lock().unwrap();
-        
+
         let pending = task_queue.priority_queues.iter().map(|q| q.len()).sum();
         let running = task_queue.running_tasks.len();
         let completed = task_queue.completed_tasks.len();
         let failed = task_queue.failed_tasks.len();
-        
+
         (pending, running, completed, failed)
     }
-    
+
     /// 設定を取得
     pub fn get_config(&self) -> AsyncRuntimeConfig {
         self.config.clone()
@@ -547,7 +552,7 @@ pub fn runtime() -> &'static AsyncRuntime {
         if GLOBAL_RUNTIME.is_none() {
             GLOBAL_RUNTIME = Some(AsyncRuntime::new(None));
         }
-        
+
         GLOBAL_RUNTIME.as_ref().unwrap()
     }
 }

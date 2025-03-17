@@ -1,4 +1,4 @@
-use crate::dex::{DexManager, Order, OrderType, TradingPair, Trade};
+use crate::dex::{DexManager, Order, OrderType, Trade, TradingPair};
 use crate::node::Node;
 use crate::transaction::Transaction;
 use crate::wallet::{Account, WalletManager};
@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use warp::{Rejection, Reply};
 use warp::reply::Response;
+use warp::{Rejection, Reply};
 
 // ウォレットAPI用の構造体
 
@@ -218,7 +218,8 @@ pub async fn handle_create_account(
             Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -247,7 +248,8 @@ pub async fn handle_get_account(
             Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::NOT_FOUND,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -285,7 +287,8 @@ pub async fn handle_transfer(
                     Ok(warp::reply::with_status(
                         warp::reply::json(&json_response),
                         warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    ).into_response())
+                    )
+                    .into_response())
                 }
             }
         }
@@ -297,7 +300,8 @@ pub async fn handle_transfer(
             Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -333,13 +337,14 @@ pub async fn handle_create_order(
             return Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response());
+            )
+            .into_response());
         }
     };
-    
+
     // 取引ペアを作成
     let pair = TradingPair::new(req.base, req.quote);
-    
+
     // 注文を作成
     match dex_manager.create_order(
         &req.account_id,
@@ -350,13 +355,16 @@ pub async fn handle_create_order(
     ) {
         Ok((order, trades)) => {
             // 取引情報を変換
-            let trade_infos = trades.iter().map(|trade| TradeInfo {
-                id: trade.id.clone(),
-                price: trade.price,
-                amount: trade.amount,
-                executed_at: trade.executed_at.to_rfc3339(),
-            }).collect();
-            
+            let trade_infos = trades
+                .iter()
+                .map(|trade| TradeInfo {
+                    id: trade.id.clone(),
+                    price: trade.price,
+                    amount: trade.amount,
+                    executed_at: trade.executed_at.to_rfc3339(),
+                })
+                .collect();
+
             let response = CreateOrderResponse {
                 order_id: order.id,
                 pair: pair.to_string(),
@@ -376,7 +384,8 @@ pub async fn handle_create_order(
             Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -403,7 +412,8 @@ pub async fn handle_cancel_order(
             Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -414,23 +424,29 @@ pub async fn handle_get_order_book(
     dex_manager: Arc<DexManager>,
 ) -> Result<Response, Rejection> {
     let pair = TradingPair::new(query.base, query.quote);
-    
+
     match dex_manager.get_order_book(&pair) {
         Ok((bids, asks)) => {
             // 買い注文情報を変換
-            let bid_infos = bids.iter().map(|order| OrderInfo {
-                price: order.price,
-                amount: order.amount - order.filled_amount,
-                total: order.price * (order.amount - order.filled_amount),
-            }).collect();
-            
+            let bid_infos = bids
+                .iter()
+                .map(|order| OrderInfo {
+                    price: order.price,
+                    amount: order.amount - order.filled_amount,
+                    total: order.price * (order.amount - order.filled_amount),
+                })
+                .collect();
+
             // 売り注文情報を変換
-            let ask_infos = asks.iter().map(|order| OrderInfo {
-                price: order.price,
-                amount: order.amount - order.filled_amount,
-                total: order.price * (order.amount - order.filled_amount),
-            }).collect();
-            
+            let ask_infos = asks
+                .iter()
+                .map(|order| OrderInfo {
+                    price: order.price,
+                    amount: order.amount - order.filled_amount,
+                    total: order.price * (order.amount - order.filled_amount),
+                })
+                .collect();
+
             let response = OrderBookResponse {
                 pair: pair.to_string(),
                 bids: bid_infos,
@@ -446,7 +462,8 @@ pub async fn handle_get_order_book(
             Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -458,11 +475,12 @@ pub async fn handle_get_trade_history(
 ) -> Result<Response, Rejection> {
     let pair = TradingPair::new(query.base, query.quote);
     let limit = query.limit.unwrap_or(100);
-    
+
     match dex_manager.get_trade_history(&pair) {
         Ok(trades) => {
             // 取引情報を変換
-            let trade_infos = trades.iter()
+            let trade_infos = trades
+                .iter()
                 .take(limit)
                 .map(|trade| TradeInfo {
                     id: trade.id.clone(),
@@ -471,7 +489,7 @@ pub async fn handle_get_trade_history(
                     executed_at: trade.executed_at.to_rfc3339(),
                 })
                 .collect();
-            
+
             let response = TradeHistoryResponse {
                 pair: pair.to_string(),
                 trades: trade_infos,
@@ -486,7 +504,8 @@ pub async fn handle_get_trade_history(
             Ok(warp::reply::with_status(
                 warp::reply::json(&json_response),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }

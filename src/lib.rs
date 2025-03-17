@@ -1,12 +1,12 @@
 pub mod ai;
 pub mod api;
 pub mod api_handlers;
-pub mod async_utils; // asyncは予約語なので変更
 pub mod async_runtime;
+pub mod async_utils; // asyncは予約語なので変更
 pub mod chart;
 pub mod consensus;
-pub mod cross_shard;
 pub mod cross_chain;
+pub mod cross_shard;
 pub mod crypto;
 pub mod dex;
 pub mod error;
@@ -27,4 +27,4 @@ pub mod wallet;
 mod tests;
 
 // Re-export key types for easier access
-pub use cross_chain::{CrossChainBridge, BridgeConfig, ChainType};
+pub use cross_chain::{BridgeConfig, ChainType, CrossChainBridge};

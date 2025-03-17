@@ -1,0 +1,48 @@
+# Clippy設定ファイル
+
+# 警告レベルを設定
+warn-level = "warn"
+
+# 特定のlintを無効化
+[lints]
+# 特定のlintを無効化する例
+# unused_imports = "allow"
+# dead_code = "allow"
+
+# 特定のlintを警告に設定
+# non_snake_case = "warn"
+
+# 特定のlintをエラーに設定
+# unsafe_code = "deny"
+# missing_docs = "deny"
+
+# 特定のlintを禁止に設定
+# unsafe_op_in_unsafe_fn = "forbid"
+
+# 特定のパスに対するlintの設定
+[paths]
+# "src/legacy/" = { unused_imports = "allow", dead_code = "allow" }
+# "tests/" = { missing_docs = "allow" }
+
+# 特定のlintグループを有効化
+[lint-groups]
+# すべてのlintを有効化
+all = true
+# 特定のlintグループを有効化
+pedantic = true
+# 実験的なlintを有効化
+nursery = true
+# カーゴ関連のlintを有効化
+cargo = true
+# 複雑性に関するlintを有効化
+complexity = true
+# 正確性に関するlintを有効化
+correctness = true
+# スタイルに関するlintを有効化
+style = true
+# パフォーマンスに関するlintを有効化
+perf = true
+# 制限に関するlintを有効化
+restriction = false
+# 安全性に関するlintを有効化
+suspicious = true

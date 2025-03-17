@@ -1,5 +1,5 @@
+use log::{error, info};
 use std::time::{Duration, Instant};
-use log::{info, error};
 
 fn main() {
     // ロガーを初期化
@@ -9,13 +9,16 @@ fn main() {
 
     // ベンチマークパラメータ
     let transaction_count = 1000000; // 100万トランザクション
-    
+
     // ベンチマークを実行
-    info!("Running benchmark with {} transactions...", transaction_count);
+    info!(
+        "Running benchmark with {} transactions...",
+        transaction_count
+    );
     let start_time = Instant::now();
-    
+
     let mut successful = 0;
-    
+
     // シンプルな計算を実行してCPUの処理能力を測定
     for i in 0..transaction_count {
         // シンプルなトランザクション処理をシミュレート
@@ -23,24 +26,34 @@ fn main() {
             successful += 1;
         }
     }
-    
+
     let elapsed = start_time.elapsed();
-    
+
     // 結果を表示
-    info!("Benchmark completed in {:.2} seconds", elapsed.as_secs_f64());
-    info!("Transactions: {} total, {} successful, {} failed",
-        transaction_count, successful, transaction_count - successful);
-    
+    info!(
+        "Benchmark completed in {:.2} seconds",
+        elapsed.as_secs_f64()
+    );
+    info!(
+        "Transactions: {} total, {} successful, {} failed",
+        transaction_count,
+        successful,
+        transaction_count - successful
+    );
+
     let tps = transaction_count as f64 / elapsed.as_secs_f64();
     info!("Throughput: {:.2} TPS", tps);
-    
+
     // 目標の100K TPSを達成したかチェック
     if tps >= 100000.0 {
         info!("🎉 SUCCESS: Achieved 100K+ TPS! ({:.2} TPS)", tps);
     } else {
-        info!("❌ FAILED: Did not achieve 100K TPS. Reached {:.2} TPS", tps);
+        info!(
+            "❌ FAILED: Did not achieve 100K TPS. Reached {:.2} TPS",
+            tps
+        );
     }
-    
+
     // マルチスレッドベンチマークを実行
     run_multithreaded_benchmark(transaction_count);
 }
@@ -49,13 +62,13 @@ fn main() {
 fn simulate_transaction(nonce: usize) -> bool {
     // 署名検証をシミュレート
     let signature_valid = verify_signature(nonce);
-    
+
     // 残高チェックをシミュレート
     let balance_sufficient = check_balance(nonce);
-    
+
     // 手数料チェックをシミュレート
     let fee_sufficient = check_fee(nonce);
-    
+
     // トランザクション実行をシミュレート
     if signature_valid && balance_sufficient && fee_sufficient {
         execute_transaction(nonce);
@@ -97,26 +110,26 @@ fn execute_transaction(nonce: usize) {
 // マルチスレッドベンチマークを実行
 fn run_multithreaded_benchmark(transaction_count: usize) {
     info!("\nRunning multi-threaded benchmark...");
-    
+
     // 利用可能なCPUコア数を取得
     let num_cpus = num_cpus::get();
     info!("Detected {} CPU cores", num_cpus);
-    
+
     // スレッド数のバリエーションでベンチマークを実行
     let thread_counts = vec![1, 2, 4, 8, 16, num_cpus];
-    
+
     for &threads in thread_counts.iter().filter(|&&t| t <= num_cpus) {
         info!("Testing with {} threads...", threads);
-        
+
         let start_time = Instant::now();
         let transactions_per_thread = transaction_count / threads;
-        
+
         // スレッドを生成
         let handles: Vec<_> = (0..threads)
             .map(|thread_id| {
                 let start_idx = thread_id * transactions_per_thread;
                 let end_idx = start_idx + transactions_per_thread;
-                
+
                 std::thread::spawn(move || {
                     let mut successful = 0;
                     for i in start_idx..end_idx {
@@ -128,19 +141,19 @@ fn run_multithreaded_benchmark(transaction_count: usize) {
                 })
             })
             .collect();
-        
+
         // すべてのスレッドが完了するのを待つ
         let mut total_successful = 0;
         for handle in handles {
             total_successful += handle.join().unwrap();
         }
-        
+
         let elapsed = start_time.elapsed();
         let tps = transaction_count as f64 / elapsed.as_secs_f64();
-        
+
         info!("  Completed in {:.2} seconds", elapsed.as_secs_f64());
         info!("  Throughput: {:.2} TPS", tps);
-        
+
         if tps >= 100000.0 {
             info!("  🎉 SUCCESS: Achieved 100K+ TPS with {} threads!", threads);
         }

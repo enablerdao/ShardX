@@ -1,8 +1,8 @@
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::time::Duration;
-use std::sync::mpsc::channel;
-use rayon::prelude::*;
 use crate::error::Error;
+use rayon::prelude::*;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::mpsc::channel;
+use std::time::Duration;
 
 /// 負荷制限付きワークスティーリングスケジューラ
 pub struct WorkStealingScheduler {
@@ -18,18 +18,18 @@ impl WorkStealingScheduler {
             .num_threads(num_cpus::get())
             .build()
             .unwrap();
-        
+
         Self {
             pool,
             cpu_limit: AtomicU32::new(50), // デフォルトでCPU使用率50%上限
         }
     }
-    
+
     /// CPU使用率上限を設定
     pub fn set_cpu_limit(&self, limit_percent: u32) {
         self.cpu_limit.store(limit_percent, Ordering::SeqCst);
     }
-    
+
     /// バッチ処理を実行
     pub fn process_batch<T, F>(&self, items: Vec<T>, processor: F) -> Vec<Result<(), Error>>
     where
@@ -52,22 +52,22 @@ impl WorkStealingScheduler {
                 std::thread::sleep(Duration::from_millis(50));
             }
         });
-        
+
         // アイテムをチャンク（小タスク）に分割
         let chunk_size = if num_cpus::get() >= 8 {
             50 // 高スペックノードは大タスク
         } else {
             10 // 低スペックノードは小タスク
         };
-        
+
         let chunks: Vec<Vec<T>> = items
             .chunks(chunk_size)
             .map(|chunk| chunk.to_vec())
             .collect();
-        
+
         // 結果を格納する配列
         let mut results = Vec::with_capacity(items.len());
-        
+
         // 各チャンクを並列処理
         self.pool.install(|| {
             let chunk_results: Vec<Vec<Result<(), Error>>> = chunks
@@ -78,21 +78,24 @@ impl WorkStealingScheduler {
                         // 一時停止信号を受信したら少し待機
                         std::thread::sleep(Duration::from_millis(50));
                     }
-                    
+
                     // チャンク内のアイテムを処理
-                    chunk.iter().map(|item| processor.clone()(item.clone())).collect()
+                    chunk
+                        .iter()
+                        .map(|item| processor.clone()(item.clone()))
+                        .collect()
                 })
                 .collect();
-            
+
             // 結果を平坦化
             for chunk_result in chunk_results {
                 results.extend(chunk_result);
             }
         });
-        
+
         // モニタリングスレッドを終了
         monitor_handle.thread().unpark();
-        
+
         results
     }
 }
@@ -107,38 +110,38 @@ fn get_cpu_usage() -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_workstealing_scheduler() {
         let scheduler = WorkStealingScheduler::new();
-        
+
         // テスト用のアイテム
         let items: Vec<u32> = (0..100).collect();
-        
+
         // テスト用の処理関数
         let processor = |item: u32| -> Result<(), Error> {
             // 単純な処理
             let _ = item * 2;
             Ok(())
         };
-        
+
         // バッチ処理を実行
         let results = scheduler.process_batch(items, processor);
-        
+
         // 結果を確認
         assert_eq!(results.len(), 100);
         for result in results {
             assert!(result.is_ok());
         }
     }
-    
+
     #[test]
     fn test_cpu_limit() {
         let scheduler = WorkStealingScheduler::new();
-        
+
         // CPU使用率上限を設定
         scheduler.set_cpu_limit(70);
-        
+
         // 設定が反映されていることを確認
         assert_eq!(scheduler.cpu_limit.load(Ordering::SeqCst), 70);
     }

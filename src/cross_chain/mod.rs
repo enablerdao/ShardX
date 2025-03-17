@@ -1,9 +1,9 @@
 mod bridge;
+mod ethereum_bridge;
 mod messaging;
 mod transaction;
-mod ethereum_bridge;
 
-pub use bridge::{CrossChainBridge, BridgeConfig, ChainType, BridgeStatus};
-pub use messaging::{CrossChainMessage, MessageType, MessageStatus};
-pub use transaction::{CrossChainTransaction, TransactionStatus, TransactionProof};
+pub use bridge::{BridgeConfig, BridgeStatus, ChainType, CrossChainBridge};
 pub use ethereum_bridge::EthereumBridge;
+pub use messaging::{CrossChainMessage, MessageStatus, MessageType};
+pub use transaction::{CrossChainTransaction, TransactionProof, TransactionStatus};

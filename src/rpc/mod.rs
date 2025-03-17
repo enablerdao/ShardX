@@ -1,3 +1,3 @@
 mod server;
 
-pub use server::{RpcServer, BlockInfo, NetworkInfo};
+pub use server::{BlockInfo, NetworkInfo, RpcServer};

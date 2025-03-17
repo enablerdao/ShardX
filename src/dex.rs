@@ -76,31 +76,31 @@ impl Order {
             updated_at: now,
         }
     }
-    
+
     /// 注文が約定可能かどうかを確認
     pub fn can_match(&self, other: &Order) -> bool {
         // 同じ注文タイプの場合はマッチングしない
         if self.order_type == other.order_type {
             return false;
         }
-        
+
         // 取引ペアが異なる場合はマッチングしない
         if self.pair != other.pair {
             return false;
         }
-        
+
         // 価格条件を確認
         match self.order_type {
             OrderType::Buy => self.price >= other.price,
             OrderType::Sell => self.price <= other.price,
         }
     }
-    
+
     /// 注文を更新
     pub fn update(&mut self, filled_amount: f64) {
         self.filled_amount += filled_amount;
         self.updated_at = chrono::Utc::now();
-        
+
         // 注文状態を更新
         if self.filled_amount >= self.amount {
             self.status = OrderStatus::Filled;
@@ -108,7 +108,7 @@ impl Order {
             self.status = OrderStatus::PartiallyFilled;
         }
     }
-    
+
     /// 注文をキャンセル
     pub fn cancel(&mut self) {
         self.status = OrderStatus::Canceled;
@@ -130,7 +130,7 @@ impl TradingPair {
     pub fn new(base: String, quote: String) -> Self {
         Self { base, quote }
     }
-    
+
     /// 取引ペアの文字列表現を取得
     pub fn to_string(&self) -> String {
         format!("{}/{}", self.base, self.quote)
@@ -193,34 +193,34 @@ impl OrderBook {
             trades: VecDeque::new(),
         }
     }
-    
+
     /// 注文を追加
     pub fn add_order(&mut self, order: Order) -> Vec<Trade> {
         let mut trades = Vec::new();
-        
+
         match order.order_type {
             OrderType::Buy => {
                 // 買い注文の場合、売り注文とマッチングを試みる
                 let mut remaining_order = order;
-                
+
                 while remaining_order.status == OrderStatus::Open && !self.sell_orders.is_empty() {
                     let mut sell_order = self.sell_orders.pop_front().unwrap();
-                    
+
                     if remaining_order.can_match(&sell_order) {
                         // マッチング可能な場合、取引を実行
                         let trade_amount = f64::min(
                             remaining_order.amount - remaining_order.filled_amount,
                             sell_order.amount - sell_order.filled_amount,
                         );
-                        
+
                         // 注文を更新
                         remaining_order.update(trade_amount);
                         sell_order.update(trade_amount);
-                        
+
                         // 取引を記録
                         let trade = Trade::new(&remaining_order, &sell_order, trade_amount);
                         trades.push(trade);
-                        
+
                         // 売り注文がまだ未約定の場合、キューに戻す
                         if sell_order.status != OrderStatus::Filled {
                             self.sell_orders.push_front(sell_order);
@@ -231,11 +231,14 @@ impl OrderBook {
                         break;
                     }
                 }
-                
+
                 // 買い注文がまだ未約定の場合、キューに追加
                 if remaining_order.status != OrderStatus::Filled {
                     // 価格の高い順にソート
-                    let pos = self.buy_orders.iter().position(|o| o.price < remaining_order.price)
+                    let pos = self
+                        .buy_orders
+                        .iter()
+                        .position(|o| o.price < remaining_order.price)
                         .unwrap_or(self.buy_orders.len());
                     self.buy_orders.insert(pos, remaining_order);
                 }
@@ -243,25 +246,25 @@ impl OrderBook {
             OrderType::Sell => {
                 // 売り注文の場合、買い注文とマッチングを試みる
                 let mut remaining_order = order;
-                
+
                 while remaining_order.status == OrderStatus::Open && !self.buy_orders.is_empty() {
                     let mut buy_order = self.buy_orders.pop_front().unwrap();
-                    
+
                     if buy_order.can_match(&remaining_order) {
                         // マッチング可能な場合、取引を実行
                         let trade_amount = f64::min(
                             buy_order.amount - buy_order.filled_amount,
                             remaining_order.amount - remaining_order.filled_amount,
                         );
-                        
+
                         // 注文を更新
                         buy_order.update(trade_amount);
                         remaining_order.update(trade_amount);
-                        
+
                         // 取引を記録
                         let trade = Trade::new(&buy_order, &remaining_order, trade_amount);
                         trades.push(trade);
-                        
+
                         // 買い注文がまだ未約定の場合、キューに戻す
                         if buy_order.status != OrderStatus::Filled {
                             self.buy_orders.push_front(buy_order);
@@ -272,30 +275,33 @@ impl OrderBook {
                         break;
                     }
                 }
-                
+
                 // 売り注文がまだ未約定の場合、キューに追加
                 if remaining_order.status != OrderStatus::Filled {
                     // 価格の低い順にソート
-                    let pos = self.sell_orders.iter().position(|o| o.price > remaining_order.price)
+                    let pos = self
+                        .sell_orders
+                        .iter()
+                        .position(|o| o.price > remaining_order.price)
                         .unwrap_or(self.sell_orders.len());
                     self.sell_orders.insert(pos, remaining_order);
                 }
             }
         }
-        
+
         // 取引履歴を更新
         for trade in &trades {
             self.trades.push_front(trade.clone());
         }
-        
+
         // 取引履歴は最大100件まで保持
         while self.trades.len() > 100 {
             self.trades.pop_back();
         }
-        
+
         trades
     }
-    
+
     /// 注文をキャンセル
     pub fn cancel_order(&mut self, order_id: &str) -> Option<Order> {
         // 買い注文から検索
@@ -306,7 +312,7 @@ impl OrderBook {
                 return Some(order);
             }
         }
-        
+
         // 売り注文から検索
         for i in 0..self.sell_orders.len() {
             if self.sell_orders[i].id == order_id {
@@ -315,20 +321,20 @@ impl OrderBook {
                 return Some(order);
             }
         }
-        
+
         None
     }
-    
+
     /// 買い注文の一覧を取得
     pub fn get_buy_orders(&self) -> Vec<Order> {
         self.buy_orders.iter().cloned().collect()
     }
-    
+
     /// 売り注文の一覧を取得
     pub fn get_sell_orders(&self) -> Vec<Order> {
         self.sell_orders.iter().cloned().collect()
     }
-    
+
     /// 取引履歴を取得
     pub fn get_trades(&self) -> Vec<Trade> {
         self.trades.iter().cloned().collect()
@@ -351,21 +357,21 @@ impl DexManager {
             wallet_manager,
         }
     }
-    
+
     /// 取引ペアを追加
     pub fn add_trading_pair(&self, base: String, quote: String) -> TradingPair {
         let pair = TradingPair::new(base, quote);
         let pair_str = pair.to_string();
-        
+
         let mut order_books = self.order_books.lock().unwrap();
         if !order_books.contains_key(&pair_str) {
             order_books.insert(pair_str.clone(), OrderBook::new(pair.clone()));
             info!("Trading pair added: {}", pair_str);
         }
-        
+
         pair
     }
-    
+
     /// 注文を作成
     pub fn create_order(
         &self,
@@ -376,25 +382,33 @@ impl DexManager {
         amount: f64,
     ) -> Result<(Order, Vec<Trade>), String> {
         // アカウントを確認
-        let account = self.wallet_manager.get_account(account_id)
+        let account = self
+            .wallet_manager
+            .get_account(account_id)
             .ok_or_else(|| format!("Account {} not found", account_id))?;
-        
+
         // 残高を確認
         match order_type {
             OrderType::Buy => {
                 let required_balance = price * amount;
                 if account.balance < required_balance {
-                    return Err(format!("Insufficient balance: {} < {}", account.balance, required_balance));
+                    return Err(format!(
+                        "Insufficient balance: {} < {}",
+                        account.balance, required_balance
+                    ));
                 }
             }
             OrderType::Sell => {
                 let token_balance = account.token_balances.get(&pair.base).unwrap_or(&0.0);
                 if *token_balance < amount {
-                    return Err(format!("Insufficient token balance: {} < {}", token_balance, amount));
+                    return Err(format!(
+                        "Insufficient token balance: {} < {}",
+                        token_balance, amount
+                    ));
                 }
             }
         }
-        
+
         // 注文を作成
         let order = Order::new(
             account_id.to_string(),
@@ -403,65 +417,74 @@ impl DexManager {
             price,
             amount,
         );
-        
+
         // オーダーブックに追加
         let pair_str = pair.to_string();
         let mut order_books = self.order_books.lock().unwrap();
-        
-        let order_book = order_books.entry(pair_str.clone())
+
+        let order_book = order_books
+            .entry(pair_str.clone())
             .or_insert_with(|| OrderBook::new(pair.clone()));
-        
+
         let trades = order_book.add_order(order.clone());
-        
-        info!("Order created: {} {} {} at {} for {}", 
-            order.id, 
-            if order_type == OrderType::Buy { "BUY" } else { "SELL" },
+
+        info!(
+            "Order created: {} {} {} at {} for {}",
+            order.id,
+            if order_type == OrderType::Buy {
+                "BUY"
+            } else {
+                "SELL"
+            },
             amount,
             price,
             pair_str
         );
-        
+
         if !trades.is_empty() {
             info!("Trades executed: {}", trades.len());
-            
+
             // 取引を処理
             for trade in &trades {
                 self.process_trade(trade)?;
             }
         }
-        
+
         Ok((order, trades))
     }
-    
+
     /// 注文をキャンセル
     pub fn cancel_order(&self, account_id: &str, order_id: &str) -> Result<Order, String> {
         let mut order_books = self.order_books.lock().unwrap();
-        
+
         // すべてのオーダーブックから検索
         for (pair_str, order_book) in order_books.iter_mut() {
             if let Some(order) = order_book.cancel_order(order_id) {
                 // 注文者を確認
                 if order.account_id != account_id {
-                    return Err(format!("Order {} does not belong to account {}", order_id, account_id));
+                    return Err(format!(
+                        "Order {} does not belong to account {}",
+                        order_id, account_id
+                    ));
                 }
-                
+
                 info!("Order canceled: {} for {}", order_id, pair_str);
                 return Ok(order);
             }
         }
-        
+
         Err(format!("Order {} not found", order_id))
     }
-    
+
     /// 取引を処理
     fn process_trade(&self, trade: &Trade) -> Result<(), String> {
         // 買い手と売り手のアカウントを取得
         let buy_order = self.get_order(&trade.buy_order_id)?;
         let sell_order = self.get_order(&trade.sell_order_id)?;
-        
+
         let buyer_id = buy_order.account_id.clone();
         let seller_id = sell_order.account_id.clone();
-        
+
         // 残高を更新
         self.wallet_manager.process_trade(
             &buyer_id,
@@ -471,14 +494,14 @@ impl DexManager {
             trade.price,
             trade.amount,
         )?;
-        
+
         Ok(())
     }
-    
+
     /// 注文を取得
     fn get_order(&self, order_id: &str) -> Result<Order, String> {
         let order_books = self.order_books.lock().unwrap();
-        
+
         // すべてのオーダーブックから検索
         for order_book in order_books.values() {
             // 買い注文から検索
@@ -487,7 +510,7 @@ impl DexManager {
                     return Ok(order.clone());
                 }
             }
-            
+
             // 売り注文から検索
             for order in &order_book.sell_orders {
                 if order.id == order_id {
@@ -495,29 +518,31 @@ impl DexManager {
                 }
             }
         }
-        
+
         Err(format!("Order {} not found", order_id))
     }
-    
+
     /// オーダーブックを取得
     pub fn get_order_book(&self, pair: &TradingPair) -> Result<(Vec<Order>, Vec<Order>), String> {
         let pair_str = pair.to_string();
         let order_books = self.order_books.lock().unwrap();
-        
-        let order_book = order_books.get(&pair_str)
+
+        let order_book = order_books
+            .get(&pair_str)
             .ok_or_else(|| format!("Trading pair {} not found", pair_str))?;
-        
+
         Ok((order_book.get_buy_orders(), order_book.get_sell_orders()))
     }
-    
+
     /// 取引履歴を取得
     pub fn get_trade_history(&self, pair: &TradingPair) -> Result<Vec<Trade>, String> {
         let pair_str = pair.to_string();
         let order_books = self.order_books.lock().unwrap();
-        
-        let order_book = order_books.get(&pair_str)
+
+        let order_book = order_books
+            .get(&pair_str)
             .ok_or_else(|| format!("Trading pair {} not found", pair_str))?;
-        
+
         Ok(order_book.get_trades())
     }
 }

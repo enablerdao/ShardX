@@ -1,13 +1,13 @@
+use chrono::{DateTime, Utc};
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
-use log::{debug, info, warn, error};
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
-use crate::error::Error;
 use super::bridge::ChainType;
 use super::transaction::TransactionProof;
+use crate::error::Error;
 
 /// メッセージの状態
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -99,7 +99,7 @@ impl CrossChainMessage {
         data: Option<Vec<u8>>,
     ) -> Self {
         let id = Uuid::new_v4().to_string();
-        
+
         Self {
             id,
             transaction_id,
@@ -116,41 +116,41 @@ impl CrossChainMessage {
             error: None,
         }
     }
-    
+
     /// メッセージを送信済みに設定
     pub fn mark_as_sent(&mut self) {
         self.sent_at = Some(Utc::now());
         self.status = MessageStatus::Sent;
     }
-    
+
     /// メッセージを受信済みに設定
     pub fn mark_as_received(&mut self) {
         self.received_at = Some(Utc::now());
         self.status = MessageStatus::Received;
     }
-    
+
     /// メッセージを処理中に設定
     pub fn mark_as_processing(&mut self) {
         self.status = MessageStatus::Processing;
     }
-    
+
     /// メッセージを処理完了に設定
     pub fn mark_as_processed(&mut self) {
         self.processed_at = Some(Utc::now());
         self.status = MessageStatus::Processed;
     }
-    
+
     /// メッセージを失敗に設定
     pub fn mark_as_failed(&mut self, error: String) {
         self.status = MessageStatus::Failed;
         self.error = Some(error);
     }
-    
+
     /// メッセージをタイムアウトに設定
     pub fn mark_as_timeout(&mut self) {
         self.status = MessageStatus::Timeout;
     }
-    
+
     /// リトライ回数をインクリメント
     pub fn increment_retry_count(&mut self) {
         self.retry_count += 1;
@@ -193,127 +193,130 @@ impl MessageQueue {
             max_processed_messages,
         }
     }
-    
+
     /// メッセージを送信キューに追加
     pub fn enqueue_for_sending(&self, message: CrossChainMessage) -> Result<(), Error> {
         let mut send_queue = self.send_queue.lock().unwrap();
-        
+
         if send_queue.len() >= self.max_queue_size {
             return Err(Error::CapacityError("Send queue is full".to_string()));
         }
-        
+
         send_queue.push(message);
         Ok(())
     }
-    
+
     /// メッセージを受信キューに追加
     pub fn enqueue_for_processing(&self, message: CrossChainMessage) -> Result<(), Error> {
         let mut receive_queue = self.receive_queue.lock().unwrap();
-        
+
         if receive_queue.len() >= self.max_queue_size {
             return Err(Error::CapacityError("Receive queue is full".to_string()));
         }
-        
+
         receive_queue.push(message);
         Ok(())
     }
-    
+
     /// 送信キューからメッセージを取得
     pub fn dequeue_for_sending(&self) -> Option<CrossChainMessage> {
         let mut send_queue = self.send_queue.lock().unwrap();
-        
+
         if send_queue.is_empty() {
             return None;
         }
-        
+
         Some(send_queue.remove(0))
     }
-    
+
     /// 受信キューからメッセージを取得
     pub fn dequeue_for_processing(&self) -> Option<CrossChainMessage> {
         let mut receive_queue = self.receive_queue.lock().unwrap();
-        
+
         if receive_queue.is_empty() {
             return None;
         }
-        
+
         Some(receive_queue.remove(0))
     }
-    
+
     /// 処理済みメッセージを追加
     pub fn add_processed_message(&self, message: CrossChainMessage) {
         let mut processed_messages = self.processed_messages.lock().unwrap();
-        
+
         // 最大保持数を超える場合は古いメッセージを削除
         if processed_messages.len() >= self.max_processed_messages {
             processed_messages.remove(0);
         }
-        
+
         processed_messages.push(message);
     }
-    
+
     /// 処理済みメッセージを取得
     pub fn get_processed_message(&self, message_id: &str) -> Option<CrossChainMessage> {
         let processed_messages = self.processed_messages.lock().unwrap();
-        
-        processed_messages.iter()
+
+        processed_messages
+            .iter()
             .find(|m| m.id == message_id)
             .cloned()
     }
-    
+
     /// 送信キューのサイズを取得
     pub fn send_queue_size(&self) -> usize {
         let send_queue = self.send_queue.lock().unwrap();
         send_queue.len()
     }
-    
+
     /// 受信キューのサイズを取得
     pub fn receive_queue_size(&self) -> usize {
         let receive_queue = self.receive_queue.lock().unwrap();
         receive_queue.len()
     }
-    
+
     /// 処理済みメッセージ数を取得
     pub fn processed_messages_count(&self) -> usize {
         let processed_messages = self.processed_messages.lock().unwrap();
         processed_messages.len()
     }
-    
+
     /// メッセージ処理ループを開始
     pub async fn start_processing(&self) -> Result<(), Error> {
         // メッセージ受信チャネルを取得
         let mut receiver = {
             let mut receiver_guard = self.message_receiver.lock().unwrap();
-            receiver_guard.take().ok_or_else(|| Error::InternalError("Message receiver already taken".to_string()))?
+            receiver_guard
+                .take()
+                .ok_or_else(|| Error::InternalError("Message receiver already taken".to_string()))?
         };
-        
+
         // メッセージ処理ループを開始
         let message_sender = self.message_sender.clone();
-        
+
         tokio::spawn(async move {
             while let Some(message) = receiver.recv().await {
                 // 受信メッセージを処理
                 let mut message = message.clone();
                 message.mark_as_received();
-                
+
                 // 受信キューに追加
                 if let Err(e) = self.enqueue_for_processing(message.clone()) {
                     error!("Failed to enqueue message for processing: {}", e);
                     continue;
                 }
-                
+
                 // 送信キューからメッセージを取得して送信
                 while let Some(mut send_message) = self.dequeue_for_sending() {
                     send_message.mark_as_sent();
-                    
+
                     if let Err(e) = message_sender.send(send_message.clone()).await {
                         error!("Failed to send message: {}", e);
-                        
+
                         // 失敗したメッセージを再度キューに追加
                         let mut failed_message = send_message.clone();
                         failed_message.increment_retry_count();
                         failed_message.mark_as_failed(format!("Failed to send: {}", e));
-                        
+
                         if let Err(e) = self.enqueue_for_sending(failed_message) {
                             error!("Failed to re-enqueue message: {}", e);
                         }
@@ -324,38 +327,38 @@ impl MessageQueue {
                 }
             }
         });
-        
+
         Ok(())
     }
-    
+
     /// 古いメッセージをクリーンアップ
     pub fn cleanup_old_messages(&self, max_age_hours: u64) {
         let now = Utc::now();
-        
+
         // 処理済みメッセージをクリーンアップ
         {
             let mut processed_messages = self.processed_messages.lock().unwrap();
-            
+
             processed_messages.retain(|m| {
                 let age = now.signed_duration_since(m.created_at);
                 age.num_hours() < max_age_hours as i64
             });
         }
-        
+
         // 送信キューをクリーンアップ
         {
             let mut send_queue = self.send_queue.lock().unwrap();
-            
+
             send_queue.retain(|m| {
                 let age = now.signed_duration_since(m.created_at);
                 age.num_hours() < max_age_hours as i64
             });
         }
-        
+
         // 受信キューをクリーンアップ
         {
             let mut receive_queue = self.receive_queue.lock().unwrap();
-            
+
             receive_queue.retain(|m| {
                 let age = now.signed_duration_since(m.created_at);
                 age.num_hours() < max_age_hours as i64

@@ -1,15 +1,14 @@
+use log::{error, info};
 use std::str::FromStr;
-use tokio::sync::mpsc;
-use log::{info, error};
 use std::time::Duration;
+use tokio::sync::mpsc;
 use web3::types::{Address, H256};
 
+use shardx::cross_chain::{
+    BridgeConfig, BridgeStatus, ChainType, CrossChainTransaction, EthereumBridge, TransactionStatus,
+};
 use shardx::error::Error;
 use shardx::transaction::Transaction;
-use shardx::cross_chain::{
-    EthereumBridge, BridgeConfig, ChainType, BridgeStatus,
-    CrossChainTransaction, TransactionStatus,
-};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -31,10 +30,10 @@ async fn main() -> Result<(), Error> {
         // Ganacheのエンドポイントを使用
         target_endpoint: "http://localhost:8545".to_string(),
         source_contract: None,
-        target_contract: None, // 直接送金のためコントラクト不要
+        target_contract: None,             // 直接送金のためコントラクト不要
         max_transaction_size: 1024 * 1024, // 1MB
-        max_message_size: 1024 * 1024, // 1MB
-        confirmation_blocks: 1, // ローカル環境では1ブロックで十分
+        max_message_size: 1024 * 1024,     // 1MB
+        confirmation_blocks: 1,            // ローカル環境では1ブロックで十分
         timeout_sec: 60,
         retry_count: 3,
         retry_interval_sec: 10,
@@ -48,11 +47,7 @@ async fn main() -> Result<(), Error> {
     };
 
     // ブリッジを作成
-    let mut bridge = EthereumBridge::new(
-        bridge_config,
-        message_tx.clone(),
-        message_rx,
-    );
+    let mut bridge = EthereumBridge::new(bridge_config, message_tx.clone(), message_rx);
 
     // テスト用の秘密鍵（Ganacheのデフォルトアカウント）
     // 注意: これは公開リポジトリに含めるべきではありません
@@ -76,7 +71,9 @@ async fn main() -> Result<(), Error> {
 
     if status != BridgeStatus::Connected {
         error!("Bridge is not connected. Exiting...");
-        return Err(Error::ConnectionError("Bridge is not connected".to_string()));
+        return Err(Error::ConnectionError(
+            "Bridge is not connected".to_string(),
+        ));
     }
 
     // 送金先アドレス（Ganacheの2番目のアカウント）
@@ -85,7 +82,10 @@ async fn main() -> Result<(), Error> {
     // 残高を確認
     let wallet_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; // Ganacheの1番目のアカウント
     let balance = bridge.get_balance(wallet_address).await?;
-    info!("Wallet balance: {} ETH", web3::types::U256::from(balance) / web3::types::U256::exp10(18));
+    info!(
+        "Wallet balance: {} ETH",
+        web3::types::U256::from(balance) / web3::types::U256::exp10(18)
+    );
 
     // テストトランザクションを作成
     let transaction = Transaction {
@@ -113,46 +113,56 @@ async fn main() -> Result<(), Error> {
     // トランザクションの状態を確認
     for i in 0..10 {
         tokio::time::sleep(Duration::from_secs(2)).await;
-        
+
         // 最新のブロック番号を更新
         let latest_block = bridge.update_latest_block().await?;
         info!("Latest block: {}", latest_block);
-        
+
         let tx_status = bridge.check_transaction_status(tx_hash).await?;
         info!("Transaction status ({}): {:?}", i, tx_status);
-        
+
         if tx_status == TransactionStatus::Confirmed {
             info!("Transaction confirmed!");
-            
+
             // トランザクション証明を作成
-            let proof = bridge.create_transaction_proof(tx_hash, &transaction.id).await?;
+            let proof = bridge
+                .create_transaction_proof(tx_hash, &transaction.id)
+                .await?;
             info!("Transaction proof created: {}", proof.id);
             info!("Block hash: {}", proof.block_hash);
             info!("Block height: {}", proof.block_height);
-            
+
             break;
         }
     }
 
     // 送金先の残高を確認
     let recipient_balance = bridge.get_balance(to_address).await?;
-    info!("Recipient balance: {} ETH", web3::types::U256::from(recipient_balance) / web3::types::U256::exp10(18));
+    info!(
+        "Recipient balance: {} ETH",
+        web3::types::U256::from(recipient_balance) / web3::types::U256::exp10(18)
+    );
 
     // クロスチェーントランザクションを開始
     info!("Starting cross-chain transaction...");
-    let cross_tx_id = bridge.start_cross_chain_transaction(transaction.clone()).await?;
+    let cross_tx_id = bridge
+        .start_cross_chain_transaction(transaction.clone())
+        .await?;
     info!("Cross-chain transaction started. ID: {}", cross_tx_id);
 
     // トランザクションの状態を確認
     for i in 0..10 {
         tokio::time::sleep(Duration::from_secs(2)).await;
-        
+
         let tx_status = bridge.get_transaction_status(&cross_tx_id)?;
         info!("Cross-chain transaction status ({}): {:?}", i, tx_status);
-        
-        if matches!(tx_status, TransactionStatus::Confirmed | TransactionStatus::Verified | TransactionStatus::Failed) {
+
+        if matches!(
+            tx_status,
+            TransactionStatus::Confirmed | TransactionStatus::Verified | TransactionStatus::Failed
+        ) {
             let tx_details = bridge.get_transaction_details(&cross_tx_id)?;
-            
+
             if tx_details.is_successful() {
                 info!("Cross-chain transaction completed successfully!");
                 if let Some(proof) = &tx_details.proof {
@@ -163,7 +173,7 @@ async fn main() -> Result<(), Error> {
             } else {
                 error!("Cross-chain transaction failed: {:?}", tx_details.error);
             }
-            
+
             break;
         }
     }

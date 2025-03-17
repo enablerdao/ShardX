@@ -1,11 +1,11 @@
+use log::{error, info};
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use log::{info, error};
 use std::time::Duration;
+use tokio::sync::mpsc;
 
+use shardx::cross_chain::{BridgeConfig, BridgeStatus, ChainType, CrossChainBridge};
 use shardx::error::Error;
 use shardx::transaction::Transaction;
-use shardx::cross_chain::{CrossChainBridge, BridgeConfig, ChainType, BridgeStatus};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Error> {
         source_contract: None,
         target_contract: Some("0x1234567890123456789012345678901234567890".to_string()),
         max_transaction_size: 1024 * 1024, // 1MB
-        max_message_size: 1024 * 1024, // 1MB
+        max_message_size: 1024 * 1024,     // 1MB
         confirmation_blocks: 12,
         timeout_sec: 60,
         retry_count: 3,
@@ -43,11 +43,7 @@ async fn main() -> Result<(), Error> {
     };
 
     // ブリッジを作成
-    let bridge = CrossChainBridge::new(
-        bridge_config,
-        message_tx.clone(),
-        message_rx,
-    );
+    let bridge = CrossChainBridge::new(bridge_config, message_tx.clone(), message_rx);
 
     // ブリッジを初期化
     bridge.initialize().await?;
@@ -58,7 +54,9 @@ async fn main() -> Result<(), Error> {
 
     if status != BridgeStatus::Connected {
         error!("Bridge is not connected. Exiting...");
-        return Err(Error::ConnectionError("Bridge is not connected".to_string()));
+        return Err(Error::ConnectionError(
+            "Bridge is not connected".to_string(),
+        ));
     }
 
     // テストトランザクションを作成
@@ -72,13 +70,13 @@ async fn main() -> Result<(), Error> {
     // トランザクションの状態を確認
     for i in 0..10 {
         tokio::time::sleep(Duration::from_secs(3)).await;
-        
+
         let tx_status = bridge.get_transaction_status(&tx_id)?;
         info!("Transaction status ({}): {:?}", i, tx_status);
-        
+
         if tx_status.is_completed() {
             let tx_details = bridge.get_transaction_details(&tx_id)?;
-            
+
             if tx_details.is_successful() {
                 info!("Transaction completed successfully!");
                 if let Some(proof) = &tx_details.proof {
@@ -89,7 +87,7 @@ async fn main() -> Result<(), Error> {
             } else {
                 error!("Transaction failed: {:?}", tx_details.error);
             }
-            
+
             break;
         }
     }

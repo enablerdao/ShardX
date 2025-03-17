@@ -1,4 +1,4 @@
-use crate::transaction::{DAG, Transaction, TransactionStatus};
+use crate::transaction::{Transaction, TransactionStatus, DAG};
 use async_trait::async_trait;
 use log::{debug, info};
 use std::sync::Arc;
@@ -8,7 +8,7 @@ use std::sync::Arc;
 pub trait Validator: Send + Sync {
     /// トランザクションの署名を検証
     async fn verify_signature(&self, signature: &[u8], payload: &[u8]) -> bool;
-    
+
     /// トランザクションを検証
     async fn validate_transaction(&self, tx: &Transaction, dag: &DAG) -> bool;
 }
@@ -26,7 +26,7 @@ impl ProofOfFlow {
     pub fn new(dag: Arc<DAG>, validators: Vec<Arc<dyn Validator>>) -> Self {
         Self { dag, validators }
     }
-    
+
     /// トランザクションを検証してDAGに追加
     pub async fn process_transaction(&self, tx: Transaction) -> Result<(), String> {
         // タイムスタンプの順序を確認
@@ -39,7 +39,7 @@ impl ProofOfFlow {
                 return Err(format!("Parent transaction {} not found", parent_id));
             }
         }
-        
+
         // バリデータによる検証
         let mut valid_votes = 0;
         for validator in &self.validators {
@@ -47,24 +47,38 @@ impl ProofOfFlow {
                 valid_votes += 1;
             }
         }
-        
+
         // 過半数のバリデータが承認した場合
         let required_votes = (self.validators.len() / 2) + 1;
         if valid_votes >= required_votes {
             // トランザクションをDAGに追加
             self.dag.add_transaction(tx.clone())?;
-            
+
             // トランザクションを確認済みに更新
-            self.dag.update_transaction_status(&tx.id, TransactionStatus::Confirmed)?;
-            
-            info!("Transaction {} confirmed with {}/{} votes", tx.id, valid_votes, self.validators.len());
+            self.dag
+                .update_transaction_status(&tx.id, TransactionStatus::Confirmed)?;
+
+            info!(
+                "Transaction {} confirmed with {}/{} votes",
+                tx.id,
+                valid_votes,
+                self.validators.len()
+            );
             Ok(())
         } else {
-            debug!("Transaction {} rejected with {}/{} votes", tx.id, valid_votes, self.validators.len());
-            Err(format!("Not enough validator votes: {}/{}", valid_votes, required_votes))
+            debug!(
+                "Transaction {} rejected with {}/{} votes",
+                tx.id,
+                valid_votes,
+                self.validators.len()
+            );
+            Err(format!(
+                "Not enough validator votes: {}/{}",
+                valid_votes, required_votes
+            ))
         }
     }
-    
+
     /// 現在のTPS（1秒あたりのトランザクション数）を計算
     pub fn calculate_tps(&self, window_seconds: u64) -> f64 {
         // 実際の実装では、過去window_seconds間に確認されたトランザクション数をカウント
@@ -87,7 +101,7 @@ impl Validator for SimpleValidator {
         // 実際の実装では、暗号署名の検証を行う
         true
     }
-    
+
     async fn validate_transaction(&self, tx: &Transaction, dag: &DAG) -> bool {
         // 親トランザクションが存在し、タイムスタンプの順序が正しいことを確認
         for parent_id in &tx.parent_ids {
@@ -99,7 +113,7 @@ impl Validator for SimpleValidator {
                 return false;
             }
         }
-        
+
         // 署名を検証
         self.verify_signature(&tx.signature, &tx.payload).await
     }

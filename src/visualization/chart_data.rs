@@ -1,6 +1,6 @@
+use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
 
 use crate::error::Error;
 use crate::transaction::Transaction;
@@ -34,7 +34,7 @@ impl ChartPeriod {
             ChartPeriod::All => DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
         }
     }
-    
+
     /// 期間の間隔を取得
     pub fn get_interval(&self) -> Duration {
         match self {
@@ -46,7 +46,7 @@ impl ChartPeriod {
             ChartPeriod::All => Duration::days(30),
         }
     }
-    
+
     /// 文字列から期間を解析
     pub fn from_str(s: &str) -> Result<Self, Error> {
         match s.to_lowercase().as_str() {
@@ -56,10 +56,13 @@ impl ChartPeriod {
             "month" => Ok(ChartPeriod::Month),
             "year" => Ok(ChartPeriod::Year),
             "all" => Ok(ChartPeriod::All),
-            _ => Err(Error::ValidationError(format!("Invalid chart period: {}", s))),
+            _ => Err(Error::ValidationError(format!(
+                "Invalid chart period: {}",
+                s
+            ))),
         }
     }
-    
+
     /// 期間を文字列に変換
     pub fn to_str(&self) -> &'static str {
         match self {
@@ -100,13 +103,18 @@ impl ChartMetric {
             "volume" | "transaction_volume" => Ok(ChartMetric::TransactionVolume),
             "fees" => Ok(ChartMetric::Fees),
             "active_addresses" => Ok(ChartMetric::ActiveAddresses),
-            "avg_transaction_size" | "average_transaction_size" => Ok(ChartMetric::AverageTransactionSize),
+            "avg_transaction_size" | "average_transaction_size" => {
+                Ok(ChartMetric::AverageTransactionSize)
+            }
             "price" => Ok(ChartMetric::Price),
             "cross_shard" | "cross_shard_transactions" => Ok(ChartMetric::CrossShardTransactions),
-            _ => Err(Error::ValidationError(format!("Invalid chart metric: {}", s))),
+            _ => Err(Error::ValidationError(format!(
+                "Invalid chart metric: {}",
+                s
+            ))),
         }
     }
-    
+
     /// メトリックを文字列に変換
     pub fn to_str(&self) -> &'static str {
         match self {
@@ -119,7 +127,7 @@ impl ChartMetric {
             ChartMetric::CrossShardTransactions => "cross_shard_transactions",
         }
     }
-    
+
     /// メトリックの表示名を取得
     pub fn display_name(&self) -> &'static str {
         match self {
@@ -171,7 +179,7 @@ impl ChartDataManager {
             price_data: HashMap::new(),
         }
     }
-    
+
     /// トランザクションからチャートデータを生成
     pub fn generate_transaction_chart_data(
         &self,
@@ -183,48 +191,86 @@ impl ChartDataManager {
     ) -> Result<ChartData, Error> {
         let end = end_time.unwrap_or_else(Utc::now);
         let start = start_time.unwrap_or_else(|| period.get_start_time(end));
-        
+
         // 期間の間隔を取得
         let interval = period.get_interval();
-        
+
         // データポイントを初期化
         let mut data_points = Vec::new();
         let mut current_time = start;
-        
+
         while current_time <= end {
             data_points.push(DataPoint {
                 timestamp: current_time,
                 value: 0.0,
             });
-            
+
             current_time = current_time + interval;
         }
-        
+
         // トランザクションを集計
         match metric {
             ChartMetric::TransactionCount => {
-                self.aggregate_transaction_count(transactions, &mut data_points, start, end, interval)?;
+                self.aggregate_transaction_count(
+                    transactions,
+                    &mut data_points,
+                    start,
+                    end,
+                    interval,
+                )?;
             }
             ChartMetric::TransactionVolume => {
-                self.aggregate_transaction_volume(transactions, &mut data_points, start, end, interval)?;
+                self.aggregate_transaction_volume(
+                    transactions,
+                    &mut data_points,
+                    start,
+                    end,
+                    interval,
+                )?;
             }
             ChartMetric::Fees => {
-                self.aggregate_transaction_fees(transactions, &mut data_points, start, end, interval)?;
+                self.aggregate_transaction_fees(
+                    transactions,
+                    &mut data_points,
+                    start,
+                    end,
+                    interval,
+                )?;
             }
             ChartMetric::ActiveAddresses => {
-                self.aggregate_active_addresses(transactions, &mut data_points, start, end, interval)?;
+                self.aggregate_active_addresses(
+                    transactions,
+                    &mut data_points,
+                    start,
+                    end,
+                    interval,
+                )?;
             }
             ChartMetric::AverageTransactionSize => {
-                self.aggregate_average_transaction_size(transactions, &mut data_points, start, end, interval)?;
+                self.aggregate_average_transaction_size(
+                    transactions,
+                    &mut data_points,
+                    start,
+                    end,
+                    interval,
+                )?;
             }
             ChartMetric::CrossShardTransactions => {
-                self.aggregate_cross_shard_transactions(transactions, &mut data_points, start, end, interval)?;
+                self.aggregate_cross_shard_transactions(
+                    transactions,
+                    &mut data_points,
+                    start,
+                    end,
+                    interval,
+                )?;
             }
             ChartMetric::Price => {
-                return Err(Error::ValidationError("Price metric requires price data".to_string()));
+                return Err(Error::ValidationError(
+                    "Price metric requires price data".to_string(),
+                ));
             }
         }
-        
+
         Ok(ChartData {
             metric,
             period,
@@ -233,7 +279,7 @@ impl ChartDataManager {
             data_points,
         })
     }
-    
+
     /// 価格チャートデータを生成
     pub fn generate_price_chart_data(
         &self,
@@ -244,19 +290,19 @@ impl ChartDataManager {
     ) -> Result<ChartData, Error> {
         let end = end_time.unwrap_or_else(Utc::now);
         let start = start_time.unwrap_or_else(|| period.get_start_time(end));
-        
+
         // 価格データを取得
         let price_data = self.price_data.get(pair).ok_or_else(|| {
             Error::ValidationError(format!("Price data not available for pair: {}", pair))
         })?;
-        
+
         // 期間の間隔を取得
         let interval = period.get_interval();
-        
+
         // データポイントを初期化
         let mut data_points = Vec::new();
         let mut current_time = start;
-        
+
         while current_time <= end {
             // 現在の時間に最も近い価格データを検索
             let closest_price = price_data
@@ -265,15 +311,15 @@ impl ChartDataManager {
                 .min_by_key(|point| (current_time - point.timestamp).num_seconds().abs() as u64)
                 .map(|point| point.value)
                 .unwrap_or(0.0);
-            
+
             data_points.push(DataPoint {
                 timestamp: current_time,
                 value: closest_price,
             });
-            
+
             current_time = current_time + interval;
         }
-        
+
         Ok(ChartData {
             metric: ChartMetric::Price,
             period,
@@ -282,20 +328,23 @@ impl ChartDataManager {
             data_points,
         })
     }
-    
+
     /// 価格データを追加
     pub fn add_price_data(&mut self, pair: &str, timestamp: DateTime<Utc>, price: f64) {
-        let entry = self.price_data.entry(pair.to_string()).or_insert_with(Vec::new);
-        
+        let entry = self
+            .price_data
+            .entry(pair.to_string())
+            .or_insert_with(Vec::new);
+
         entry.push(DataPoint {
             timestamp,
             value: price,
         });
-        
+
         // タイムスタンプでソート
         entry.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
     }
-    
+
     /// トランザクション数を集計
     fn aggregate_transaction_count(
         &self,
@@ -307,24 +356,26 @@ impl ChartDataManager {
     ) -> Result<(), Error> {
         // 各間隔のトランザクション数をカウント
         for tx in transactions {
-            let tx_time = DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0)
-                .ok_or_else(|| Error::ValidationError("Invalid transaction timestamp".to_string()))?;
-            
+            let tx_time =
+                DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0).ok_or_else(|| {
+                    Error::ValidationError("Invalid transaction timestamp".to_string())
+                })?;
+
             if tx_time < start || tx_time > end {
                 continue;
             }
-            
+
             // トランザクションが属する間隔を特定
             let index = ((tx_time - start).num_seconds() / interval.num_seconds()) as usize;
-            
+
             if index < data_points.len() {
                 data_points[index].value += 1.0;
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// トランザクション量を集計
     fn aggregate_transaction_volume(
         &self,
@@ -336,25 +387,27 @@ impl ChartDataManager {
     ) -> Result<(), Error> {
         // 各間隔のトランザクション量を集計
         for tx in transactions {
-            let tx_time = DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0)
-                .ok_or_else(|| Error::ValidationError("Invalid transaction timestamp".to_string()))?;
-            
+            let tx_time =
+                DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0).ok_or_else(|| {
+                    Error::ValidationError("Invalid transaction timestamp".to_string())
+                })?;
+
             if tx_time < start || tx_time > end {
                 continue;
             }
-            
+
             // トランザクションが属する間隔を特定
             let index = ((tx_time - start).num_seconds() / interval.num_seconds()) as usize;
-            
+
             if index < data_points.len() {
                 let amount = tx.amount.parse::<f64>().unwrap_or(0.0);
                 data_points[index].value += amount;
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// トランザクション手数料を集計
     fn aggregate_transaction_fees(
         &self,
@@ -366,25 +419,27 @@ impl ChartDataManager {
     ) -> Result<(), Error> {
         // 各間隔のトランザクション手数料を集計
         for tx in transactions {
-            let tx_time = DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0)
-                .ok_or_else(|| Error::ValidationError("Invalid transaction timestamp".to_string()))?;
-            
+            let tx_time =
+                DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0).ok_or_else(|| {
+                    Error::ValidationError("Invalid transaction timestamp".to_string())
+                })?;
+
             if tx_time < start || tx_time > end {
                 continue;
             }
-            
+
             // トランザクションが属する間隔を特定
             let index = ((tx_time - start).num_seconds() / interval.num_seconds()) as usize;
-            
+
             if index < data_points.len() {
                 let fee = tx.fee.parse::<f64>().unwrap_or(0.0);
                 data_points[index].value += fee;
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// アクティブアドレス数を集計
     fn aggregate_active_addresses(
         &self,
@@ -395,35 +450,38 @@ impl ChartDataManager {
         interval: Duration,
     ) -> Result<(), Error> {
         // 各間隔のアクティブアドレスを集計
-        let mut active_addresses: Vec<HashMap<String, bool>> = vec![HashMap::new(); data_points.len()];
-        
+        let mut active_addresses: Vec<HashMap<String, bool>> =
+            vec![HashMap::new(); data_points.len()];
+
         for tx in transactions {
-            let tx_time = DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0)
-                .ok_or_else(|| Error::ValidationError("Invalid transaction timestamp".to_string()))?;
-            
+            let tx_time =
+                DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0).ok_or_else(|| {
+                    Error::ValidationError("Invalid transaction timestamp".to_string())
+                })?;
+
             if tx_time < start || tx_time > end {
                 continue;
             }
-            
+
             // トランザクションが属する間隔を特定
             let index = ((tx_time - start).num_seconds() / interval.num_seconds()) as usize;
-            
+
             if index < active_addresses.len() {
                 active_addresses[index].insert(tx.from.clone(), true);
                 active_addresses[index].insert(tx.to.clone(), true);
             }
         }
-        
+
         // アクティブアドレス数をデータポイントに設定
         for (i, addresses) in active_addresses.iter().enumerate() {
             if i < data_points.len() {
                 data_points[i].value = addresses.len() as f64;
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 平均トランザクションサイズを集計
     fn aggregate_average_transaction_size(
         &self,
@@ -436,27 +494,29 @@ impl ChartDataManager {
         // 各間隔のトランザクション数と合計サイズを集計
         let mut tx_counts: Vec<u64> = vec![0; data_points.len()];
         let mut tx_sizes: Vec<u64> = vec![0; data_points.len()];
-        
+
         for tx in transactions {
-            let tx_time = DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0)
-                .ok_or_else(|| Error::ValidationError("Invalid transaction timestamp".to_string()))?;
-            
+            let tx_time =
+                DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0).ok_or_else(|| {
+                    Error::ValidationError("Invalid transaction timestamp".to_string())
+                })?;
+
             if tx_time < start || tx_time > end {
                 continue;
             }
-            
+
             // トランザクションが属する間隔を特定
             let index = ((tx_time - start).num_seconds() / interval.num_seconds()) as usize;
-            
+
             if index < tx_counts.len() {
                 tx_counts[index] += 1;
-                
+
                 // トランザクションサイズを計算（簡易的な実装）
                 let size = tx.data.as_ref().map(|d| d.len()).unwrap_or(0) + 100; // 基本サイズ + データサイズ
                 tx_sizes[index] += size as u64;
             }
         }
-        
+
         // 平均トランザクションサイズを計算
         for i in 0..data_points.len() {
             if tx_counts[i] > 0 {
@@ -465,10 +525,10 @@ impl ChartDataManager {
                 data_points[i].value = 0.0;
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// クロスシャードトランザクション数を集計
     fn aggregate_cross_shard_transactions(
         &self,
@@ -480,26 +540,28 @@ impl ChartDataManager {
     ) -> Result<(), Error> {
         // 各間隔のクロスシャードトランザクション数をカウント
         for tx in transactions {
-            let tx_time = DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0)
-                .ok_or_else(|| Error::ValidationError("Invalid transaction timestamp".to_string()))?;
-            
+            let tx_time =
+                DateTime::<Utc>::from_timestamp(tx.timestamp as i64, 0).ok_or_else(|| {
+                    Error::ValidationError("Invalid transaction timestamp".to_string())
+                })?;
+
             if tx_time < start || tx_time > end {
                 continue;
             }
-            
+
             // クロスシャードトランザクションのみをカウント
             if tx.parent_id.is_none() {
                 continue;
             }
-            
+
             // トランザクションが属する間隔を特定
             let index = ((tx_time - start).num_seconds() / interval.num_seconds()) as usize;
-            
+
             if index < data_points.len() {
                 data_points[index].value += 1.0;
             }
         }
-        
+
         Ok(())
     }
 }

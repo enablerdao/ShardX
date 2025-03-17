@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
+use chrono::{DateTime, Duration, Utc};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
+use crate::chart::DataPoint;
 use crate::error::Error;
 use crate::transaction::{Transaction, TransactionStatus};
-use crate::chart::DataPoint;
 
 /// 予測モデルタイプ
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -134,12 +134,12 @@ impl TransactionPredictor {
             last_training_time: None,
         }
     }
-    
+
     /// モデルを学習
     pub fn train(&mut self, historical_data: &[Transaction]) -> Result<(), Error> {
         // 学習データを準備
         let training_data = self.prepare_training_data(historical_data)?;
-        
+
         // モデルを作成
         let mut model: Box<dyn PredictionModel> = match self.model_config.model_type {
             PredictionModelType::LinearRegression => Box::new(LinearRegressionModel::new()),
@@ -150,47 +150,63 @@ impl TransactionPredictor {
             PredictionModelType::RandomForest => Box::new(RandomForestModel::new()),
             PredictionModelType::Ensemble => Box::new(EnsembleModel::new()),
         };
-        
+
         // モデルを学習
         model.train(&training_data, &self.model_config)?;
-        
+
         // 学習済みモデルを保存
         self.trained_model = Some(model);
         self.last_training_time = Some(Utc::now());
-        
+
         Ok(())
     }
-    
+
     /// 予測を実行
     pub fn predict(&self, target: PredictionTarget) -> Result<PredictionResult, Error> {
         // 学習済みモデルがない場合はエラー
-        let model = self.trained_model.as_ref()
+        let model = self
+            .trained_model
+            .as_ref()
             .ok_or_else(|| Error::InvalidState("モデルが学習されていません".to_string()))?;
-        
+
         // 予測を実行
         let now = Utc::now();
         let (start_time, end_time) = self.get_prediction_time_range(now);
-        
+
         // 予測データポイントを生成
         let predictions = model.predict(target.clone(), start_time, end_time)?;
-        
+
         // 信頼区間を計算
         let (confidence_lower, confidence_upper) = if self.model_config.confidence_level > 0.0 {
-            let lower = model.predict_confidence_lower(target.clone(), start_time, end_time, self.model_config.confidence_level)?;
-            let upper = model.predict_confidence_upper(target.clone(), start_time, end_time, self.model_config.confidence_level)?;
+            let lower = model.predict_confidence_lower(
+                target.clone(),
+                start_time,
+                end_time,
+                self.model_config.confidence_level,
+            )?;
+            let upper = model.predict_confidence_upper(
+                target.clone(),
+                start_time,
+                end_time,
+                self.model_config.confidence_level,
+            )?;
             (Some(lower), Some(upper))
         } else {
             (None, None)
         };
-        
+
         // 予測精度とエラーを計算
         let accuracy = model.get_accuracy();
         let error_rmse = model.get_error_rmse();
         let error_mae = model.get_error_mae();
-        
+
         // 予測結果を作成
         let result = PredictionResult {
-            id: format!("pred-{}-{}", target.to_string().to_lowercase(), now.timestamp()),
+            id: format!(
+                "pred-{}-{}",
+                target.to_string().to_lowercase(),
+                now.timestamp()
+            ),
             model_type: self.model_config.model_type.clone(),
             target,
             horizon: self.model_config.prediction_horizon.clone(),
@@ -205,53 +221,62 @@ impl TransactionPredictor {
             error_mae,
             metadata: None,
         };
-        
+
         Ok(result)
     }
-    
+
     /// 学習データを準備
-    fn prepare_training_data(&self, historical_data: &[Transaction]) -> Result<TrainingData, Error> {
+    fn prepare_training_data(
+        &self,
+        historical_data: &[Transaction],
+    ) -> Result<TrainingData, Error> {
         // 現在時刻を取得
         let now = Utc::now();
-        
+
         // 学習期間の開始時刻を計算
         let training_start = now - Duration::days(self.model_config.training_period_days as i64);
-        
+
         // 学習期間内のトランザクションをフィルタリング
-        let filtered_transactions: Vec<&Transaction> = historical_data.iter()
+        let filtered_transactions: Vec<&Transaction> = historical_data
+            .iter()
             .filter(|tx| {
                 let tx_time = Utc.timestamp(tx.timestamp, 0);
                 tx_time >= training_start && tx_time <= now
             })
             .collect();
-        
+
         if filtered_transactions.is_empty() {
-            return Err(Error::InvalidInput("学習期間内にトランザクションがありません".to_string()));
+            return Err(Error::InvalidInput(
+                "学習期間内にトランザクションがありません".to_string(),
+            ));
         }
-        
+
         // 特徴量を抽出
         let features = self.extract_features(&filtered_transactions);
-        
+
         // 目標値を抽出
         let targets = self.extract_targets(&filtered_transactions);
-        
+
         // 学習データを作成
         let training_data = TrainingData {
             features,
             targets,
-            timestamps: filtered_transactions.iter().map(|tx| Utc.timestamp(tx.timestamp, 0)).collect(),
+            timestamps: filtered_transactions
+                .iter()
+                .map(|tx| Utc.timestamp(tx.timestamp, 0))
+                .collect(),
         };
-        
+
         Ok(training_data)
     }
-    
+
     /// 特徴量を抽出
     fn extract_features(&self, transactions: &[&Transaction]) -> Vec<Vec<Feature>> {
         let mut features = Vec::new();
-        
+
         for tx in transactions {
             let mut tx_features = Vec::new();
-            
+
             // 設定された特徴量を抽出
             for feature_name in &self.model_config.features {
                 let feature_value = match feature_name.as_str() {
@@ -260,90 +285,99 @@ impl TransactionPredictor {
                     "hour_of_day" => {
                         let tx_time = Utc.timestamp(tx.timestamp, 0);
                         tx_time.hour() as f64
-                    },
+                    }
                     "day_of_week" => {
                         let tx_time = Utc.timestamp(tx.timestamp, 0);
                         tx_time.weekday().num_days_from_monday() as f64
-                    },
+                    }
                     "is_weekend" => {
                         let tx_time = Utc.timestamp(tx.timestamp, 0);
                         let weekday = tx_time.weekday().num_days_from_monday();
-                        if weekday >= 5 { 1.0 } else { 0.0 }
-                    },
+                        if weekday >= 5 {
+                            1.0
+                        } else {
+                            0.0
+                        }
+                    }
                     _ => 0.0, // 未知の特徴量は0とする
                 };
-                
+
                 tx_features.push(Feature {
                     name: feature_name.clone(),
                     value: feature_value,
                     importance: None,
                 });
             }
-            
+
             features.push(tx_features);
         }
-        
+
         features
     }
-    
+
     /// 目標値を抽出
-    fn extract_targets(&self, transactions: &[&Transaction]) -> HashMap<PredictionTarget, Vec<f64>> {
+    fn extract_targets(
+        &self,
+        transactions: &[&Transaction],
+    ) -> HashMap<PredictionTarget, Vec<f64>> {
         let mut targets = HashMap::new();
-        
+
         // トランザクション数
         let tx_counts = vec![1.0; transactions.len()];
         targets.insert(PredictionTarget::TransactionCount, tx_counts);
-        
+
         // 取引量
         let tx_volumes: Vec<f64> = transactions.iter().map(|tx| tx.amount as f64).collect();
         targets.insert(PredictionTarget::TransactionVolume, tx_volumes);
-        
+
         // 手数料
         let tx_fees: Vec<f64> = transactions.iter().map(|tx| tx.fee as f64).collect();
         targets.insert(PredictionTarget::TransactionFee, tx_fees);
-        
+
         // ガス使用量（仮の実装）
         let gas_usages: Vec<f64> = transactions.iter().map(|tx| tx.fee as f64 * 10.0).collect();
         targets.insert(PredictionTarget::GasUsage, gas_usages);
-        
+
         targets
     }
-    
+
     /// 予測時間範囲を取得
     fn get_prediction_time_range(&self, now: DateTime<Utc>) -> (DateTime<Utc>, DateTime<Utc>) {
         let start_time = now;
-        
+
         let end_time = match self.model_config.prediction_horizon {
             PredictionHorizon::ShortTerm => now + Duration::hours(24),
             PredictionHorizon::MediumTerm => now + Duration::days(7),
             PredictionHorizon::LongTerm => now + Duration::days(30),
         };
-        
+
         (start_time, end_time)
     }
-    
+
     /// モデル設定を取得
     pub fn get_model_config(&self) -> &ModelConfig {
         &self.model_config
     }
-    
+
     /// モデル設定を更新
     pub fn update_model_config(&mut self, config: ModelConfig) {
         self.model_config = config;
         self.trained_model = None;
         self.last_training_time = None;
     }
-    
+
     /// 最終学習時刻を取得
     pub fn get_last_training_time(&self) -> Option<DateTime<Utc>> {
         self.last_training_time
     }
-    
+
     /// モデルの特徴量重要度を取得
     pub fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
-        let model = self.trained_model.as_ref()
+        let model = self
+            .trained_model
+            .as_ref()
             .ok_or_else(|| Error::InvalidState("モデルが学習されていません".to_string()))?;
-        
+
         model.get_feature_importance()
     }
 }
@@ -363,25 +397,42 @@ pub struct TrainingData {
 pub trait PredictionModel {
     /// モデルを学習
     fn train(&mut self, data: &TrainingData, config: &ModelConfig) -> Result<(), Error>;
-    
+
     /// 予測を実行
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error>;
-    
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error>;
+
     /// 信頼区間（下限）を予測
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error>;
-    
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error>;
+
     /// 信頼区間（上限）を予測
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error>;
-    
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error>;
+
     /// 予測精度を取得
     fn get_accuracy(&self) -> Option<f64>;
-    
+
     /// 予測エラー（RMSE）を取得
     fn get_error_rmse(&self) -> Option<f64>;
-    
+
     /// 予測エラー（MAE）を取得
     fn get_error_mae(&self) -> Option<f64>;
-    
+
     /// 特徴量重要度を取得
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error>;
 }
@@ -420,9 +471,9 @@ impl PredictionModel for LinearRegressionModel {
     fn train(&mut self, data: &TrainingData, config: &ModelConfig) -> Result<(), Error> {
         // 実際の実装では、線形回帰モデルを学習する
         // ここでは簡易的な実装として、ランダムな係数を生成
-        
+
         let mut rng = rand::thread_rng();
-        
+
         // 特徴量ごとに係数を生成
         if !data.features.is_empty() && !data.features[0].is_empty() {
             for feature in &data.features[0] {
@@ -430,15 +481,15 @@ impl PredictionModel for LinearRegressionModel {
                 self.coefficients.insert(feature.name.clone(), coefficient);
             }
         }
-        
+
         // 切片を生成
         self.intercept = rng.gen_range(-10.0..10.0);
-        
+
         // 精度とエラーを設定
         self.accuracy = Some(0.8);
         self.rmse = Some(0.2);
         self.mae = Some(0.15);
-        
+
         // 特徴量重要度を設定
         self.feature_importance = Vec::new();
         for (name, coef) in &self.coefficients {
@@ -448,12 +499,14 @@ impl PredictionModel for LinearRegressionModel {
                 importance: Some(coef.abs()),
             });
         }
-        
+
         // 特徴量重要度を正規化
-        let total_importance: f64 = self.feature_importance.iter()
+        let total_importance: f64 = self
+            .feature_importance
+            .iter()
             .filter_map(|f| f.importance)
             .sum();
-        
+
         if total_importance > 0.0 {
             for feature in &mut self.feature_importance {
                 if let Some(importance) = feature.importance {
@@ -461,11 +514,16 @@ impl PredictionModel for LinearRegressionModel {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 予測期間の時間間隔を決定
         let interval_hours = match target {
             PredictionTarget::TransactionCount => 1,
@@ -475,35 +533,35 @@ impl PredictionModel for LinearRegressionModel {
             PredictionTarget::BlockTime => 1,
             PredictionTarget::NetworkLoad => 1,
         };
-        
+
         // 予測データポイントを生成
         let mut predictions = Vec::new();
         let mut current_time = start_time;
-        
+
         while current_time <= end_time {
             // 時間に基づく基本予測値
             let hour_of_day = current_time.hour() as f64;
             let day_of_week = current_time.weekday().num_days_from_monday() as f64;
-            
+
             // 基本予測値を計算
             let mut prediction = self.intercept;
-            
+
             // 時間係数を適用
             if let Some(hour_coef) = self.coefficients.get("hour_of_day") {
                 prediction += hour_coef * hour_of_day;
             }
-            
+
             // 曜日係数を適用
             if let Some(day_coef) = self.coefficients.get("day_of_week") {
                 prediction += day_coef * day_of_week;
             }
-            
+
             // 週末係数を適用
             if let Some(weekend_coef) = self.coefficients.get("is_weekend") {
                 let is_weekend = if day_of_week >= 5.0 { 1.0 } else { 0.0 };
                 prediction += weekend_coef * is_weekend;
             }
-            
+
             // 予測値を調整（対象に応じて）
             let adjusted_prediction = match target {
                 PredictionTarget::TransactionCount => prediction.max(0.0).round(),
@@ -513,76 +571,92 @@ impl PredictionModel for LinearRegressionModel {
                 PredictionTarget::BlockTime => prediction.max(1.0),
                 PredictionTarget::NetworkLoad => (prediction * 100.0).max(0.0).min(100.0),
             };
-            
+
             // データポイントを追加
             predictions.push(DataPoint {
                 timestamp: current_time,
                 value: adjusted_prediction,
                 metadata: None,
             });
-            
+
             // 次の時間に進む
             current_time = current_time + Duration::hours(interval_hours);
         }
-        
+
         Ok(predictions)
     }
-    
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 下限を計算
-        let lower_bounds: Vec<DataPoint> = predictions.iter()
+        let lower_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 - width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(lower_bounds)
     }
-    
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 上限を計算
-        let upper_bounds: Vec<DataPoint> = predictions.iter()
+        let upper_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 + width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(upper_bounds)
     }
-    
+
     fn get_accuracy(&self) -> Option<f64> {
         self.accuracy
     }
-    
+
     fn get_error_rmse(&self) -> Option<f64> {
         self.rmse
     }
-    
+
     fn get_error_mae(&self) -> Option<f64> {
         self.mae
     }
-    
+
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
         if self.feature_importance.is_empty() {
-            return Err(Error::InvalidState("特徴量重要度が計算されていません".to_string()));
+            return Err(Error::InvalidState(
+                "特徴量重要度が計算されていません".to_string(),
+            ));
         }
-        
+
         Ok(self.feature_importance.clone())
     }
 }
@@ -622,53 +696,60 @@ impl PredictionModel for MovingAverageModel {
                 self.window_size = window_size;
             }
         }
-        
+
         // 過去の値を保存
         for (target, values) in &data.targets {
-            self.historical_values.insert(target.clone(), values.clone());
+            self.historical_values
+                .insert(target.clone(), values.clone());
         }
-        
+
         // 精度とエラーを設定
         self.accuracy = Some(0.7);
         self.rmse = Some(0.3);
         self.mae = Some(0.25);
-        
+
         Ok(())
     }
-    
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 過去の値を取得
-        let values = self.historical_values.get(&target)
-            .ok_or_else(|| Error::InvalidInput(format!("対象 {:?} の過去データがありません", target)))?;
-        
+        let values = self.historical_values.get(&target).ok_or_else(|| {
+            Error::InvalidInput(format!("対象 {:?} の過去データがありません", target))
+        })?;
+
         if values.is_empty() {
             return Err(Error::InvalidInput("過去データが空です".to_string()));
         }
-        
+
         // 移動平均を計算
         let window_size = self.window_size.min(values.len());
         let last_values = &values[values.len() - window_size..];
         let avg_value = last_values.iter().sum::<f64>() / window_size as f64;
-        
+
         // 予測期間の時間間隔を決定
         let interval_hours = 1;
-        
+
         // 予測データポイントを生成
         let mut predictions = Vec::new();
         let mut current_time = start_time;
-        
+
         while current_time <= end_time {
             // 時間に基づく変動係数
             let hour_of_day = current_time.hour() as f64;
             let hour_factor = 1.0 + 0.1 * (hour_of_day - 12.0).abs() / 12.0;
-            
+
             // 曜日に基づく変動係数
             let day_of_week = current_time.weekday().num_days_from_monday() as f64;
             let day_factor = if day_of_week >= 5.0 { 0.8 } else { 1.2 };
-            
+
             // 予測値を計算
             let prediction = avg_value * hour_factor * day_factor;
-            
+
             // 予測値を調整（対象に応じて）
             let adjusted_prediction = match target {
                 PredictionTarget::TransactionCount => prediction.max(0.0).round(),
@@ -678,74 +759,90 @@ impl PredictionModel for MovingAverageModel {
                 PredictionTarget::BlockTime => prediction.max(1.0),
                 PredictionTarget::NetworkLoad => prediction.max(0.0).min(100.0),
             };
-            
+
             // データポイントを追加
             predictions.push(DataPoint {
                 timestamp: current_time,
                 value: adjusted_prediction,
                 metadata: None,
             });
-            
+
             // 次の時間に進む
             current_time = current_time + Duration::hours(interval_hours);
         }
-        
+
         Ok(predictions)
     }
-    
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 下限を計算
-        let lower_bounds: Vec<DataPoint> = predictions.iter()
+        let lower_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 - width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(lower_bounds)
     }
-    
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 上限を計算
-        let upper_bounds: Vec<DataPoint> = predictions.iter()
+        let upper_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 + width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(upper_bounds)
     }
-    
+
     fn get_accuracy(&self) -> Option<f64> {
         self.accuracy
     }
-    
+
     fn get_error_rmse(&self) -> Option<f64> {
         self.rmse
     }
-    
+
     fn get_error_mae(&self) -> Option<f64> {
         self.mae
     }
-    
+
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
         // 移動平均モデルでは特徴量重要度は計算しない
-        Err(Error::InvalidOperation("移動平均モデルでは特徴量重要度を計算できません".to_string()))
+        Err(Error::InvalidOperation(
+            "移動平均モデルでは特徴量重要度を計算できません".to_string(),
+        ))
     }
 }
 
@@ -784,54 +881,61 @@ impl PredictionModel for ExponentialSmoothingModel {
                 self.alpha = alpha.max(0.0).min(1.0);
             }
         }
-        
+
         // 過去の値を保存
         for (target, values) in &data.targets {
-            self.historical_values.insert(target.clone(), values.clone());
+            self.historical_values
+                .insert(target.clone(), values.clone());
         }
-        
+
         // 精度とエラーを設定
         self.accuracy = Some(0.75);
         self.rmse = Some(0.25);
         self.mae = Some(0.2);
-        
+
         Ok(())
     }
-    
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 過去の値を取得
-        let values = self.historical_values.get(&target)
-            .ok_or_else(|| Error::InvalidInput(format!("対象 {:?} の過去データがありません", target)))?;
-        
+        let values = self.historical_values.get(&target).ok_or_else(|| {
+            Error::InvalidInput(format!("対象 {:?} の過去データがありません", target))
+        })?;
+
         if values.is_empty() {
             return Err(Error::InvalidInput("過去データが空です".to_string()));
         }
-        
+
         // 指数平滑法で予測値を計算
         let mut smoothed_value = values[0];
         for &value in &values[1..] {
             smoothed_value = self.alpha * value + (1.0 - self.alpha) * smoothed_value;
         }
-        
+
         // 予測期間の時間間隔を決定
         let interval_hours = 1;
-        
+
         // 予測データポイントを生成
         let mut predictions = Vec::new();
         let mut current_time = start_time;
-        
+
         while current_time <= end_time {
             // 時間に基づく変動係数
             let hour_of_day = current_time.hour() as f64;
             let hour_factor = 1.0 + 0.1 * (hour_of_day - 12.0).abs() / 12.0;
-            
+
             // 曜日に基づく変動係数
             let day_of_week = current_time.weekday().num_days_from_monday() as f64;
             let day_factor = if day_of_week >= 5.0 { 0.8 } else { 1.2 };
-            
+
             // 予測値を計算
             let prediction = smoothed_value * hour_factor * day_factor;
-            
+
             // 予測値を調整（対象に応じて）
             let adjusted_prediction = match target {
                 PredictionTarget::TransactionCount => prediction.max(0.0).round(),
@@ -841,74 +945,90 @@ impl PredictionModel for ExponentialSmoothingModel {
                 PredictionTarget::BlockTime => prediction.max(1.0),
                 PredictionTarget::NetworkLoad => prediction.max(0.0).min(100.0),
             };
-            
+
             // データポイントを追加
             predictions.push(DataPoint {
                 timestamp: current_time,
                 value: adjusted_prediction,
                 metadata: None,
             });
-            
+
             // 次の時間に進む
             current_time = current_time + Duration::hours(interval_hours);
         }
-        
+
         Ok(predictions)
     }
-    
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 下限を計算
-        let lower_bounds: Vec<DataPoint> = predictions.iter()
+        let lower_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 - width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(lower_bounds)
     }
-    
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 上限を計算
-        let upper_bounds: Vec<DataPoint> = predictions.iter()
+        let upper_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 + width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(upper_bounds)
     }
-    
+
     fn get_accuracy(&self) -> Option<f64> {
         self.accuracy
     }
-    
+
     fn get_error_rmse(&self) -> Option<f64> {
         self.rmse
     }
-    
+
     fn get_error_mae(&self) -> Option<f64> {
         self.mae
     }
-    
+
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
         // 指数平滑法モデルでは特徴量重要度は計算しない
-        Err(Error::InvalidOperation("指数平滑法モデルでは特徴量重要度を計算できません".to_string()))
+        Err(Error::InvalidOperation(
+            "指数平滑法モデルでは特徴量重要度を計算できません".to_string(),
+        ))
     }
 }
 
@@ -953,75 +1073,80 @@ impl PredictionModel for ARIMAModel {
                 self.p = p;
             }
         }
-        
+
         if let Some(d_str) = config.hyperparameters.get("d") {
             if let Ok(d) = d_str.parse::<usize>() {
                 self.d = d;
             }
         }
-        
+
         if let Some(q_str) = config.hyperparameters.get("q") {
             if let Ok(q) = q_str.parse::<usize>() {
                 self.q = q;
             }
         }
-        
+
         // 過去の値を保存
         for (target, values) in &data.targets {
-            self.historical_values.insert(target.clone(), values.clone());
+            self.historical_values
+                .insert(target.clone(), values.clone());
         }
-        
+
         // 精度とエラーを設定
         self.accuracy = Some(0.85);
         self.rmse = Some(0.15);
         self.mae = Some(0.12);
-        
+
         Ok(())
     }
-    
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 過去の値を取得
-        let values = self.historical_values.get(&target)
-            .ok_or_else(|| Error::InvalidInput(format!("対象 {:?} の過去データがありません", target)))?;
-        
+        let values = self.historical_values.get(&target).ok_or_else(|| {
+            Error::InvalidInput(format!("対象 {:?} の過去データがありません", target))
+        })?;
+
         if values.is_empty() {
             return Err(Error::InvalidInput("過去データが空です".to_string()));
         }
-        
+
         // 実際の実装では、ARIMAモデルを使用して予測を行う
         // ここでは簡易的な実装として、過去の値の平均と標準偏差を使用
-        
+
         let mean = values.iter().sum::<f64>() / values.len() as f64;
-        
-        let variance = values.iter()
-            .map(|v| (v - mean).powi(2))
-            .sum::<f64>() / values.len() as f64;
-        
+
+        let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
+
         let std_dev = variance.sqrt();
-        
+
         // 予測期間の時間間隔を決定
         let interval_hours = 1;
-        
+
         // 予測データポイントを生成
         let mut predictions = Vec::new();
         let mut current_time = start_time;
         let mut rng = rand::thread_rng();
-        
+
         while current_time <= end_time {
             // 時間に基づく変動係数
             let hour_of_day = current_time.hour() as f64;
             let hour_factor = 1.0 + 0.1 * (hour_of_day - 12.0).abs() / 12.0;
-            
+
             // 曜日に基づく変動係数
             let day_of_week = current_time.weekday().num_days_from_monday() as f64;
             let day_factor = if day_of_week >= 5.0 { 0.8 } else { 1.2 };
-            
+
             // ランダム変動
             let random_factor = 1.0 + rng.gen_range(-0.1..0.1) * std_dev / mean;
-            
+
             // 予測値を計算
             let prediction = mean * hour_factor * day_factor * random_factor;
-            
+
             // 予測値を調整（対象に応じて）
             let adjusted_prediction = match target {
                 PredictionTarget::TransactionCount => prediction.max(0.0).round(),
@@ -1031,74 +1156,90 @@ impl PredictionModel for ARIMAModel {
                 PredictionTarget::BlockTime => prediction.max(1.0),
                 PredictionTarget::NetworkLoad => prediction.max(0.0).min(100.0),
             };
-            
+
             // データポイントを追加
             predictions.push(DataPoint {
                 timestamp: current_time,
                 value: adjusted_prediction,
                 metadata: None,
             });
-            
+
             // 次の時間に進む
             current_time = current_time + Duration::hours(interval_hours);
         }
-        
+
         Ok(predictions)
     }
-    
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 下限を計算
-        let lower_bounds: Vec<DataPoint> = predictions.iter()
+        let lower_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 - width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(lower_bounds)
     }
-    
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 上限を計算
-        let upper_bounds: Vec<DataPoint> = predictions.iter()
+        let upper_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 + width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(upper_bounds)
     }
-    
+
     fn get_accuracy(&self) -> Option<f64> {
         self.accuracy
     }
-    
+
     fn get_error_rmse(&self) -> Option<f64> {
         self.rmse
     }
-    
+
     fn get_error_mae(&self) -> Option<f64> {
         self.mae
     }
-    
+
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
         // ARIMAモデルでは特徴量重要度は計算しない
-        Err(Error::InvalidOperation("ARIMAモデルでは特徴量重要度を計算できません".to_string()))
+        Err(Error::InvalidOperation(
+            "ARIMAモデルでは特徴量重要度を計算できません".to_string(),
+        ))
     }
 }
 
@@ -1142,49 +1283,50 @@ impl PredictionModel for NeuralNetworkModel {
     fn train(&mut self, data: &TrainingData, config: &ModelConfig) -> Result<(), Error> {
         // ニューラルネットワークパラメータを設定
         if let Some(hidden_layers_str) = config.hyperparameters.get("hidden_layers") {
-            let layers: Result<Vec<usize>, _> = hidden_layers_str.split(',')
+            let layers: Result<Vec<usize>, _> = hidden_layers_str
+                .split(',')
                 .map(|s| s.trim().parse::<usize>())
                 .collect();
-            
+
             if let Ok(layers) = layers {
                 self.hidden_layers = layers;
             }
         }
-        
+
         if let Some(learning_rate_str) = config.hyperparameters.get("learning_rate") {
             if let Ok(learning_rate) = learning_rate_str.parse::<f64>() {
                 self.learning_rate = learning_rate;
             }
         }
-        
+
         // 実際の実装では、ニューラルネットワークを学習する
         // ここでは簡易的な実装として、ランダムな重みとバイアスを生成
-        
+
         let mut rng = rand::thread_rng();
-        
+
         // 入力層のサイズ
         let input_size = if !data.features.is_empty() {
             data.features[0].len()
         } else {
             1
         };
-        
+
         // 出力層のサイズ
         let output_size = 1;
-        
+
         // レイヤーサイズを設定
         let mut layer_sizes = vec![input_size];
         layer_sizes.extend_from_slice(&self.hidden_layers);
         layer_sizes.push(output_size);
-        
+
         // 重みとバイアスを初期化
         self.weights = Vec::new();
         self.biases = Vec::new();
-        
+
         for i in 0..layer_sizes.len() - 1 {
             let input_dim = layer_sizes[i];
             let output_dim = layer_sizes[i + 1];
-            
+
             // 重みを初期化
             let mut layer_weights = Vec::new();
             for _ in 0..output_dim {
@@ -1195,7 +1337,7 @@ impl PredictionModel for NeuralNetworkModel {
                 layer_weights.push(neuron_weights);
             }
             self.weights.push(layer_weights);
-            
+
             // バイアスを初期化
             let mut layer_biases = Vec::new();
             for _ in 0..output_dim {
@@ -1203,33 +1345,34 @@ impl PredictionModel for NeuralNetworkModel {
             }
             self.biases.push(layer_biases);
         }
-        
+
         // 精度とエラーを設定
         self.accuracy = Some(0.9);
         self.rmse = Some(0.1);
         self.mae = Some(0.08);
-        
+
         // 特徴量重要度を計算
         self.feature_importance = Vec::new();
         if !data.features.is_empty() && !data.features[0].is_empty() {
             for (i, feature) in data.features[0].iter().enumerate() {
                 // 入力層の重みの絶対値の平均を特徴量重要度とする
-                let importance = self.weights[0].iter()
-                    .map(|w| w[i].abs())
-                    .sum::<f64>() / self.weights[0].len() as f64;
-                
+                let importance = self.weights[0].iter().map(|w| w[i].abs()).sum::<f64>()
+                    / self.weights[0].len() as f64;
+
                 self.feature_importance.push(Feature {
                     name: feature.name.clone(),
                     value: 0.0,
                     importance: Some(importance),
                 });
             }
-            
+
             // 特徴量重要度を正規化
-            let total_importance: f64 = self.feature_importance.iter()
+            let total_importance: f64 = self
+                .feature_importance
+                .iter()
                 .filter_map(|f| f.importance)
                 .sum();
-            
+
             if total_importance > 0.0 {
                 for feature in &mut self.feature_importance {
                     if let Some(importance) = feature.importance {
@@ -1238,55 +1381,62 @@ impl PredictionModel for NeuralNetworkModel {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 重みとバイアスが初期化されていない場合はエラー
         if self.weights.is_empty() || self.biases.is_empty() {
-            return Err(Error::InvalidState("モデルが学習されていません".to_string()));
+            return Err(Error::InvalidState(
+                "モデルが学習されていません".to_string(),
+            ));
         }
-        
+
         // 予測期間の時間間隔を決定
         let interval_hours = 1;
-        
+
         // 予測データポイントを生成
         let mut predictions = Vec::new();
         let mut current_time = start_time;
-        
+
         while current_time <= end_time {
             // 入力特徴量を生成
             let hour_of_day = current_time.hour() as f64 / 24.0;
             let day_of_week = current_time.weekday().num_days_from_monday() as f64 / 7.0;
             let is_weekend = if day_of_week >= 5.0 / 7.0 { 1.0 } else { 0.0 };
-            
+
             let inputs = vec![hour_of_day, day_of_week, is_weekend];
-            
+
             // ニューラルネットワークで予測
             let mut activations = inputs;
-            
+
             for layer in 0..self.weights.len() {
                 let mut new_activations = Vec::new();
-                
+
                 for neuron in 0..self.weights[layer].len() {
                     let mut sum = self.biases[layer][neuron];
-                    
+
                     for (i, &input) in activations.iter().enumerate() {
                         sum += input * self.weights[layer][neuron][i];
                     }
-                    
+
                     // ReLU活性化関数
                     let activation = if sum > 0.0 { sum } else { 0.0 };
                     new_activations.push(activation);
                 }
-                
+
                 activations = new_activations;
             }
-            
+
             // 予測値を取得
             let prediction = activations[0];
-            
+
             // 予測値を調整（対象に応じて）
             let adjusted_prediction = match target {
                 PredictionTarget::TransactionCount => (prediction * 1000.0).max(0.0).round(),
@@ -1296,76 +1446,92 @@ impl PredictionModel for NeuralNetworkModel {
                 PredictionTarget::BlockTime => prediction * 10.0 + 1.0,
                 PredictionTarget::NetworkLoad => prediction * 100.0,
             };
-            
+
             // データポイントを追加
             predictions.push(DataPoint {
                 timestamp: current_time,
                 value: adjusted_prediction,
                 metadata: None,
             });
-            
+
             // 次の時間に進む
             current_time = current_time + Duration::hours(interval_hours);
         }
-        
+
         Ok(predictions)
     }
-    
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 下限を計算
-        let lower_bounds: Vec<DataPoint> = predictions.iter()
+        let lower_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 - width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(lower_bounds)
     }
-    
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 上限を計算
-        let upper_bounds: Vec<DataPoint> = predictions.iter()
+        let upper_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 + width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(upper_bounds)
     }
-    
+
     fn get_accuracy(&self) -> Option<f64> {
         self.accuracy
     }
-    
+
     fn get_error_rmse(&self) -> Option<f64> {
         self.rmse
     }
-    
+
     fn get_error_mae(&self) -> Option<f64> {
         self.mae
     }
-    
+
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
         if self.feature_importance.is_empty() {
-            return Err(Error::InvalidState("特徴量重要度が計算されていません".to_string()));
+            return Err(Error::InvalidState(
+                "特徴量重要度が計算されていません".to_string(),
+            ));
         }
-        
+
         Ok(self.feature_importance.clone())
     }
 }
@@ -1408,36 +1574,38 @@ impl PredictionModel for RandomForestModel {
                 self.n_trees = n_trees;
             }
         }
-        
+
         if let Some(max_depth_str) = config.hyperparameters.get("max_depth") {
             if let Ok(max_depth) = max_depth_str.parse::<usize>() {
                 self.max_depth = max_depth;
             }
         }
-        
+
         // 実際の実装では、ランダムフォレストモデルを学習する
         // ここでは簡易的な実装として、ランダムな特徴量重要度を生成
-        
+
         let mut rng = rand::thread_rng();
-        
+
         // 特徴量重要度を計算
         self.feature_importance = Vec::new();
         if !data.features.is_empty() && !data.features[0].is_empty() {
             for feature in &data.features[0] {
                 let importance = rng.gen_range(0.0..1.0);
-                
+
                 self.feature_importance.push(Feature {
                     name: feature.name.clone(),
                     value: 0.0,
                     importance: Some(importance),
                 });
             }
-            
+
             // 特徴量重要度を正規化
-            let total_importance: f64 = self.feature_importance.iter()
+            let total_importance: f64 = self
+                .feature_importance
+                .iter()
                 .filter_map(|f| f.importance)
                 .sum();
-            
+
             if total_importance > 0.0 {
                 for feature in &mut self.feature_importance {
                     if let Some(importance) = feature.importance {
@@ -1446,29 +1614,36 @@ impl PredictionModel for RandomForestModel {
                 }
             }
         }
-        
+
         // 精度とエラーを設定
         self.accuracy = Some(0.92);
         self.rmse = Some(0.08);
         self.mae = Some(0.06);
-        
+
         Ok(())
     }
-    
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 特徴量重要度が計算されていない場合はエラー
         if self.feature_importance.is_empty() {
-            return Err(Error::InvalidState("モデルが学習されていません".to_string()));
+            return Err(Error::InvalidState(
+                "モデルが学習されていません".to_string(),
+            ));
         }
-        
+
         // 予測期間の時間間隔を決定
         let interval_hours = 1;
-        
+
         // 予測データポイントを生成
         let mut predictions = Vec::new();
         let mut current_time = start_time;
         let mut rng = rand::thread_rng();
-        
+
         while current_time <= end_time {
             // 基本予測値
             let base_value = match target {
@@ -1479,21 +1654,21 @@ impl PredictionModel for RandomForestModel {
                 PredictionTarget::BlockTime => 5.0,
                 PredictionTarget::NetworkLoad => 50.0,
             };
-            
+
             // 時間に基づく変動係数
             let hour_of_day = current_time.hour() as f64;
             let hour_factor = 1.0 + 0.2 * (hour_of_day - 12.0).abs() / 12.0;
-            
+
             // 曜日に基づく変動係数
             let day_of_week = current_time.weekday().num_days_from_monday() as f64;
             let day_factor = if day_of_week >= 5.0 { 0.7 } else { 1.3 };
-            
+
             // ランダム変動
             let random_factor = 1.0 + rng.gen_range(-0.05..0.05);
-            
+
             // 予測値を計算
             let prediction = base_value * hour_factor * day_factor * random_factor;
-            
+
             // 予測値を調整（対象に応じて）
             let adjusted_prediction = match target {
                 PredictionTarget::TransactionCount => prediction.max(0.0).round(),
@@ -1503,76 +1678,92 @@ impl PredictionModel for RandomForestModel {
                 PredictionTarget::BlockTime => prediction.max(1.0),
                 PredictionTarget::NetworkLoad => prediction.max(0.0).min(100.0),
             };
-            
+
             // データポイントを追加
             predictions.push(DataPoint {
                 timestamp: current_time,
                 value: adjusted_prediction,
                 metadata: None,
             });
-            
+
             // 次の時間に進む
             current_time = current_time + Duration::hours(interval_hours);
         }
-        
+
         Ok(predictions)
     }
-    
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 下限を計算
-        let lower_bounds: Vec<DataPoint> = predictions.iter()
+        let lower_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 - width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(lower_bounds)
     }
-    
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 通常の予測を取得
         let predictions = self.predict(target, start_time, end_time)?;
-        
+
         // 信頼区間の幅を計算（簡易的な実装）
         let width_factor = 1.0 - confidence_level;
-        
+
         // 上限を計算
-        let upper_bounds: Vec<DataPoint> = predictions.iter()
+        let upper_bounds: Vec<DataPoint> = predictions
+            .iter()
             .map(|p| DataPoint {
                 timestamp: p.timestamp,
                 value: p.value * (1.0 + width_factor),
                 metadata: None,
             })
             .collect();
-        
+
         Ok(upper_bounds)
     }
-    
+
     fn get_accuracy(&self) -> Option<f64> {
         self.accuracy
     }
-    
+
     fn get_error_rmse(&self) -> Option<f64> {
         self.rmse
     }
-    
+
     fn get_error_mae(&self) -> Option<f64> {
         self.mae
     }
-    
+
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
         if self.feature_importance.is_empty() {
-            return Err(Error::InvalidState("特徴量重要度が計算されていません".to_string()));
+            return Err(Error::InvalidState(
+                "特徴量重要度が計算されていません".to_string(),
+            ));
         }
-        
+
         Ok(self.feature_importance.clone())
     }
 }
@@ -1608,40 +1799,40 @@ impl PredictionModel for EnsembleModel {
     fn train(&mut self, data: &TrainingData, config: &ModelConfig) -> Result<(), Error> {
         // サブモデルを作成
         let mut sub_models: Vec<Box<dyn PredictionModel>> = Vec::new();
-        
+
         // 線形回帰モデル
         let linear_model = Box::new(LinearRegressionModel::new());
         sub_models.push(linear_model);
-        
+
         // 移動平均モデル
         let ma_model = Box::new(MovingAverageModel::new());
         sub_models.push(ma_model);
-        
+
         // 指数平滑法モデル
         let es_model = Box::new(ExponentialSmoothingModel::new());
         sub_models.push(es_model);
-        
+
         // ARIMAモデル
         let arima_model = Box::new(ARIMAModel::new());
         sub_models.push(arima_model);
-        
+
         // ニューラルネットワークモデル
         let nn_model = Box::new(NeuralNetworkModel::new());
         sub_models.push(nn_model);
-        
+
         // ランダムフォレストモデル
         let rf_model = Box::new(RandomForestModel::new());
         sub_models.push(rf_model);
-        
+
         // 各サブモデルを学習
         for model in &mut sub_models {
             model.train(data, config)?;
         }
-        
+
         // モデルの重みを設定
         let n_models = sub_models.len();
         let mut weights = vec![1.0 / n_models as f64; n_models];
-        
+
         // 精度に基づいて重みを調整
         let mut total_accuracy = 0.0;
         for (i, model) in sub_models.iter().enumerate() {
@@ -1650,52 +1841,59 @@ impl PredictionModel for EnsembleModel {
                 total_accuracy += accuracy;
             }
         }
-        
+
         // 重みを正規化
         if total_accuracy > 0.0 {
             for weight in &mut weights {
                 *weight /= total_accuracy;
             }
         }
-        
+
         // サブモデルと重みを保存
         self.sub_models = sub_models;
         self.model_weights = weights;
-        
+
         // 精度とエラーを設定
         self.accuracy = Some(0.95);
         self.rmse = Some(0.05);
         self.mae = Some(0.04);
-        
+
         Ok(())
     }
-    
-    fn predict(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> Result<Vec<DataPoint>, Error> {
         if self.sub_models.is_empty() {
-            return Err(Error::InvalidState("モデルが学習されていません".to_string()));
+            return Err(Error::InvalidState(
+                "モデルが学習されていません".to_string(),
+            ));
         }
-        
+
         // 各サブモデルの予測を取得
         let mut all_predictions = Vec::new();
-        
+
         for model in &self.sub_models {
             let model_predictions = model.predict(target.clone(), start_time, end_time)?;
             all_predictions.push(model_predictions);
         }
-        
+
         // 予測を集約
         let mut ensemble_predictions = Vec::new();
-        
+
         if !all_predictions.is_empty() {
             let n_points = all_predictions[0].len();
-            
+
             for i in 0..n_points {
                 let timestamp = all_predictions[0][i].timestamp;
-                
+
                 // 重み付き平均を計算
                 let mut weighted_sum = 0.0;
                 let mut total_weight = 0.0;
-                
+
                 for (j, predictions) in all_predictions.iter().enumerate() {
                     if i < predictions.len() {
                         let weight = if j < self.model_weights.len() {
@@ -1703,18 +1901,18 @@ impl PredictionModel for EnsembleModel {
                         } else {
                             1.0 / self.sub_models.len() as f64
                         };
-                        
+
                         weighted_sum += predictions[i].value * weight;
                         total_weight += weight;
                     }
                 }
-                
+
                 let ensemble_value = if total_weight > 0.0 {
                     weighted_sum / total_weight
                 } else {
                     0.0
                 };
-                
+
                 ensemble_predictions.push(DataPoint {
                     timestamp,
                     value: ensemble_value,
@@ -1722,32 +1920,43 @@ impl PredictionModel for EnsembleModel {
                 });
             }
         }
-        
+
         Ok(ensemble_predictions)
     }
-    
-    fn predict_confidence_lower(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_lower(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 各サブモデルの下限予測を取得
         let mut all_lower_bounds = Vec::new();
-        
+
         for model in &self.sub_models {
-            let model_lower_bounds = model.predict_confidence_lower(target.clone(), start_time, end_time, confidence_level)?;
+            let model_lower_bounds = model.predict_confidence_lower(
+                target.clone(),
+                start_time,
+                end_time,
+                confidence_level,
+            )?;
             all_lower_bounds.push(model_lower_bounds);
         }
-        
+
         // 下限予測を集約
         let mut ensemble_lower_bounds = Vec::new();
-        
+
         if !all_lower_bounds.is_empty() {
             let n_points = all_lower_bounds[0].len();
-            
+
             for i in 0..n_points {
                 let timestamp = all_lower_bounds[0][i].timestamp;
-                
+
                 // 重み付き平均を計算
                 let mut weighted_sum = 0.0;
                 let mut total_weight = 0.0;
-                
+
                 for (j, lower_bounds) in all_lower_bounds.iter().enumerate() {
                     if i < lower_bounds.len() {
                         let weight = if j < self.model_weights.len() {
@@ -1755,18 +1964,18 @@ impl PredictionModel for EnsembleModel {
                         } else {
                             1.0 / self.sub_models.len() as f64
                         };
-                        
+
                         weighted_sum += lower_bounds[i].value * weight;
                         total_weight += weight;
                     }
                 }
-                
+
                 let ensemble_value = if total_weight > 0.0 {
                     weighted_sum / total_weight
                 } else {
                     0.0
                 };
-                
+
                 ensemble_lower_bounds.push(DataPoint {
                     timestamp,
                     value: ensemble_value,
@@ -1774,32 +1983,43 @@ impl PredictionModel for EnsembleModel {
                 });
             }
         }
-        
+
         Ok(ensemble_lower_bounds)
     }
-    
-    fn predict_confidence_upper(&self, target: PredictionTarget, start_time: DateTime<Utc>, end_time: DateTime<Utc>, confidence_level: f64) -> Result<Vec<DataPoint>, Error> {
+
+    fn predict_confidence_upper(
+        &self,
+        target: PredictionTarget,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+        confidence_level: f64,
+    ) -> Result<Vec<DataPoint>, Error> {
         // 各サブモデルの上限予測を取得
         let mut all_upper_bounds = Vec::new();
-        
+
         for model in &self.sub_models {
-            let model_upper_bounds = model.predict_confidence_upper(target.clone(), start_time, end_time, confidence_level)?;
+            let model_upper_bounds = model.predict_confidence_upper(
+                target.clone(),
+                start_time,
+                end_time,
+                confidence_level,
+            )?;
             all_upper_bounds.push(model_upper_bounds);
         }
-        
+
         // 上限予測を集約
         let mut ensemble_upper_bounds = Vec::new();
-        
+
         if !all_upper_bounds.is_empty() {
             let n_points = all_upper_bounds[0].len();
-            
+
             for i in 0..n_points {
                 let timestamp = all_upper_bounds[0][i].timestamp;
-                
+
                 // 重み付き平均を計算
                 let mut weighted_sum = 0.0;
                 let mut total_weight = 0.0;
-                
+
                 for (j, upper_bounds) in all_upper_bounds.iter().enumerate() {
                     if i < upper_bounds.len() {
                         let weight = if j < self.model_weights.len() {
@@ -1807,18 +2027,18 @@ impl PredictionModel for EnsembleModel {
                         } else {
                             1.0 / self.sub_models.len() as f64
                         };
-                        
+
                         weighted_sum += upper_bounds[i].value * weight;
                         total_weight += weight;
                     }
                 }
-                
+
                 let ensemble_value = if total_weight > 0.0 {
                     weighted_sum / total_weight
                 } else {
                     0.0
                 };
-                
+
                 ensemble_upper_bounds.push(DataPoint {
                     timestamp,
                     value: ensemble_value,
@@ -1826,26 +2046,26 @@ impl PredictionModel for EnsembleModel {
                 });
             }
         }
-        
+
         Ok(ensemble_upper_bounds)
     }
-    
+
     fn get_accuracy(&self) -> Option<f64> {
         self.accuracy
     }
-    
+
     fn get_error_rmse(&self) -> Option<f64> {
         self.rmse
     }
-    
+
     fn get_error_mae(&self) -> Option<f64> {
         self.mae
     }
-    
+
     fn get_feature_importance(&self) -> Result<Vec<Feature>, Error> {
         // 各サブモデルの特徴量重要度を集約
         let mut all_feature_importance = Vec::new();
-        
+
         for (i, model) in self.sub_models.iter().enumerate() {
             if let Ok(model_importance) = model.get_feature_importance() {
                 let weight = if i < self.model_weights.len() {
@@ -1853,23 +2073,24 @@ impl PredictionModel for EnsembleModel {
                 } else {
                     1.0 / self.sub_models.len() as f64
                 };
-                
+
                 for feature in model_importance {
                     if let Some(importance) = feature.importance {
                         let weighted_importance = importance * weight;
-                        
+
                         // 既存の特徴量を探す
                         let mut found = false;
                         for existing_feature in &mut all_feature_importance {
                             if existing_feature.name == feature.name {
                                 if let Some(existing_importance) = existing_feature.importance {
-                                    existing_feature.importance = Some(existing_importance + weighted_importance);
+                                    existing_feature.importance =
+                                        Some(existing_importance + weighted_importance);
                                 }
                                 found = true;
                                 break;
                             }
                         }
-                        
+
                         // 新しい特徴量を追加
                         if !found {
                             all_feature_importance.push(Feature {
@@ -1882,12 +2103,13 @@ impl PredictionModel for EnsembleModel {
                 }
             }
         }
-        
+
         // 特徴量重要度を正規化
-        let total_importance: f64 = all_feature_importance.iter()
+        let total_importance: f64 = all_feature_importance
+            .iter()
             .filter_map(|f| f.importance)
             .sum();
-        
+
         if total_importance > 0.0 {
             for feature in &mut all_feature_importance {
                 if let Some(importance) = feature.importance {
@@ -1895,11 +2117,13 @@ impl PredictionModel for EnsembleModel {
                 }
             }
         }
-        
+
         if all_feature_importance.is_empty() {
-            return Err(Error::InvalidState("特徴量重要度が計算されていません".to_string()));
+            return Err(Error::InvalidState(
+                "特徴量重要度が計算されていません".to_string(),
+            ));
         }
-        
+
         Ok(all_feature_importance)
     }
 }
@@ -1907,11 +2131,11 @@ impl PredictionModel for EnsembleModel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     fn create_test_transactions() -> Vec<Transaction> {
         let now = Utc::now();
         let base_timestamp = now.timestamp();
-        
+
         vec![
             Transaction {
                 id: "tx1".to_string(),
@@ -2003,66 +2227,86 @@ mod tests {
             },
         ]
     }
-    
+
     #[test]
     fn test_linear_regression_model() {
         let transactions = create_test_transactions();
-        
+
         let model_config = ModelConfig {
             model_type: PredictionModelType::LinearRegression,
             hyperparameters: HashMap::new(),
-            features: vec!["amount".to_string(), "fee".to_string(), "hour_of_day".to_string(), "day_of_week".to_string()],
+            features: vec![
+                "amount".to_string(),
+                "fee".to_string(),
+                "hour_of_day".to_string(),
+                "day_of_week".to_string(),
+            ],
             training_period_days: 30,
             prediction_horizon: PredictionHorizon::ShortTerm,
             confidence_level: 0.95,
         };
-        
+
         let mut predictor = TransactionPredictor::new(model_config);
-        
+
         // モデルを学習
         predictor.train(&transactions).unwrap();
-        
+
         // 予測を実行
-        let prediction_result = predictor.predict(PredictionTarget::TransactionCount).unwrap();
-        
+        let prediction_result = predictor
+            .predict(PredictionTarget::TransactionCount)
+            .unwrap();
+
         // 予測結果を検証
         assert!(!prediction_result.predictions.is_empty());
         assert_eq!(prediction_result.target, PredictionTarget::TransactionCount);
-        assert_eq!(prediction_result.model_type, PredictionModelType::LinearRegression);
+        assert_eq!(
+            prediction_result.model_type,
+            PredictionModelType::LinearRegression
+        );
         assert_eq!(prediction_result.horizon, PredictionHorizon::ShortTerm);
-        
+
         // 特徴量重要度を取得
         let feature_importance = predictor.get_feature_importance().unwrap();
         assert!(!feature_importance.is_empty());
     }
-    
+
     #[test]
     fn test_ensemble_model() {
         let transactions = create_test_transactions();
-        
+
         let model_config = ModelConfig {
             model_type: PredictionModelType::Ensemble,
             hyperparameters: HashMap::new(),
-            features: vec!["amount".to_string(), "fee".to_string(), "hour_of_day".to_string(), "day_of_week".to_string()],
+            features: vec![
+                "amount".to_string(),
+                "fee".to_string(),
+                "hour_of_day".to_string(),
+                "day_of_week".to_string(),
+            ],
             training_period_days: 30,
             prediction_horizon: PredictionHorizon::MediumTerm,
             confidence_level: 0.9,
         };
-        
+
         let mut predictor = TransactionPredictor::new(model_config);
-        
+
         // モデルを学習
         predictor.train(&transactions).unwrap();
-        
+
         // 予測を実行
-        let prediction_result = predictor.predict(PredictionTarget::TransactionVolume).unwrap();
-        
+        let prediction_result = predictor
+            .predict(PredictionTarget::TransactionVolume)
+            .unwrap();
+
         // 予測結果を検証
         assert!(!prediction_result.predictions.is_empty());
-        assert_eq!(prediction_result.target, PredictionTarget::TransactionVolume);
+        assert_eq!(
+            prediction_result.target,
+            PredictionTarget::TransactionVolume
+        );
         assert_eq!(prediction_result.model_type, PredictionModelType::Ensemble);
         assert_eq!(prediction_result.horizon, PredictionHorizon::MediumTerm);
-        
+
         // 信頼区間を検証
         assert!(prediction_result.confidence_lower.is_some());
         assert!(prediction_result.confidence_upper.is_some());

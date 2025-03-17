@@ -6,10 +6,13 @@ use tokio::sync::mpsc;
 use tokio::time::Duration;
 
 use crate::error::Error;
-use crate::transaction::{Transaction, TransactionStatus, CrossShardManager, CrossShardTransaction, CrossShardTransactionState};
-use crate::transaction::parallel_processor::{ParallelProcessor, ProcessorConfig};
-use crate::shard::{ShardId, ShardManager, ShardInfo, ShardStatus};
 use crate::network::NetworkMessage;
+use crate::shard::{ShardId, ShardInfo, ShardManager, ShardStatus};
+use crate::transaction::parallel_processor::{ParallelProcessor, ProcessorConfig};
+use crate::transaction::{
+    CrossShardManager, CrossShardTransaction, CrossShardTransactionState, Transaction,
+    TransactionStatus,
+};
 
 /// 依存関係グループ化のテスト
 #[tokio::test]
@@ -43,12 +46,7 @@ async fn test_group_by_dependencies() {
     let shard_manager = Arc::new(ShardManager::new(network_tx.clone()));
 
     // 並列処理器を作成
-    let processor = ParallelProcessor::new(
-        cross_shard_manager,
-        shard_manager,
-        network_tx,
-        None,
-    );
+    let processor = ParallelProcessor::new(cross_shard_manager, shard_manager, network_tx, None);
 
     // 依存関係に基づいてグループ化
     let groups = processor.group_by_dependencies(dependencies);
@@ -99,12 +97,7 @@ async fn test_cycle_detection() {
     let shard_manager = Arc::new(ShardManager::new(network_tx.clone()));
 
     // 並列処理器を作成
-    let processor = ParallelProcessor::new(
-        cross_shard_manager,
-        shard_manager,
-        network_tx,
-        None,
-    );
+    let processor = ParallelProcessor::new(cross_shard_manager, shard_manager, network_tx, None);
 
     // 依存関係に基づいてグループ化
     let groups = processor.group_by_dependencies(dependencies);
@@ -117,7 +110,8 @@ async fn test_cycle_detection() {
     assert!(groups[0].contains(&"tx1".to_string()));
 
     // 2番目以降のグループは循環依存関係の解決を含む
-    let all_cycle_txs: HashSet<_> = groups[1..].iter()
+    let all_cycle_txs: HashSet<_> = groups[1..]
+        .iter()
         .flat_map(|group| group.iter().cloned())
         .collect();
 
@@ -139,7 +133,11 @@ async fn test_large_batch_dependencies() {
             to: format!("addr{}", (i + 1) % 100),
             amount: i as f64,
             nonce: i as u64 % 10, // 各アドレスごとに0-9のnonce
-            parent_id: if i > 0 && i % 10 == 0 { Some(format!("tx{}", i - 1)) } else { None },
+            parent_id: if i > 0 && i % 10 == 0 {
+                Some(format!("tx{}", i - 1))
+            } else {
+                None
+            },
             status: TransactionStatus::Pending,
             timestamp: chrono::Utc::now().timestamp() as u64,
             data: None,
@@ -154,26 +152,28 @@ async fn test_large_batch_dependencies() {
     let shard_manager = Arc::new(ShardManager::new(network_tx.clone()));
 
     // 並列処理器を作成
-    let processor = ParallelProcessor::new(
-        cross_shard_manager,
-        shard_manager,
-        network_tx,
-        None,
-    );
+    let processor = ParallelProcessor::new(cross_shard_manager, shard_manager, network_tx, None);
 
     // 依存関係を解析
     let start_time = std::time::Instant::now();
-    let groups = processor.analyze_batch_dependencies(&transactions).await.unwrap();
+    let groups = processor
+        .analyze_batch_dependencies(&transactions)
+        .await
+        .unwrap();
     let elapsed = start_time.elapsed();
 
     // 結果を検証
-    println!("Analyzed {} transactions in {:?}, found {} groups", 
-             transactions.len(), elapsed, groups.len());
-    
+    println!(
+        "Analyzed {} transactions in {:?}, found {} groups",
+        transactions.len(),
+        elapsed,
+        groups.len()
+    );
+
     // すべてのトランザクションが含まれていることを確認
     let total_txs: usize = groups.iter().map(|g| g.len()).sum();
     assert_eq!(total_txs, transactions.len());
-    
+
     // 処理時間が合理的であることを確認（1000トランザクションで1秒以内）
     assert!(elapsed < Duration::from_secs(1));
 }
@@ -227,12 +227,7 @@ async fn test_stats_update() {
     let shard_manager = Arc::new(ShardManager::new(network_tx.clone()));
 
     // 並列処理器を作成
-    let processor = ParallelProcessor::new(
-        cross_shard_manager,
-        shard_manager,
-        network_tx,
-        None,
-    );
+    let processor = ParallelProcessor::new(cross_shard_manager, shard_manager, network_tx, None);
 
     // 初期統計を確認
     let initial_stats = processor.get_stats();

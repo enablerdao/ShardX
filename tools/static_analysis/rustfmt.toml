@@ -1,0 +1,73 @@
+# rustfmt設定ファイル
+
+# エディションを指定
+edition = "2021"
+
+# 最大行幅
+max_width = 100
+
+# インデントスタイル
+hard_tabs = false
+tab_spaces = 4
+
+# 改行スタイル
+newline_style = "Unix"
+
+# 波括弧のスタイル
+brace_style = "SameLineWhere"
+
+# 制御フロー構文のスタイル
+control_brace_style = "AlwaysSameLine"
+
+# 空の括弧のスタイル
+empty_item_single_line = true
+
+# 関数呼び出しの引数のスタイル
+fn_args_layout = "Tall"
+
+# whereの位置
+where_single_line = false
+
+# インポートのグループ化と並べ替え
+imports_layout = "HorizontalVertical"
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+
+# トレイトの境界のスタイル
+overflow_delimited_expr = true
+struct_lit_single_line = true
+struct_variant_width = 0
+
+# コメントの最大幅
+comment_width = 100
+
+# ドキュメントコメントのスタイル
+wrap_comments = true
+normalize_comments = true
+normalize_doc_attributes = true
+
+# 末尾のカンマ
+trailing_comma = "Vertical"
+
+# マッチブロックのスタイル
+match_block_trailing_comma = true
+match_arm_blocks = true
+
+# 空行の制御
+blank_lines_upper_bound = 2
+blank_lines_lower_bound = 0
+
+# 属性のスタイル
+merge_derives = true
+use_field_init_shorthand = true
+use_try_shorthand = true
+
+# 安定性
+unstable_features = false
+
+# 無視するファイル
+ignore = [
+    "target/",
+    "Cargo.lock",
+    "benches/",
+]

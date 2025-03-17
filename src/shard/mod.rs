@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::RwLock;
-use serde::{Serialize, Deserialize};
 
 use crate::error::Error;
 
@@ -67,165 +67,167 @@ impl ShardManager {
             connections: Mutex::new(HashMap::new()),
         }
     }
-    
+
     /// シャードを追加
     pub async fn add_shard(&self, shard: ShardInfo) -> Result<(), Error> {
         let mut shards = self.shards.write().await;
-        
+
         if shards.contains_key(&shard.id) {
-            return Err(Error::ShardError(format!("Shard already exists: {}", shard.id)));
+            return Err(Error::ShardError(format!(
+                "Shard already exists: {}",
+                shard.id
+            )));
         }
-        
+
         shards.insert(shard.id.clone(), shard);
-        
+
         Ok(())
     }
-    
+
     /// シャードを更新
     pub async fn update_shard(&self, shard: ShardInfo) -> Result<(), Error> {
         let mut shards = self.shards.write().await;
-        
+
         if !shards.contains_key(&shard.id) {
             return Err(Error::ShardError(format!("Shard not found: {}", shard.id)));
         }
-        
+
         shards.insert(shard.id.clone(), shard);
-        
+
         Ok(())
     }
-    
+
     /// シャードを削除
     pub async fn remove_shard(&self, shard_id: &ShardId) -> Result<(), Error> {
         let mut shards = self.shards.write().await;
-        
+
         if !shards.contains_key(shard_id) {
             return Err(Error::ShardError(format!("Shard not found: {}", shard_id)));
         }
-        
+
         shards.remove(shard_id);
-        
+
         // 関連する接続情報も削除
         let mut connections = self.connections.lock().unwrap();
-        
+
         connections.retain(|&(from, to), _| from != *shard_id && to != *shard_id);
-        
+
         Ok(())
     }
-    
+
     /// シャードを取得
     pub async fn get_shard(&self, shard_id: &ShardId) -> Result<ShardInfo, Error> {
         let shards = self.shards.read().await;
-        
-        shards.get(shard_id)
+
+        shards
+            .get(shard_id)
             .cloned()
             .ok_or_else(|| Error::ShardError(format!("Shard not found: {}", shard_id)))
     }
-    
+
     /// すべてのシャードを取得
     pub async fn get_all_shards(&self) -> Result<Vec<ShardInfo>, Error> {
         let shards = self.shards.read().await;
-        
+
         Ok(shards.values().cloned().collect())
     }
-    
+
     /// アクティブなシャードを取得
     pub async fn get_active_shards(&self) -> Result<Vec<ShardInfo>, Error> {
         let shards = self.shards.read().await;
-        
-        Ok(shards.values()
+
+        Ok(shards
+            .values()
             .filter(|shard| shard.status == ShardStatus::Active)
             .cloned()
             .collect())
     }
-    
+
     /// シャード間の接続情報を追加
     pub fn add_connection(&self, connection: ConnectionInfo) -> Result<(), Error> {
         let mut connections = self.connections.lock().unwrap();
-        
+
         let key = (connection.from.clone(), connection.to.clone());
-        
+
         connections.insert(key, connection);
-        
+
         Ok(())
     }
-    
+
     /// シャード間の接続情報を更新
     pub fn update_connection(&self, connection: ConnectionInfo) -> Result<(), Error> {
         let mut connections = self.connections.lock().unwrap();
-        
+
         let key = (connection.from.clone(), connection.to.clone());
-        
+
         if !connections.contains_key(&key) {
             return Err(Error::ShardError(format!(
                 "Connection not found: {} -> {}",
-                connection.from,
-                connection.to
+                connection.from, connection.to
             )));
         }
-        
+
         connections.insert(key, connection);
-        
+
         Ok(())
     }
-    
+
     /// シャード間の接続情報を削除
     pub fn remove_connection(&self, from: &ShardId, to: &ShardId) -> Result<(), Error> {
         let mut connections = self.connections.lock().unwrap();
-        
+
         let key = (from.clone(), to.clone());
-        
+
         if !connections.contains_key(&key) {
             return Err(Error::ShardError(format!(
                 "Connection not found: {} -> {}",
-                from,
-                to
+                from, to
             )));
         }
-        
+
         connections.remove(&key);
-        
+
         Ok(())
     }
-    
+
     /// シャード間の接続情報を取得
     pub fn get_connection(&self, from: &ShardId, to: &ShardId) -> Result<ConnectionInfo, Error> {
         let connections = self.connections.lock().unwrap();
-        
+
         let key = (from.clone(), to.clone());
-        
-        connections.get(&key)
+
+        connections
+            .get(&key)
             .cloned()
-            .ok_or_else(|| Error::ShardError(format!(
-                "Connection not found: {} -> {}",
-                from,
-                to
-            )))
+            .ok_or_else(|| Error::ShardError(format!("Connection not found: {} -> {}", from, to)))
     }
-    
+
     /// シャードからの接続情報をすべて取得
     pub fn get_connections_from(&self, from: &ShardId) -> Result<Vec<ConnectionInfo>, Error> {
         let connections = self.connections.lock().unwrap();
-        
-        Ok(connections.iter()
+
+        Ok(connections
+            .iter()
             .filter(|&((f, _), _)| f == from)
             .map(|(_, conn)| conn.clone())
             .collect())
     }
-    
+
     /// シャードへの接続情報をすべて取得
     pub fn get_connections_to(&self, to: &ShardId) -> Result<Vec<ConnectionInfo>, Error> {
         let connections = self.connections.lock().unwrap();
-        
-        Ok(connections.iter()
+
+        Ok(connections
+            .iter()
             .filter(|&((_, t), _)| t == to)
             .map(|(_, conn)| conn.clone())
             .collect())
     }
-    
+
     /// すべての接続情報を取得
     pub fn get_all_connections(&self) -> Result<Vec<ConnectionInfo>, Error> {
         let connections = self.connections.lock().unwrap();
-        
+
         Ok(connections.values().cloned().collect())
     }
 }

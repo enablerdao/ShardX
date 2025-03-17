@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use api::ApiServer;
 use dex::DexManager;
-use log::{info, error};
+use log::{error, info};
 use node::{Node, NodeConfig};
 use tokio::sync::Mutex;
 use wallet::WalletManager;
@@ -25,13 +25,16 @@ use wallet::WalletManager;
 async fn main() {
     // コマンドライン引数の解析
     let args: Vec<String> = env::args().collect();
-    
-    let mut node_id = format!("node_{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
+
+    let mut node_id = format!(
+        "node_{}",
+        uuid::Uuid::new_v4().to_string().split('-').next().unwrap()
+    );
     let mut port = 54868;
     let mut data_dir = "./data".to_string();
     let mut log_level = "info".to_string();
     let mut shard_count = 256;
-    
+
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -86,7 +89,9 @@ async fn main() {
                 println!("  --node-id ID       ノードID (デフォルト: ランダム生成)");
                 println!("  --port PORT        APIポート (デフォルト: 54868)");
                 println!("  --data-dir DIR     データディレクトリ (デフォルト: ./data)");
-                println!("  --log-level LEVEL  ログレベル (debug, info, warn, error) (デフォルト: info)");
+                println!(
+                    "  --log-level LEVEL  ログレベル (debug, info, warn, error) (デフォルト: info)"
+                );
                 println!("  --shard-count N    シャード数 (デフォルト: 256)");
                 println!("  --help             このヘルプメッセージを表示");
                 return;
@@ -96,11 +101,11 @@ async fn main() {
             }
         }
     }
-    
+
     // ロガーを初期化
     std::env::set_var("RUST_LOG", log_level.clone());
     env_logger::init_from_env(env_logger::Env::default().default_filter_or(&log_level));
-    
+
     // データディレクトリの作成
     if !Path::new(&data_dir).exists() {
         if let Err(e) = fs::create_dir_all(&data_dir) {
@@ -108,53 +113,56 @@ async fn main() {
             return;
         }
     }
-    
+
     info!("ShardX ノードを起動中...");
     info!("ノードID: {}", node_id);
     info!("ポート: {}", port);
     info!("データディレクトリ: {}", data_dir);
     info!("ログレベル: {}", log_level);
-    
+
     // ノード設定を作成
     let mut config = NodeConfig::default();
     config.node_id = node_id;
     config.port = port;
     config.data_dir = data_dir;
     config.shard_count = shard_count;
-    
+
     info!("DAGを初期化中...");
-    
+
     // ノードを作成
     let mut node = Node::new(config);
-    
-    info!("シャーディングマネージャを初期化中 (シャード数: {})...", shard_count);
-    
+
+    info!(
+        "シャーディングマネージャを初期化中 (シャード数: {})...",
+        shard_count
+    );
+
     // ノードを起動
     info!("コンセンサスエンジンを初期化中...");
     node.start().await;
-    
+
     // ノードをArcでラップ
     let node = Arc::new(Mutex::new(node));
-    
+
     // ウォレットマネージャーを作成
     let wallet_manager = Arc::new(WalletManager::new());
-    
+
     // DEXマネージャーを作成
     let dex_manager = Arc::new(DexManager::new(Arc::clone(&wallet_manager)));
-    
+
     // 初期データを設定
     initialize_demo_data(&wallet_manager, &dex_manager).await;
-    
+
     info!("APIサーバーを起動中 (ポート: {})...", port);
-    
+
     // APIサーバーを作成
     let api_server = ApiServer::new(
         Arc::clone(&node),
         Arc::clone(&wallet_manager),
         Arc::clone(&dex_manager),
-        port
+        port,
     );
-    
+
     // APIサーバーを起動
     match api_server.start().await {
         Ok(_) => info!("APIサーバーが正常に終了しました"),
@@ -165,17 +173,25 @@ async fn main() {
 /// デモデータを初期化する関数
 async fn initialize_demo_data(wallet_manager: &WalletManager, dex_manager: &DexManager) {
     info!("Initializing demo data...");
-    
+
     // デモアカウントを作成
     let alice = wallet_manager.create_account("Alice".to_string()).unwrap();
     let bob = wallet_manager.create_account("Bob".to_string()).unwrap();
-    
-    info!("Created demo accounts: Alice ({}), Bob ({})", alice.id, bob.id);
-    
+
+    info!(
+        "Created demo accounts: Alice ({}), Bob ({})",
+        alice.id, bob.id
+    );
+
     // 取引ペアを追加
     let btc_usd = dex_manager.add_trading_pair("BTC".to_string(), "USD".to_string());
     let eth_usd = dex_manager.add_trading_pair("ETH".to_string(), "USD".to_string());
     let btc_eth = dex_manager.add_trading_pair("BTC".to_string(), "ETH".to_string());
-    
-    info!("Added trading pairs: {}, {}, {}", btc_usd.to_string(), eth_usd.to_string(), btc_eth.to_string());
+
+    info!(
+        "Added trading pairs: {}, {}, {}",
+        btc_usd.to_string(),
+        eth_usd.to_string(),
+        btc_eth.to_string()
+    );
 }

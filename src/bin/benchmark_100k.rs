@@ -1,12 +1,14 @@
+use log::{error, info};
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use log::{info, error};
 use std::time::{Duration, Instant};
+use tokio::sync::mpsc;
 
 use shardx::error::Error;
-use shardx::transaction::{HighThroughputEngine, EngineConfig, CrossShardManager, CrossShardOptimizer};
-use shardx::shard::{ShardManager, ShardConfig};
-use shardx::network::{NetworkManager, NetworkMessage, NetworkConfig};
+use shardx::network::{NetworkConfig, NetworkManager, NetworkMessage};
+use shardx::shard::{ShardConfig, ShardManager};
+use shardx::transaction::{
+    CrossShardManager, CrossShardOptimizer, EngineConfig, HighThroughputEngine,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -25,9 +27,9 @@ async fn main() -> Result<(), Error> {
         ping_interval_sec: 60,
         max_message_size: 10 * 1024 * 1024, // 10MB
     };
-    
+
     let network_manager = NetworkManager::new(network_config, network_rx)?;
-    
+
     // シャードマネージャーを作成
     let shard_config = ShardConfig {
         initial_shards: 256,
@@ -37,12 +39,15 @@ async fn main() -> Result<(), Error> {
         rebalance_threshold: 0.3,
         rebalance_interval_sec: 300,
     };
-    
-    let shard_manager = Arc::new(ShardManager::new_with_config(network_tx.clone(), shard_config));
-    
+
+    let shard_manager = Arc::new(ShardManager::new_with_config(
+        network_tx.clone(),
+        shard_config,
+    ));
+
     // クロスシャードマネージャーを作成
     let cross_shard_manager = Arc::new(CrossShardManager::new(network_tx.clone()));
-    
+
     // 高スループットエンジンを作成
     let engine_config = EngineConfig {
         max_throughput: 100000,
@@ -61,54 +66,75 @@ async fn main() -> Result<(), Error> {
         high_load_threshold: 0.8,
         low_load_threshold: 0.3,
     };
-    
+
     let engine = HighThroughputEngine::new(
         cross_shard_manager.clone(),
         shard_manager.clone(),
         network_tx.clone(),
         Some(engine_config),
     )?;
-    
+
     // エンジンを起動
     engine.start()?;
-    
+
     // シャードを初期化
     info!("Initializing shards...");
     for i in 0..256 {
         shard_manager.create_shard(format!("shard-{}", i)).await?;
     }
-    
+
     // ベンチマークパラメータ
     let transaction_count = 1000000; // 100万トランザクション
     let concurrency = 256;
     let timeout_sec = 60; // 1分
-    
+
     // ベンチマークを実行
-    info!("Running benchmark with {} transactions...", transaction_count);
+    info!(
+        "Running benchmark with {} transactions...",
+        transaction_count
+    );
     let start_time = Instant::now();
-    
-    let result = engine.run_benchmark(transaction_count, concurrency, timeout_sec).await?;
-    
+
+    let result = engine
+        .run_benchmark(transaction_count, concurrency, timeout_sec)
+        .await?;
+
     let elapsed = start_time.elapsed();
-    
+
     // 結果を表示
-    info!("Benchmark completed in {:.2} seconds", elapsed.as_secs_f64());
-    info!("Transactions: {} total, {} successful, {} failed",
-        result.transaction_count, result.successful_transactions, result.failed_transactions);
+    info!(
+        "Benchmark completed in {:.2} seconds",
+        elapsed.as_secs_f64()
+    );
+    info!(
+        "Transactions: {} total, {} successful, {} failed",
+        result.transaction_count, result.successful_transactions, result.failed_transactions
+    );
     info!("Throughput: {:.2} TPS", result.transactions_per_second);
-    info!("Average transaction time: {:.2} ms", result.avg_transaction_time_ms);
-    info!("Min/Max transaction time: {} ms / {} ms",
-        result.min_transaction_time_ms, result.max_transaction_time_ms);
-    
+    info!(
+        "Average transaction time: {:.2} ms",
+        result.avg_transaction_time_ms
+    );
+    info!(
+        "Min/Max transaction time: {} ms / {} ms",
+        result.min_transaction_time_ms, result.max_transaction_time_ms
+    );
+
     // 目標の100K TPSを達成したかチェック
     if result.transactions_per_second >= 100000.0 {
-        info!("🎉 SUCCESS: Achieved 100K+ TPS! ({:.2} TPS)", result.transactions_per_second);
+        info!(
+            "🎉 SUCCESS: Achieved 100K+ TPS! ({:.2} TPS)",
+            result.transactions_per_second
+        );
     } else {
-        info!("❌ FAILED: Did not achieve 100K TPS. Reached {:.2} TPS", result.transactions_per_second);
+        info!(
+            "❌ FAILED: Did not achieve 100K TPS. Reached {:.2} TPS",
+            result.transactions_per_second
+        );
     }
-    
+
     // エンジンを停止
     engine.stop()?;
-    
+
     Ok(())
 }

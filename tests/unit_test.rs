@@ -121,8 +121,20 @@ mod tests {
 
         // テスト用のトランザクションを作成
         let tx1 = Transaction::new(vec![], "Small payload".as_bytes().to_vec());
-        let tx2 = Transaction::new(vec![], "Very large payload that should have lower priority due to size".as_bytes().to_vec());
-        let tx3 = Transaction::new(vec!["parent1".to_string(), "parent2".to_string(), "parent3".to_string()], "Medium payload with many parents".as_bytes().to_vec());
+        let tx2 = Transaction::new(
+            vec![],
+            "Very large payload that should have lower priority due to size"
+                .as_bytes()
+                .to_vec(),
+        );
+        let tx3 = Transaction::new(
+            vec![
+                "parent1".to_string(),
+                "parent2".to_string(),
+                "parent3".to_string(),
+            ],
+            "Medium payload with many parents".as_bytes().to_vec(),
+        );
 
         // 優先度を計算
         let priority1 = ai_manager.calculate_priority(&tx1);

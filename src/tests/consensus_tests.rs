@@ -60,11 +60,11 @@ mod tests {
         ];
 
         let engine = ConsensusEngine::new(validators);
-        
+
         // 有効なトランザクション
         let tx1 = create_mock_transaction("tx1", vec!["parent1".to_string()], 12345);
         assert!(engine.verify_transaction(&tx1));
-        
+
         // 無効なトランザクション（タイムスタンプが0）
         let tx2 = create_mock_transaction("tx2", vec!["parent1".to_string()], 0);
         assert!(!engine.verify_transaction(&tx2));
@@ -72,24 +72,22 @@ mod tests {
 
     #[test]
     fn test_transaction_ordering() {
-        let validators = vec![
-            SimpleValidator {
-                id: "validator1".to_string(),
-                stake: 100.0,
-            },
-        ];
+        let validators = vec![SimpleValidator {
+            id: "validator1".to_string(),
+            stake: 100.0,
+        }];
 
         let engine = ConsensusEngine::new(validators);
-        
+
         // 時間順にトランザクションを作成
         let tx1 = create_mock_transaction("tx1", vec![], 10000);
         let tx2 = create_mock_transaction("tx2", vec!["tx1".to_string()], 10001);
         let tx3 = create_mock_transaction("tx3", vec!["tx2".to_string()], 10002);
-        
+
         // 順序が正しいことを確認
         assert!(tx1.timestamp < tx2.timestamp);
         assert!(tx2.timestamp < tx3.timestamp);
-        
+
         // 親子関係が正しいことを確認
         assert!(tx1.parent_ids.is_empty());
         assert_eq!(tx2.parent_ids[0], "tx1");
