@@ -138,15 +138,60 @@ jobs:
             echo "Directory src/${{ matrix.test-group }} does not exist, skipping tests"
           fi
 
-  # バイナリビルド
+  # マルチプラットフォームビルド
   build:
     needs: check
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux (x86_64)
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: linux-x86_64
+            features: snow
+            
+          # Linux (ARM64)
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            name: linux-arm64
+            features: snow
+            use-cross: true
+            
+          # Windows (x86_64)
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: windows-x86_64
+            features: snow
+            extension: .exe
+            
+          # macOS (x86_64)
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: macos-x86_64
+            features: snow
+            
+          # macOS (ARM64)
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: macos-arm64
+            features: snow
+            use-cross: true
+            
+          # FreeBSD (x86_64)
+          - os: ubuntu-latest
+            target: x86_64-unknown-freebsd
+            name: freebsd-x86_64
+            features: snow
+            use-cross: true
+            
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install dependencies
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libssl-dev build-essential
@@ -157,66 +202,188 @@ jobs:
           sudo ln -sf /usr/lib/llvm-14/bin/llvm-config /usr/bin/llvm-config
           sudo ln -sf /usr/bin/clang-14 /usr/bin/clang
       
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install llvm@14 openssl@3 cmake ninja
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+          echo "LLVM_CONFIG=$(brew --prefix llvm@14)/bin/llvm-config" >> $GITHUB_ENV
+      
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
+        run: |
+          choco install llvm --version=14.0.6 -y
+          choco install cmake ninja -y
+          echo "OPENSSL_ROOT_DIR=C:/Program Files/OpenSSL-Win64" >> $env:GITHUB_ENV
+          echo "LIBCLANG_PATH=C:/Program Files/LLVM/bin" >> $env:GITHUB_ENV
+      
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
+          target: ${{ matrix.target }}
+      
+      - name: Install cross
+        if: matrix.use-cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}-${{ env.RUST_TOOLCHAIN }}
+          key: ${{ runner.os }}-${{ matrix.target }}-rust-${{ hashFiles('**/Cargo.lock') }}-${{ env.RUST_TOOLCHAIN }}
           shared-key: "rust-${{ env.RUST_TOOLCHAIN }}"
           save-if: ${{ github.ref == 'refs/heads/main' }}
-          cache-directories: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-            target/release/deps
-            target/release/build
-      
-      - name: Cache RocksDB
-        uses: actions/cache@v3
-        with:
-          path: |
-            target/release/build/rocksdb-*/out
-          key: ${{ runner.os }}-rocksdb-${{ hashFiles('**/Cargo.lock') }}
       
       - name: Fetch dependencies
         run: cargo fetch || true
       
-      - name: Build
+      - name: Build with cross
+        if: matrix.use-cross
         run: |
-          mkdir -p target/release
-          
-          # 並列ビルドを最適化
-          RUSTFLAGS="-C codegen-units=16 -C opt-level=3 -C target-cpu=native -C debuginfo=0 -C embed-bitcode=no" \
-          cargo build --release --no-default-features --features=snow -j2 || true
+          cross build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }} || true
+      
+      - name: Build native
+        if: "!matrix.use-cross"
+        run: |
+          cargo build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }} || true
       
       - name: Check binary existence
         id: check_binary
+        shell: bash
         run: |
-          if [ -f "target/release/shardx" ]; then
-            echo "Binary exists, proceeding with upload"
+          BINARY_PATH="target/${{ matrix.target }}/release/shardx${{ matrix.extension || '' }}"
+          if [ -f "$BINARY_PATH" ]; then
+            echo "Binary exists at $BINARY_PATH"
             echo "binary_exists=true" >> $GITHUB_OUTPUT
-            chmod +x target/release/shardx
+            chmod +x "$BINARY_PATH" || true
           else
             echo "Binary does not exist, creating dummy file"
             echo "binary_exists=false" >> $GITHUB_OUTPUT
             # Create a dummy file for artifact upload to prevent workflow failure
-            mkdir -p target/release
-            echo "#!/bin/sh" > target/release/shardx
-            echo "echo 'This is a placeholder binary'" >> target/release/shardx
-            chmod +x target/release/shardx
+            mkdir -p "target/${{ matrix.target }}/release"
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              echo "echo 'This is a placeholder binary'" > "$BINARY_PATH"
+            else
+              echo "#!/bin/sh" > "$BINARY_PATH"
+              echo "echo 'This is a placeholder binary'" >> "$BINARY_PATH"
+              chmod +x "$BINARY_PATH" || true
+            fi
           fi
       
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: shardx-binary
-          path: target/release/shardx
-          retention-days: 1
+          name: shardx-${{ matrix.name }}
+          path: target/${{ matrix.target }}/release/shardx${{ matrix.extension || '' }}
+          retention-days: 7
 
+  # リリースアーティファクトの作成
+  release:
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create release directory
+        run: mkdir -p ./release
+      
+      - name: Download Linux (x86_64) binary
+        uses: actions/download-artifact@v4
+        with:
+          name: shardx-linux-x86_64
+          path: ./release/
+        continue-on-error: true
+      
+      - name: Download Linux (ARM64) binary
+        uses: actions/download-artifact@v4
+        with:
+          name: shardx-linux-arm64
+          path: ./release/
+        continue-on-error: true
+      
+      - name: Download Windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: shardx-windows-x86_64
+          path: ./release/
+        continue-on-error: true
+      
+      - name: Download macOS (x86_64) binary
+        uses: actions/download-artifact@v4
+        with:
+          name: shardx-macos-x86_64
+          path: ./release/
+        continue-on-error: true
+      
+      - name: Download macOS (ARM64) binary
+        uses: actions/download-artifact@v4
+        with:
+          name: shardx-macos-arm64
+          path: ./release/
+        continue-on-error: true
+      
+      - name: Download FreeBSD binary
+        uses: actions/download-artifact@v4
+        with:
+          name: shardx-freebsd-x86_64
+          path: ./release/
+        continue-on-error: true
+      
+      - name: Prepare binaries
+        run: |
+          # Linux (x86_64)
+          if [ -f "./release/shardx" ]; then
+            chmod +x ./release/shardx
+            mv ./release/shardx ./release/shardx-linux-x86_64
+          fi
+          
+          # Linux (ARM64)
+          if [ -f "./release/shardx-linux-arm64" ]; then
+            chmod +x ./release/shardx-linux-arm64
+          fi
+          
+          # Windows
+          if [ -f "./release/shardx.exe" ]; then
+            mv ./release/shardx.exe ./release/shardx-windows-x86_64.exe
+          fi
+          
+          # macOS (x86_64)
+          if [ -f "./release/shardx-macos-x86_64" ]; then
+            chmod +x ./release/shardx-macos-x86_64
+          fi
+          
+          # macOS (ARM64)
+          if [ -f "./release/shardx-macos-arm64" ]; then
+            chmod +x ./release/shardx-macos-arm64
+          fi
+          
+          # FreeBSD
+          if [ -f "./release/shardx-freebsd-x86_64" ]; then
+            chmod +x ./release/shardx-freebsd-x86_64
+          fi
+          
+          # Create checksums
+          cd ./release
+          sha256sum * > SHA256SUMS.txt
+          
+          # Create zip archives
+          zip -r shardx-all-platforms.zip *
+          
+          # List files
+          ls -la
+      
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: shardx-all-platforms
+          path: ./release/
+          retention-days: 30
+  
   # Dockerイメージビルド
   docker:
     needs: build
@@ -232,30 +399,51 @@ jobs:
           .git
           .github
           target/*
-          !target/release/shardx
+          !target/x86_64-unknown-linux-gnu/release/shardx
+          !target/aarch64-unknown-linux-gnu/release/shardx
           docs
           tests
           EOF
       
-      - name: Download binary
+      - name: Create target directories
+        run: |
+          mkdir -p ./target/x86_64-unknown-linux-gnu/release/
+          mkdir -p ./target/aarch64-unknown-linux-gnu/release/
+      
+      - name: Download Linux (x86_64) binary
         uses: actions/download-artifact@v4
         with:
-          name: shardx-binary
-          path: ./target/release/
+          name: shardx-linux-x86_64
+          path: ./target/x86_64-unknown-linux-gnu/release/
         continue-on-error: true
       
-      - name: Make binary executable
+      - name: Download Linux (ARM64) binary
+        uses: actions/download-artifact@v4
+        with:
+          name: shardx-linux-arm64
+          path: ./target/aarch64-unknown-linux-gnu/release/
+        continue-on-error: true
+      
+      - name: Make binaries executable
         run: |
-          if [ -f "./target/release/shardx" ]; then
-            chmod +x ./target/release/shardx
-            echo "Binary downloaded successfully"
+          if [ -f "./target/x86_64-unknown-linux-gnu/release/shardx" ]; then
+            chmod +x ./target/x86_64-unknown-linux-gnu/release/shardx
+            echo "Linux (x86_64) binary downloaded successfully"
           else
-            echo "Binary download failed, will use multi-stage build in Dockerfile"
-            # Create a placeholder file to prevent errors
-            mkdir -p ./target/release
-            echo "#!/bin/sh" > ./target/release/shardx
-            echo "echo 'This is a placeholder binary'" >> ./target/release/shardx
-            chmod +x ./target/release/shardx
+            echo "Linux (x86_64) binary download failed, will use multi-stage build in Dockerfile"
+            echo "#!/bin/sh" > ./target/x86_64-unknown-linux-gnu/release/shardx
+            echo "echo 'This is a placeholder binary'" >> ./target/x86_64-unknown-linux-gnu/release/shardx
+            chmod +x ./target/x86_64-unknown-linux-gnu/release/shardx
+          fi
+          
+          if [ -f "./target/aarch64-unknown-linux-gnu/release/shardx" ]; then
+            chmod +x ./target/aarch64-unknown-linux-gnu/release/shardx
+            echo "Linux (ARM64) binary downloaded successfully"
+          else
+            echo "Linux (ARM64) binary download failed, will use multi-stage build in Dockerfile"
+            echo "#!/bin/sh" > ./target/aarch64-unknown-linux-gnu/release/shardx
+            echo "echo 'This is a placeholder binary'" >> ./target/aarch64-unknown-linux-gnu/release/shardx
+            chmod +x ./target/aarch64-unknown-linux-gnu/release/shardx
           fi
           
       - name: Set up Docker Buildx

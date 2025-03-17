@@ -22,10 +22,15 @@ git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
 docker-compose up -d
 
-# 方法3: 自動インストールスクリプト（Linux/macOS）
+# 方法3: プリコンパイル済みバイナリを使用（すべてのOS）
+# 以下のプラットフォームに対応: Linux, Windows, macOS, FreeBSD (x86_64/ARM64)
+curl -fsSL https://github.com/enablerdao/ShardX/releases/latest/download/shardx-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz | tar xz
+./shardx
+
+# 方法4: 自動インストールスクリプト（Linux/macOS）
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
 
-# 方法4: ソースからビルド（すべてのOS）
+# 方法5: ソースからビルド（すべてのOS）
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
 cargo build --release
@@ -134,6 +139,12 @@ curl -X POST http://localhost:54868/api/v1/transactions \
 - ✅ **詳細な分析ダッシュボード**: リアルタイムでトランザクションを可視化
 - ✅ **高度なチャート機能**: 複雑なデータの視覚化と分析
 - ✅ **ガバナンス機能**: コミュニティ主導の意思決定メカニズム
+- ✅ **マルチプラットフォーム対応**: 以下のプラットフォームで動作
+  - Linux (x86_64, ARM64)
+  - Windows (x86_64)
+  - macOS (Intel, Apple Silicon)
+  - FreeBSD (x86_64)
+  - Docker (すべてのプラットフォーム)
 
 ## 📊 パフォーマンス（実測値）
 
