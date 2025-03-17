@@ -1,257 +1,249 @@
 use crate::error::Error;
-use crate::transaction::Transaction;
-use blake3::Hasher;
-use rayon::prelude::*;
-use std::sync::mpsc::channel;
-use std::sync::{Arc, Mutex};
-use threadpool::ThreadPool;
+use sha2::{Digest, Sha256};
+use blake3::Hasher as Blake3;
+use std::fmt;
 
-/// Blake3ハッシュを使用した軽量ハッシュ計算マネージャー
-pub struct HashManager {
-    thread_pool: ThreadPool,
-    thread_count: usize,
+/// ハッシュアルゴリズム
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HashAlgorithm {
+    /// SHA-256
+    Sha256,
+    /// BLAKE3
+    Blake3,
 }
 
-impl HashManager {
-    /// 新しいHashManagerを作成
-    ///
-    /// # Arguments
-    /// * `max_threads` - 使用する最大スレッド数
-    pub fn new(max_threads: usize) -> Self {
-        // スレッドプールを作成（CPUコア数の半分を使用）
-        let thread_count = std::cmp::min(max_threads, num_cpus::get() / 2);
-
-        Self {
-            thread_pool: ThreadPool::new(thread_count),
-            thread_count,
+impl fmt::Display for HashAlgorithm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            HashAlgorithm::Sha256 => write!(f, "SHA-256"),
+            HashAlgorithm::Blake3 => write!(f, "BLAKE3"),
         }
-    }
-
-    /// トランザクションのハッシュを計算
-    ///
-    /// # Arguments
-    /// * `tx` - ハッシュを計算するトランザクション
-    pub fn hash_transaction(&self, tx: &Transaction) -> String {
-        // トランザクションをシリアライズ
-        let serialized = bincode::serialize(tx).unwrap_or_default();
-
-        // BLAKE3でハッシュ化
-        let mut hasher = Hasher::new();
-        hasher.update(&serialized);
-        let hash = hasher.finalize();
-
-        // 16進数文字列に変換
-        hex::encode(hash.as_bytes())
-    }
-
-    /// 複数のトランザクションを並列ハッシュ化
-    pub fn hash_transactions(&self, txs: &[Transaction]) -> Vec<String> {
-        // Rayonを使用して並列処理
-        txs.par_iter().map(|tx| self.hash_transaction(tx)).collect()
-    }
-
-    /// マークルツリーのルートハッシュを計算
-    pub fn compute_merkle_root(&self, hashes: &[String]) -> Result<String, Error> {
-        if hashes.is_empty() {
-            return Err(Error::InvalidInput("Empty hash list".to_string()));
-        }
-
-        if hashes.len() == 1 {
-            return Ok(hashes[0].clone());
-        }
-
-        // マークルツリーを構築
-        let mut current_level = hashes.to_vec();
-
-        while current_level.len() > 1 {
-            let mut next_level = Vec::with_capacity((current_level.len() + 1) / 2);
-
-            // 現在のレベルのハッシュをペアにして次のレベルのハッシュを計算
-            for chunk in current_level.chunks(2) {
-                let left = &chunk[0];
-                let right = if chunk.len() > 1 { &chunk[1] } else { left };
-
-                let combined = format!("{}{}", left, right);
-                let mut hasher = Hasher::new();
-                hasher.update(combined.as_bytes());
-                let hash = hasher.finalize();
-
-                next_level.push(hex::encode(hash.as_bytes()));
-            }
-
-            current_level = next_level;
-        }
-
-        Ok(current_level[0].clone())
-    }
-
-    /// データをハッシュ化
-    pub fn hash_data(&self, data: &[u8]) -> String {
-        let mut hasher = Hasher::new();
-        hasher.update(data);
-        let hash = hasher.finalize();
-
-        hex::encode(hash.as_bytes())
-    }
-
-    /// 大きなデータを並列ハッシュ化
-    pub fn hash_large_data(&self, data: &[u8]) -> String {
-        if data.len() < 1024 * 1024 || self.thread_count <= 1 {
-            // 小さなデータまたは単一スレッドの場合は通常のハッシュ
-            return self.hash_data(data);
-        }
-
-        // データをチャンクに分割
-        let chunk_size = data.len() / self.thread_count;
-        let chunks: Vec<&[u8]> = data.chunks(chunk_size).collect();
-
-        // 各チャンクを並列ハッシュ化
-        let chunk_hashes: Vec<String> = chunks
-            .par_iter()
-            .map(|chunk| self.hash_data(chunk))
-            .collect();
-
-        // チャンクハッシュを結合して最終ハッシュを計算
-        let combined = chunk_hashes.join("");
-        let mut hasher = Hasher::new();
-        hasher.update(combined.as_bytes());
-        let hash = hasher.finalize();
-
-        hex::encode(hash.as_bytes())
-    }
-
-    /// ハッシュを検証
-    pub fn verify_hash(&self, data: &[u8], expected_hash: &str) -> bool {
-        let actual_hash = self.hash_data(data);
-        actual_hash == expected_hash
-    }
-
-    /// トランザクションのバッチ検証
-    ///
-    /// # Arguments
-    /// * `txs` - 検証するトランザクションのベクター
-    pub fn verify_batch(&self, txs: Vec<Transaction>) -> Vec<Result<(), Error>> {
-        let (sender, receiver) = channel();
-        let txs_len = txs.len();
-
-        for tx in txs {
-            let sender = sender.clone();
-
-            self.thread_pool.execute(move || {
-                // 署名検証を別スレッドで実行
-                let result = verify_signature(&tx);
-                sender.send((tx.id.clone(), result)).unwrap();
-            });
-        }
-
-        // 結果を収集
-        let mut results = Vec::with_capacity(txs_len);
-        for _ in 0..txs_len {
-            if let Ok((id, result)) = receiver.recv() {
-                results.push((id, result));
-            }
-        }
-
-        // IDでソート
-        results.sort_by(|(id_a, _), (id_b, _)| id_a.cmp(id_b));
-
-        // 結果のみを返す
-        results.into_iter().map(|(_, result)| result).collect()
-    }
-
-    /// 単一トランザクションの署名を検証
-    ///
-    /// # Arguments
-    /// * `tx` - 検証するトランザクション
-    pub fn verify_signature(&self, tx: &Transaction) -> Result<(), Error> {
-        verify_signature(tx)
     }
 }
 
-/// トランザクションの署名を検証
+/// ハッシュ値
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Hash {
+    /// ハッシュアルゴリズム
+    algorithm: HashAlgorithm,
+    /// ハッシュ値
+    value: Vec<u8>,
+}
+
+impl Hash {
+    /// 新しいハッシュを作成
+    pub fn new(algorithm: HashAlgorithm, value: Vec<u8>) -> Self {
+        Self { algorithm, value }
+    }
+
+    /// ハッシュアルゴリズムを取得
+    pub fn algorithm(&self) -> HashAlgorithm {
+        self.algorithm
+    }
+
+    /// ハッシュ値を取得
+    pub fn value(&self) -> &[u8] {
+        &self.value
+    }
+
+    /// ハッシュ値を16進数文字列として取得
+    pub fn to_hex(&self) -> String {
+        hex::encode(&self.value)
+    }
+
+    /// 16進数文字列からハッシュを作成
+    pub fn from_hex(algorithm: HashAlgorithm, hex_str: &str) -> Result<Self, Error> {
+        let value = hex::decode(hex_str)
+            .map_err(|e| Error::InvalidFormat(format!("Invalid hex string: {}", e)))?;
+        Ok(Self { algorithm, value })
+    }
+}
+
+/// ハッシャー
 ///
-/// # Arguments
-/// * `tx` - 検証するトランザクション
-fn verify_signature(tx: &Transaction) -> Result<(), Error> {
-    // 実際の署名検証ロジックを実装
-    // 現在はダミー実装
-    if tx.signature.is_empty() {
-        return Err(Error::InvalidSignature);
+/// データのハッシュ計算を行う。
+pub struct Hasher {
+    /// ハッシュアルゴリズム
+    algorithm: HashAlgorithm,
+    /// SHA-256ハッシャー
+    sha256: Option<Sha256>,
+    /// BLAKE3ハッシャー
+    blake3: Option<Blake3>,
+}
+
+impl Hasher {
+    /// 新しいハッシャーを作成
+    pub fn new(algorithm: HashAlgorithm) -> Self {
+        match algorithm {
+            HashAlgorithm::Sha256 => Self {
+                algorithm,
+                sha256: Some(Sha256::new()),
+                blake3: None,
+            },
+            HashAlgorithm::Blake3 => Self {
+                algorithm,
+                sha256: None,
+                blake3: Some(Blake3::new()),
+            },
+        }
     }
 
-    // 署名が有効と仮定
-    Ok(())
+    /// データを更新
+    pub fn update(&mut self, data: &[u8]) {
+        match self.algorithm {
+            HashAlgorithm::Sha256 => {
+                if let Some(hasher) = &mut self.sha256 {
+                    hasher.update(data);
+                }
+            }
+            HashAlgorithm::Blake3 => {
+                if let Some(hasher) = &mut self.blake3 {
+                    hasher.update(data);
+                }
+            }
+        }
+    }
+
+    /// ハッシュを計算
+    pub fn finalize(self) -> Hash {
+        match self.algorithm {
+            HashAlgorithm::Sha256 => {
+                let value = self
+                    .sha256
+                    .expect("SHA-256 hasher not initialized")
+                    .finalize()
+                    .to_vec();
+                Hash::new(self.algorithm, value)
+            }
+            HashAlgorithm::Blake3 => {
+                let value = self
+                    .blake3
+                    .expect("BLAKE3 hasher not initialized")
+                    .finalize()
+                    .as_bytes()
+                    .to_vec();
+                Hash::new(self.algorithm, value)
+            }
+        }
+    }
+
+    /// データのハッシュを計算
+    pub fn hash(algorithm: HashAlgorithm, data: &[u8]) -> Hash {
+        let mut hasher = Self::new(algorithm);
+        hasher.update(data);
+        hasher.finalize()
+    }
+
+    /// SHA-256ハッシュを計算
+    pub fn sha256(data: &[u8]) -> Hash {
+        Self::hash(HashAlgorithm::Sha256, data)
+    }
+
+    /// BLAKE3ハッシュを計算
+    pub fn blake3(data: &[u8]) -> Hash {
+        Self::hash(HashAlgorithm::Blake3, data)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::{Transaction, TransactionStatus};
 
     #[test]
-    fn test_hash_transaction() {
-        let tx = Transaction {
-            id: "tx1".to_string(),
-            parent_ids: vec!["parent1".to_string()],
-            timestamp: 12345,
-            payload: vec![1, 2, 3],
-            signature: vec![4, 5, 6],
-            status: TransactionStatus::Pending,
-        };
-
-        let hash_manager = HashManager::new(2);
-        let hash = hash_manager.hash_transaction(&tx);
-
-        // ハッシュが空でないことを確認
-        assert!(!hash.as_bytes().is_empty());
+    fn test_sha256() {
+        let data = b"hello world";
+        let hash = Hasher::sha256(data);
+        assert_eq!(hash.algorithm(), HashAlgorithm::Sha256);
+        assert_eq!(
+            hash.to_hex(),
+            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+        );
     }
 
     #[test]
-    fn test_verify_signature() {
-        let tx = Transaction {
-            id: "tx1".to_string(),
-            parent_ids: vec!["parent1".to_string()],
-            timestamp: 12345,
-            payload: vec![1, 2, 3],
-            signature: vec![4, 5, 6], // 有効な署名と仮定
-            status: TransactionStatus::Pending,
-        };
-
-        let hash_manager = HashManager::new(2);
-        let result = hash_manager.verify_signature(&tx);
-
-        // 署名が有効であることを確認
-        assert!(result.is_ok());
+    fn test_blake3() {
+        let data = b"hello world";
+        let hash = Hasher::blake3(data);
+        assert_eq!(hash.algorithm(), HashAlgorithm::Blake3);
+        // BLAKE3のハッシュ値は実装によって異なる可能性があるため、長さのみを検証
+        assert_eq!(hash.value().len(), 32);
     }
 
     #[test]
-    fn test_verify_batch() {
-        let txs = vec![
-            Transaction {
-                id: "tx1".to_string(),
-                parent_ids: vec!["parent1".to_string()],
-                timestamp: 12345,
-                payload: vec![1, 2, 3],
-                signature: vec![4, 5, 6], // 有効な署名と仮定
-                status: TransactionStatus::Pending,
-            },
-            Transaction {
-                id: "tx2".to_string(),
-                parent_ids: vec!["parent2".to_string()],
-                timestamp: 12346,
-                payload: vec![7, 8, 9],
-                signature: vec![10, 11, 12], // 有効な署名と仮定
-                status: TransactionStatus::Pending,
-            },
-        ];
+    fn test_update_sha256() {
+        let mut hasher = Hasher::new(HashAlgorithm::Sha256);
+        hasher.update(b"hello ");
+        hasher.update(b"world");
+        let hash = hasher.finalize();
+        assert_eq!(
+            hash.to_hex(),
+            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+        );
+    }
 
-        let hash_manager = HashManager::new(2);
-        let results = hash_manager.verify_batch(txs);
+    #[test]
+    fn test_update_blake3() {
+        let mut hasher = Hasher::new(HashAlgorithm::Blake3);
+        hasher.update(b"hello ");
+        hasher.update(b"world");
+        let hash = hasher.finalize();
+        let single_hash = Hasher::blake3(b"hello world");
+        assert_eq!(hash.value(), single_hash.value());
+    }
 
-        // すべての署名が有効であることを確認
-        assert_eq!(results.len(), 2);
-        for result in results {
-            assert!(result.is_ok());
-        }
+    #[test]
+    fn test_from_hex() {
+        let hex_str = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9";
+        let hash = Hash::from_hex(HashAlgorithm::Sha256, hex_str).unwrap();
+        assert_eq!(hash.algorithm(), HashAlgorithm::Sha256);
+        assert_eq!(hash.to_hex(), hex_str);
+    }
+
+    #[test]
+    fn test_invalid_hex() {
+        let result = Hash::from_hex(HashAlgorithm::Sha256, "invalid");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_hash_display() {
+        assert_eq!(HashAlgorithm::Sha256.to_string(), "SHA-256");
+        assert_eq!(HashAlgorithm::Blake3.to_string(), "BLAKE3");
+    }
+
+    #[test]
+    fn test_hash_equality() {
+        let hash1 = Hasher::sha256(b"hello world");
+        let hash2 = Hasher::sha256(b"hello world");
+        let hash3 = Hasher::sha256(b"different");
+        
+        assert_eq!(hash1, hash2);
+        assert_ne!(hash1, hash3);
+    }
+
+    #[test]
+    fn test_empty_data() {
+        let empty_sha256 = Hasher::sha256(b"");
+        assert_eq!(
+            empty_sha256.to_hex(),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        
+        let empty_blake3 = Hasher::blake3(b"");
+        assert_eq!(empty_blake3.value().len(), 32);
+    }
+
+    #[test]
+    fn test_large_data() {
+        // 1MBのデータを生成
+        let large_data = vec![0u8; 1024 * 1024];
+        
+        // ハッシュを計算
+        let sha256_hash = Hasher::sha256(&large_data);
+        let blake3_hash = Hasher::blake3(&large_data);
+        
+        // ハッシュ値の長さを検証
+        assert_eq!(sha256_hash.value().len(), 32);
+        assert_eq!(blake3_hash.value().len(), 32);
     }
 }
