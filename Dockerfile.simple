@@ -108,12 +108,21 @@ VERSION=$(cat /etc/shardx/build-info | grep VERSION | cut -d= -f2 || echo "1.0.0
 # 現在のアーキテクチャを取得
 ARCH=$(uname -m)
 
+# ノードIDが設定されていない場合はランダムに生成
+if [ -z "${NODE_ID}" ]; then
+  # ランダムなノードIDを生成（ホスト名+ランダム文字列）
+  RANDOM_SUFFIX=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
+  HOST_NAME=$(hostname | tr '[:upper:]' '[:lower:]')
+  export NODE_ID="${HOST_NAME}-${RANDOM_SUFFIX}"
+  echo "NODE_ID not specified, generated random node ID: $NODE_ID"
+fi
+
 # 起動情報を表示
 echo "==============================================="
 echo "ShardX v${VERSION} Container"
 echo "==============================================="
 echo "Running on architecture: $ARCH"
-echo "Node ID: ${NODE_ID:-node1}"
+echo "Node ID: ${NODE_ID}"
 echo "Data directory: ${DATA_DIR:-/app/data}"
 echo "API port: ${PORT:-54868}"
 echo "P2P port: ${P2P_PORT:-54867}"

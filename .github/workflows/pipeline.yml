@@ -324,23 +324,41 @@ jobs:
       - name: Fetch dependencies
         run: cargo fetch || true
       
-      - name: Build with cross
-        if: matrix.use-cross
+      - name: Build with cross (Unix)
+        if: matrix.use-cross && runner.os != 'Windows'
         run: |
           # ビルド高速化のためのオプション
           RUSTFLAGS="-C codegen-units=256 -C opt-level=1" \
           CARGO_INCREMENTAL=1 \
           CARGO_NET_RETRY=10 \
           cross build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }} || true
+
+      - name: Build with cross (Windows)
+        if: matrix.use-cross && runner.os == 'Windows'
+        run: |
+          # Windows用のビルド設定
+          $env:RUSTFLAGS = "-C codegen-units=256 -C opt-level=1"
+          $env:CARGO_INCREMENTAL = "1"
+          $env:CARGO_NET_RETRY = "10"
+          cross build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }}
       
-      - name: Build native
-        if: "!matrix.use-cross"
+      - name: Build native (Unix)
+        if: "!matrix.use-cross && runner.os != 'Windows'"
         run: |
           # ビルド高速化のためのオプション
           RUSTFLAGS="-C codegen-units=256 -C opt-level=1" \
           CARGO_INCREMENTAL=1 \
           CARGO_NET_RETRY=10 \
           cargo build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }} || true
+          
+      - name: Build native (Windows)
+        if: "!matrix.use-cross && runner.os == 'Windows'"
+        run: |
+          # Windows用のビルド設定
+          $env:RUSTFLAGS = "-C codegen-units=256 -C opt-level=1"
+          $env:CARGO_INCREMENTAL = "1"
+          $env:CARGO_NET_RETRY = "10"
+          cargo build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }}
       
       - name: Check binary existence
         id: check_binary
