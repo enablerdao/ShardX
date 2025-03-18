@@ -107,4 +107,10 @@ debug = true
 
 [package.metadata.docker]
 # Rustのバージョン要件を明示
-rust_version = "1.81"
+rust_version = "1.75.0"
+
+[package.metadata.replit]
+# Replit環境での設定
+channel = "stable"
+compile_target = "x86_64-unknown-linux-gnu"
+run_command = "bash scripts/replit-run.sh"

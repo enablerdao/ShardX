@@ -1,16 +1,18 @@
-run = "cargo run --release --bin shardx"
-hidden = [".git", "target"]
+run = ["bash", "scripts/replit-run.sh"]
+hidden = [".git", ".github", "target"]
 entrypoint = "src/main.rs"
 
 [nix]
-channel = "stable-22_11"
+channel = "stable-23_11"
 
 [env]
+CARGO_TERM_COLOR = "always"
+RUST_BACKTRACE = "1"
 RUST_LOG = "info"
 INITIAL_SHARDS = "32"
 PORT = "54868"
-WEB_PORT = "54867"
-NODE_ID = "replit_node"
+P2P_PORT = "54867"
+# ノードIDは自動生成されます
 
 [packager]
 language = "rust"
@@ -25,5 +27,5 @@ pattern = "**/*.rs"
 start = ["rust-analyzer"]
 
 [deployment]
-run = ["sh", "-c", "cargo run --release --bin shardx"]
+run = ["bash", "scripts/replit-run.sh"]
 deploymentTarget = "cloudrun"
