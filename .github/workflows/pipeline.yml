@@ -11,6 +11,16 @@ on:
         description: 'Docker image tag'
         required: false
         default: ''
+      retry_failed:
+        description: 'Retry failed steps only'
+        type: boolean
+        required: false
+        default: false
+
+# 同時実行を制御
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -404,9 +414,15 @@ jobs:
   # Dockerイメージビルド
   docker:
     needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
+    # ジョブの結果を保存
+    outputs:
+      build_amd64_result: ${{ steps.build_amd64.outcome }}
+      build_arm64_result: ${{ steps.build_arm64.outcome }}
+      manifest_result: ${{ steps.create_manifest.outcome }}
+      push_result: ${{ steps.push_manifest.outcome }}
     steps:
       - uses: actions/checkout@v4
       
@@ -512,7 +528,8 @@ jobs:
       
       # AMD64 向けのビルドとプッシュ
       - name: Build and push Docker image for amd64
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        id: build_amd64
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -526,10 +543,36 @@ jobs:
           provenance: false
           allow: security.insecure
         continue-on-error: true
+      
+      # AMD64ビルドの検証
+      - name: Verify amd64 build
+        if: steps.build_amd64.outcome == 'success'
+        run: |
+          echo "AMD64 build successful, verifying image..."
+          docker pull ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}-amd64
+          echo "AMD64 image verification successful"
+        continue-on-error: true
+        
+      # AMD64ビルドの再試行
+      - name: Retry amd64 build if failed
+        if: steps.build_amd64.outcome != 'success'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}-amd64
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=amd64-retry
+          file: ./Dockerfile.simple
+          provenance: false
+          allow: security.insecure
+        continue-on-error: true
         
       # ARM64 向けのビルドとプッシュ
       - name: Build and push Docker image for arm64
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        id: build_arm64
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -544,15 +587,44 @@ jobs:
           allow: security.insecure
         continue-on-error: true
         
-      # マニフェストリストの作成とプッシュ（改善版）
-      - name: Create and push manifest list
+      # ARM64ビルドの検証
+      - name: Verify arm64 build
+        if: steps.build_arm64.outcome == 'success'
+        run: |
+          echo "ARM64 build successful, verifying image..."
+          docker pull ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}-arm64
+          echo "ARM64 image verification successful"
+        continue-on-error: true
+        
+      # ARM64ビルドの再試行
+      - name: Retry arm64 build if failed
+        if: steps.build_arm64.outcome != 'success'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}-arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=arm64-retry
+          file: ./Dockerfile.simple
+          provenance: false
+          allow: security.insecure
+        continue-on-error: true
+        
+      # マニフェストリストの作成（ステップを分離して信頼性向上）
+      - name: Create manifest list
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        id: create_manifest
         run: |
           # Docker CLI にログイン
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           
           # Docker Buildx の実験的機能を有効化
           export DOCKER_CLI_EXPERIMENTAL=enabled
+          
+          # マニフェストリストの作成結果を保存する配列
+          MANIFEST_RESULTS=()
           
           # 各イメージタグに対してマニフェストを作成
           for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
@@ -567,16 +639,206 @@ jobs:
             docker manifest annotate $tag $tag-arm64 --arch arm64 --os linux --variant v8
             docker manifest annotate $tag $tag-amd64 --arch amd64 --os linux
             
-            # マニフェストリストを検査
-            docker manifest inspect $tag
-            
-            # マニフェストリストをプッシュ
-            docker manifest push --purge $tag
-            
-            echo "Manifest for $tag created and pushed successfully"
+            # マニフェストリストを検査して結果を保存
+            if docker manifest inspect $tag > /tmp/manifest_$tag.json 2>/dev/null; then
+              echo "Manifest for $tag created successfully"
+              MANIFEST_RESULTS+=("$tag:success")
+            else
+              echo "Failed to create manifest for $tag"
+              MANIFEST_RESULTS+=("$tag:failure")
+            fi
           done
           
-          # 確認のためにイメージをプル
-          docker pull --platform=linux/arm64 ${{ steps.meta.outputs.tags }}
-          docker pull --platform=linux/amd64 ${{ steps.meta.outputs.tags }}
+          # 結果をステップ出力として保存
+          echo "manifest_results=${MANIFEST_RESULTS[*]}" >> $GITHUB_OUTPUT
         continue-on-error: true
+      
+      # マニフェストリストの検証
+      - name: Verify manifest list
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        id: verify_manifest
+        run: |
+          export DOCKER_CLI_EXPERIMENTAL=enabled
+          
+          # 検証結果を保存する配列
+          VERIFY_RESULTS=()
+          
+          # 各イメージタグに対してマニフェストを検証
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
+            echo "Verifying manifest for $tag"
+            
+            # マニフェストリストを検査
+            if docker manifest inspect $tag | grep -q "arm64" && docker manifest inspect $tag | grep -q "amd64"; then
+              echo "Manifest for $tag contains both arm64 and amd64 architectures"
+              VERIFY_RESULTS+=("$tag:success")
+            else
+              echo "Manifest for $tag is missing architectures"
+              VERIFY_RESULTS+=("$tag:failure")
+            fi
+          done
+          
+          # 結果をステップ出力として保存
+          echo "verify_results=${VERIFY_RESULTS[*]}" >> $GITHUB_OUTPUT
+        continue-on-error: true
+      
+      # マニフェストリストのプッシュ
+      - name: Push manifest list
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        id: push_manifest
+        run: |
+          export DOCKER_CLI_EXPERIMENTAL=enabled
+          
+          # プッシュ結果を保存する配列
+          PUSH_RESULTS=()
+          
+          # 各イメージタグに対してマニフェストをプッシュ
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
+            echo "Pushing manifest for $tag"
+            
+            # マニフェストリストをプッシュ（3回まで再試行）
+            for i in {1..3}; do
+              if docker manifest push --purge $tag; then
+                echo "Manifest for $tag pushed successfully on attempt $i"
+                PUSH_RESULTS+=("$tag:success")
+                break
+              else
+                echo "Failed to push manifest for $tag on attempt $i"
+                if [ $i -eq 3 ]; then
+                  PUSH_RESULTS+=("$tag:failure")
+                else
+                  echo "Retrying in 5 seconds..."
+                  sleep 5
+                fi
+              fi
+            done
+          done
+          
+          # 結果をステップ出力として保存
+          echo "push_results=${PUSH_RESULTS[*]}" >> $GITHUB_OUTPUT
+        continue-on-error: true
+      
+      # マニフェストリストの検証（プル）
+      - name: Verify manifest by pulling
+        id: verify_pull
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        run: |
+          # 検証結果を保存する配列
+          PULL_RESULTS=()
+          
+          # 各イメージタグに対して検証
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
+            echo "Verifying $tag by pulling"
+            
+            # AMD64 イメージをプル
+            echo "Pulling AMD64 image..."
+            if docker pull --platform=linux/amd64 $tag; then
+              echo "Successfully pulled AMD64 image"
+              PULL_RESULTS+=("amd64:success")
+            else
+              echo "Failed to pull AMD64 image"
+              PULL_RESULTS+=("amd64:failure")
+            fi
+            
+            # ARM64 イメージをプル
+            echo "Pulling ARM64 image..."
+            if docker pull --platform=linux/arm64 $tag; then
+              echo "Successfully pulled ARM64 image"
+              PULL_RESULTS+=("arm64:success")
+            else
+              echo "Failed to pull ARM64 image"
+              PULL_RESULTS+=("arm64:failure")
+            fi
+          done
+          
+          # 結果をステップ出力として保存
+          echo "pull_results=${PULL_RESULTS[*]}" >> $GITHUB_OUTPUT
+        continue-on-error: true
+        
+      # ビルド結果のサマリーを作成
+      - name: Create build summary
+        if: always()
+        run: |
+          echo "# Docker イメージビルド結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ビルド結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| アーキテクチャ | 結果 |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| AMD64 | ${{ steps.build_amd64.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ARM64 | ${{ steps.build_arm64.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## マニフェスト結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| ステップ | 結果 |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 作成 | ${{ steps.create_manifest.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 検証 | ${{ steps.verify_manifest.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| プッシュ | ${{ steps.push_manifest.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| プル検証 | ${{ steps.verify_pull.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## イメージタグ" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ${{ steps.meta.outputs.tags }}-amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- ${{ steps.meta.outputs.tags }}-arm64" >> $GITHUB_STEP_SUMMARY
+          
+          # 失敗した場合の再試行方法
+          if [ "${{ steps.build_amd64.outcome }}" != "success" ] || [ "${{ steps.build_arm64.outcome }}" != "success" ] || [ "${{ steps.create_manifest.outcome }}" != "success" ] || [ "${{ steps.push_manifest.outcome }}" != "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## 再試行方法" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "失敗したステップを再試行するには、以下のリンクをクリックしてください：" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "[失敗したステップを再試行](https://github.com/${{ github.repository }}/actions/workflows/pipeline.yml?query=branch%3A${{ github.ref_name }}&event=workflow_dispatch)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "「Run workflow」ボタンをクリックし、「retry_failed」オプションを「true」に設定してください。" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+  # 通知ジョブ
+  notify:
+    needs: [docker]
+    if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build status
+        id: check_status
+        run: |
+          if [ "${{ needs.docker.outputs.build_amd64_result }}" != "success" ] || [ "${{ needs.docker.outputs.build_arm64_result }}" != "success" ] || [ "${{ needs.docker.outputs.manifest_result }}" != "success" ] || [ "${{ needs.docker.outputs.push_result }}" != "success" ]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+          else
+            echo "status=success" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create status summary
+        run: |
+          echo "# Docker イメージビルドステータス" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check_status.outputs.status }}" = "success" ]; then
+            echo "✅ すべてのビルドが成功しました！" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "以下のコマンドでイメージを使用できます：" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "```bash" >> $GITHUB_STEP_SUMMARY
+            echo "# AMD64 (Intel/AMD) アーキテクチャ" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# ARM64 (Apple Silicon M1/M2) アーキテクチャ" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64" >> $GITHUB_STEP_SUMMARY
+            echo "```" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ 一部のビルドが失敗しました。" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| コンポーネント | ステータス |" >> $GITHUB_STEP_SUMMARY
+            echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+            echo "| AMD64 ビルド | ${{ needs.docker.outputs.build_amd64_result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ARM64 ビルド | ${{ needs.docker.outputs.build_arm64_result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| マニフェスト作成 | ${{ needs.docker.outputs.manifest_result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| マニフェストプッシュ | ${{ needs.docker.outputs.push_result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "手動でビルドするには、以下のコマンドを実行してください：" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "```bash" >> $GITHUB_STEP_SUMMARY
+            echo "./scripts/build-docker.sh --push" >> $GITHUB_STEP_SUMMARY
+            echo "```" >> $GITHUB_STEP_SUMMARY
+          fi

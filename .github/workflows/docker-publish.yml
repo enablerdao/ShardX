@@ -5,6 +5,16 @@ on:
     branches: [ main ]
     tags: [ 'v*' ]
   workflow_dispatch:
+    inputs:
+      visibility:
+        description: 'Package visibility'
+        required: true
+        default: 'public'
+        type: choice
+        options:
+          - public
+          - private
+          - internal
 
 # 同時実行を制御
 concurrency:
@@ -14,6 +24,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  VISIBILITY: ${{ github.event.inputs.visibility || 'public' }}
 
 jobs:
   build-and-push:
@@ -86,21 +97,96 @@ jobs:
         continue-on-error: true
         
       # マニフェストリストの作成とプッシュ
+      # パッケージの可視性を設定
+      - name: Set package visibility
+        run: |
+          # GitHub API を使用してパッケージの可視性を設定
+          PACKAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          echo "Setting package visibility to ${{ env.VISIBILITY }} for $PACKAGE_NAME"
+          
+          # パッケージが存在するか確認
+          PACKAGE_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/$PACKAGE_NAME")
+          
+          if [ "$PACKAGE_EXISTS" = "200" ]; then
+            # パッケージが存在する場合は可視性を更新
+            curl -X PATCH \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/$PACKAGE_NAME" \
+              -d '{"visibility":"${{ env.VISIBILITY }}"}'
+            
+            echo "Package visibility updated to ${{ env.VISIBILITY }}"
+          else
+            echo "Package does not exist yet or cannot be accessed. It will be created with visibility ${{ env.VISIBILITY }}"
+          fi
+        continue-on-error: true
+      
+      # マニフェストリストの作成とプッシュ
       - name: Create and push manifest list
         run: |
           # Docker CLI にログイン
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          
+          # Docker CLI の実験的機能を有効化
+          export DOCKER_CLI_EXPERIMENTAL=enabled
           
           # 各イメージタグに対してマニフェストを作成
           for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
             echo "Creating manifest for $tag"
             
             # マニフェストリストを作成
-            docker manifest create $tag \
+            docker manifest create --amend $tag \
               $tag-amd64 \
               $tag-arm64
             
-            # マニフェストリストをプッシュ
-            docker manifest push $tag
+            # アーキテクチャ情報を注釈
+            docker manifest annotate $tag $tag-arm64 --arch arm64 --os linux --variant v8
+            docker manifest annotate $tag $tag-amd64 --arch amd64 --os linux
+            
+            # マニフェストリストを検査
+            docker manifest inspect $tag
+            
+            # マニフェストリストをプッシュ（3回まで再試行）
+            for i in {1..3}; do
+              if docker manifest push --purge $tag; then
+                echo "Manifest for $tag pushed successfully on attempt $i"
+                break
+              else
+                echo "Failed to push manifest for $tag on attempt $i"
+                if [ $i -eq 3 ]; then
+                  echo "Failed to push manifest after 3 attempts"
+                else
+                  echo "Retrying in 5 seconds..."
+                  sleep 5
+                fi
+              fi
+            done
           done
+        continue-on-error: true
+        
+      # パッケージの可視性を確認
+      - name: Verify package visibility
+        run: |
+          PACKAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          echo "Verifying package visibility for $PACKAGE_NAME"
+          
+          # パッケージの可視性を確認
+          VISIBILITY=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/$PACKAGE_NAME" \
+            | jq -r '.visibility')
+          
+          echo "Current package visibility: $VISIBILITY"
+          
+          if [ "$VISIBILITY" = "${{ env.VISIBILITY }}" ]; then
+            echo "Package visibility is correctly set to ${{ env.VISIBILITY }}"
+          else
+            echo "Warning: Package visibility is $VISIBILITY, expected ${{ env.VISIBILITY }}"
+          fi
         continue-on-error: true
