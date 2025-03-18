@@ -215,8 +215,16 @@ jobs:
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: |
-          brew update
-          brew install llvm@14 openssl@3 cmake ninja
+          # Homebrewのワーニングを抑制するための設定
+          export HOMEBREW_NO_INSTALL_UPGRADE=1
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          export HOMEBREW_NO_ENV_HINTS=1
+          
+          # 必要なパッケージをインストール（--formula フラグを使用してワーニングを抑制）
+          brew install --formula llvm@14 openssl@3 cmake ninja || true
+          
+          # 環境変数を設定
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
           echo "LLVM_CONFIG=$(brew --prefix llvm@14)/bin/llvm-config" >> $GITHUB_ENV
       
