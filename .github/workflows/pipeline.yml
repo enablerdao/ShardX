@@ -564,7 +564,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-amd64
+          tags: ghcr.io/${{ format('{0}', github.repository_owner) }}/shardx:${{ github.ref_name }}-amd64
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=amd64-ghcr
           cache-to: type=gha,mode=max,scope=amd64-ghcr
@@ -625,7 +625,7 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64
-          tags: ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-arm64
+          tags: ghcr.io/${{ format('{0}', github.repository_owner) }}/shardx:${{ github.ref_name }}-arm64
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=arm64-ghcr
           cache-to: type=gha,mode=max,scope=arm64-ghcr
@@ -925,9 +925,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### GitHub Packages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-amd64" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ format('{0}', github.repository_owner) }}/shardx:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ format('{0}', github.repository_owner) }}/shardx:${{ github.ref_name }}-amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ format('{0}', github.repository_owner) }}/shardx:${{ github.ref_name }}-arm64" >> $GITHUB_STEP_SUMMARY
           
           # 失敗した場合の再試行方法
           if [ "${{ steps.build_amd64.outcome }}" != "success" ] || [ "${{ steps.build_arm64.outcome }}" != "success" ] || [ "${{ steps.create_manifest.outcome }}" != "success" ] || [ "${{ steps.push_manifest.outcome }}" != "success" ]; then
