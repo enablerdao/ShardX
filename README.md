@@ -16,24 +16,28 @@
 # 基本的な使用方法（すべてのOS）- 最も簡単
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
 
-# カスタムノード設定で起動
+# カスタム設定で起動（ノードIDは自動生成されます）
 docker run -p 54867:54867 -p 54868:54868 \
-  -e NODE_ID=tokyo-node-1 \
   -e RUST_LOG=info \
   yukih47/shardx:latest
 
 # データを永続化して実運用環境で使用
 docker run -p 54867:54867 -p 54868:54868 \
-  -e NODE_ID=prod-node-1 \
   -v $(pwd)/shardx-data:/app/data \
   yukih47/shardx:latest
 
 # システムサービスとして起動（バックグラウンド実行）
 docker run -d --restart=always --name shardx-node \
   -p 54867:54867 -p 54868:54868 \
-  -e NODE_ID=service-node-1 \
   -v shardx-volume:/app/data \
   yukih47/shardx:latest
+
+# 注意: 現在のイメージが更新されるまでの間、以下のコマンドを使用してください
+docker run -d --name shardx-node \
+  -p 54867:54867 -p 54868:54868 \
+  --entrypoint /bin/sh \
+  debian:bookworm-slim \
+  -c 'apt-get update && apt-get install -y curl && curl -s https://raw.githubusercontent.com/enablerdao/ShardX/main/scripts/placeholder.sh | sh'
 ```
 
 ### アーキテクチャ固有のイメージ（必要な場合）
