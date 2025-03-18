@@ -544,27 +544,39 @@ jobs:
           allow: security.insecure
         continue-on-error: true
         
-      # マニフェストリストの作成とプッシュ
+      # マニフェストリストの作成とプッシュ（改善版）
       - name: Create and push manifest list
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         run: |
           # Docker CLI にログイン
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           
+          # Docker Buildx の実験的機能を有効化
+          export DOCKER_CLI_EXPERIMENTAL=enabled
+          
           # 各イメージタグに対してマニフェストを作成
           for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
             echo "Creating manifest for $tag"
             
             # マニフェストリストを作成
-            docker manifest create $tag \
+            docker manifest create --amend $tag \
               $tag-amd64 \
               $tag-arm64
             
             # アーキテクチャ情報を注釈
-            docker manifest annotate $tag $tag-arm64 --arch arm64 --os linux
+            docker manifest annotate $tag $tag-arm64 --arch arm64 --os linux --variant v8
             docker manifest annotate $tag $tag-amd64 --arch amd64 --os linux
             
+            # マニフェストリストを検査
+            docker manifest inspect $tag
+            
             # マニフェストリストをプッシュ
-            docker manifest push $tag
+            docker manifest push --purge $tag
+            
+            echo "Manifest for $tag created and pushed successfully"
           done
+          
+          # 確認のためにイメージをプル
+          docker pull --platform=linux/arm64 ${{ steps.meta.outputs.tags }}
+          docker pull --platform=linux/amd64 ${{ steps.meta.outputs.tags }}
         continue-on-error: true

@@ -5,9 +5,17 @@ FROM --platform=$TARGETPLATFORM debian:bookworm-slim
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETARCH
+ARG TARGETVARIANT
 
 # デバッグ情報を表示
-RUN echo "Building for $TARGETPLATFORM (arch: $TARGETARCH) on $BUILDPLATFORM"
+RUN echo "Building for $TARGETPLATFORM (arch: $TARGETARCH, variant: $TARGETVARIANT) on $BUILDPLATFORM"
+
+# アーキテクチャ情報をファイルに保存（デバッグ用）
+RUN mkdir -p /etc/shardx && \
+    echo "TARGETPLATFORM=$TARGETPLATFORM" > /etc/shardx/build-info && \
+    echo "TARGETARCH=$TARGETARCH" >> /etc/shardx/build-info && \
+    echo "TARGETVARIANT=$TARGETVARIANT" >> /etc/shardx/build-info && \
+    echo "BUILDPLATFORM=$BUILDPLATFORM" >> /etc/shardx/build-info
 
 WORKDIR /app
 
@@ -22,32 +30,61 @@ RUN apt-get update && \
 # データディレクトリを作成
 RUN mkdir -p /app/data /app/web && chmod 777 /app/data
 
-# バイナリとウェブファイルをコピー
+# バイナリとウェブファイルをコピー（改善版）
 COPY target/x86_64-unknown-linux-gnu/release/shardx /app/shardx.x86_64 || true
 COPY target/aarch64-unknown-linux-gnu/release/shardx /app/shardx.arm64 || true
 COPY web /app/web/ || true
 
-# アーキテクチャに応じたバイナリを選択するスクリプト
+# アーキテクチャに応じたバイナリを直接コピー（ビルド時に決定）
+RUN if [ "$TARGETARCH" = "amd64" ] || [ "$TARGETARCH" = "x86_64" ]; then \
+      if [ -f "/app/shardx.x86_64" ]; then \
+        echo "Copying x86_64 binary to /app/shardx during build"; \
+        cp -f /app/shardx.x86_64 /app/shardx; \
+      fi; \
+    elif [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "aarch64" ]; then \
+      if [ -f "/app/shardx.arm64" ]; then \
+        echo "Copying arm64 binary to /app/shardx during build"; \
+        cp -f /app/shardx.arm64 /app/shardx; \
+      fi; \
+    else \
+      echo "Unknown architecture: $TARGETARCH"; \
+    fi
+
+# アーキテクチャに応じたバイナリを選択するスクリプト（改善版）
 RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
     echo 'set -e' >> /app/entrypoint.sh && \
     echo 'ARCH=$(uname -m)' >> /app/entrypoint.sh && \
     echo 'echo "Running on architecture: $ARCH"' >> /app/entrypoint.sh && \
+    echo 'echo "Build information:"' >> /app/entrypoint.sh && \
+    echo 'cat /etc/shardx/build-info || echo "Build info not available"' >> /app/entrypoint.sh && \
+    echo 'echo "Available binaries:"' >> /app/entrypoint.sh && \
+    echo 'ls -la /app/shardx.* 2>/dev/null || echo "No architecture-specific binaries found"' >> /app/entrypoint.sh && \
     echo 'if [ "$ARCH" = "x86_64" ]; then' >> /app/entrypoint.sh && \
     echo '  if [ -f "/app/shardx.x86_64" ]; then' >> /app/entrypoint.sh && \
     echo '    echo "Using x86_64 binary"' >> /app/entrypoint.sh && \
-    echo '    cp /app/shardx.x86_64 /app/shardx' >> /app/entrypoint.sh && \
+    echo '    cp -f /app/shardx.x86_64 /app/shardx' >> /app/entrypoint.sh && \
+    echo '  else' >> /app/entrypoint.sh && \
+    echo '    echo "WARNING: x86_64 binary not found"' >> /app/entrypoint.sh && \
     echo '  fi' >> /app/entrypoint.sh && \
     echo 'elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then' >> /app/entrypoint.sh && \
     echo '  if [ -f "/app/shardx.arm64" ]; then' >> /app/entrypoint.sh && \
     echo '    echo "Using arm64 binary"' >> /app/entrypoint.sh && \
-    echo '    cp /app/shardx.arm64 /app/shardx' >> /app/entrypoint.sh && \
+    echo '    cp -f /app/shardx.arm64 /app/shardx' >> /app/entrypoint.sh && \
+    echo '  else' >> /app/entrypoint.sh && \
+    echo '    echo "WARNING: arm64 binary not found"' >> /app/entrypoint.sh && \
     echo '  fi' >> /app/entrypoint.sh && \
+    echo 'else' >> /app/entrypoint.sh && \
+    echo '  echo "WARNING: Unsupported architecture: $ARCH"' >> /app/entrypoint.sh && \
     echo 'fi' >> /app/entrypoint.sh && \
     echo 'if [ ! -f "/app/shardx" ]; then' >> /app/entrypoint.sh && \
     echo '  echo "WARNING: ShardX binary not available for architecture: $ARCH"' >> /app/entrypoint.sh && \
     echo '  echo "Creating placeholder binary"' >> /app/entrypoint.sh && \
     echo '  echo "#!/bin/sh" > /app/shardx' >> /app/entrypoint.sh && \
     echo '  echo "echo \"ShardX binary not available for architecture: $ARCH\"" >> /app/shardx' >> /app/entrypoint.sh && \
+    echo '  echo "echo \"Available binaries:\"" >> /app/shardx' >> /app/entrypoint.sh && \
+    echo '  echo "ls -la /app/shardx.* 2>/dev/null || echo \"No architecture-specific binaries found\"" >> /app/shardx' >> /app/entrypoint.sh && \
+    echo '  echo "echo \"Build information:\"" >> /app/shardx' >> /app/entrypoint.sh && \
+    echo '  echo "cat /etc/shardx/build-info || echo \"Build info not available\"" >> /app/shardx' >> /app/entrypoint.sh && \
     echo '  echo "echo \"Please check the build logs for more information.\"" >> /app/shardx' >> /app/entrypoint.sh && \
     echo 'fi' >> /app/entrypoint.sh && \
     echo 'chmod +x /app/shardx' >> /app/entrypoint.sh && \
