@@ -510,21 +510,33 @@ jobs:
           # ビルドステップをスキップして、直接プッシュする
           echo "Skipping test step due to OCI format limitations"
       
-      - name: Push Docker image
+      # 各アーキテクチャ用に個別にビルドしてプッシュ
+      - name: Build and push Docker image for amd64
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           file: ./Dockerfile.simple
-          # 以下の設定を変更
           provenance: false
-          outputs: type=registry
-          no-cache: false
-          pull: true
+          allow: security.insecure
+        continue-on-error: true
+        
+      - name: Build and push Docker image for arm64
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          file: ./Dockerfile.simple
+          provenance: false
           allow: security.insecure
         continue-on-error: true

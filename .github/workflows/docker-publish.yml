@@ -57,4 +57,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           provenance: false
-          outputs: type=registry
+          # 以下の設定を追加
+          allow: security.insecure
+          no-cache: false
+          pull: true
