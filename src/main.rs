@@ -198,8 +198,19 @@ async fn main() {
     );
 
     // ウェブサーバーを作成
-    info!("Webサーバーを起動中 (ポート: {})...", web_port);
-    let web_server = WebServer::new(web_dir, web_port);
+    info!("Webサーバーを初期化中 (ポート: {})...", web_port);
+    info!("Webディレクトリパス: {}", web_dir);
+    
+    // Webディレクトリの存在を確認
+    if !Path::new(&web_dir).exists() {
+        error!("Webディレクトリが存在しません: {}", web_dir);
+        println!("エラー: Webディレクトリが存在しません: {}", web_dir);
+        println!("現在の作業ディレクトリ: {}", std::env::current_dir().unwrap().display());
+        return;
+    }
+    
+    let web_server = WebServer::new(web_dir.clone(), web_port);
+    info!("Webサーバーが初期化されました");
     
     // アクセス可能なURLを表示
     println!("\n=== ShardX サービスが起動しました ===");
@@ -217,19 +228,27 @@ async fn main() {
         cli.start().await;
     } else {
         // 両方のサーバーを並行して起動
-        tokio::select! {
-            api_result = api_server.start() => {
-                match api_result {
-                    Ok(_) => info!("APIサーバーが正常に終了しました"),
-                    Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
-                }
+        info!("APIサーバーとWebサーバーを並行して起動します");
+        
+        // Webサーバーを別スレッドで起動
+        let web_handle = tokio::spawn(async move {
+            info!("Webサーバーの起動を試みます...");
+            match web_server.start().await {
+                Ok(_) => info!("Webサーバーが正常に終了しました"),
+                Err(e) => error!("Webサーバーの起動に失敗しました: {}", e),
             }
-            web_result = web_server.start() => {
-                match web_result {
-                    Ok(_) => info!("Webサーバーが正常に終了しました"),
-                    Err(e) => error!("Webサーバーの起動に失敗しました: {}", e),
-                }
-            }
+        });
+        
+        // APIサーバーを起動
+        info!("APIサーバーの起動を試みます...");
+        match api_server.start().await {
+            Ok(_) => info!("APIサーバーが正常に終了しました"),
+            Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
+        }
+        
+        // Webサーバーの終了を待機
+        if let Err(e) = web_handle.await {
+            error!("Webサーバータスクの実行中にエラーが発生しました: {}", e);
         }
     }
 }
