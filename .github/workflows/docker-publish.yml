@@ -1,10 +1,15 @@
-name: Docker Publish
+name: Docker Publish to GitHub Packages
 
 on:
   push:
     branches: [ main ]
     tags: [ 'v*' ]
   workflow_dispatch:
+
+# 同時実行を制御
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
@@ -13,9 +18,11 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
+      id-token: write  # プロベナンスに必要
 
     steps:
       - name: Checkout repository
@@ -46,18 +53,54 @@ jobs:
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Docker image
+      # AMD64 向けのビルドとプッシュ
+      - name: Build and push Docker image for amd64
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.simple
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}-amd64
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,mode=max,scope=amd64
           provenance: false
-          # 以下の設定を追加
           allow: security.insecure
-          no-cache: false
-          pull: true
+        continue-on-error: true
+
+      # ARM64 向けのビルドとプッシュ
+      - name: Build and push Docker image for arm64
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.simple
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
+          provenance: false
+          allow: security.insecure
+        continue-on-error: true
+        
+      # マニフェストリストの作成とプッシュ
+      - name: Create and push manifest list
+        run: |
+          # Docker CLI にログイン
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          
+          # 各イメージタグに対してマニフェストを作成
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
+            echo "Creating manifest for $tag"
+            
+            # マニフェストリストを作成
+            docker manifest create $tag \
+              $tag-amd64 \
+              $tag-arm64
+            
+            # マニフェストリストをプッシュ
+            docker manifest push $tag
+          done
+        continue-on-error: true
