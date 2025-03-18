@@ -564,7 +564,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64
+          tags: ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-amd64
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=amd64-ghcr
           cache-to: type=gha,mode=max,scope=amd64-ghcr
@@ -625,7 +625,7 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64
-          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64
+          tags: ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-arm64
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=arm64-ghcr
           cache-to: type=gha,mode=max,scope=arm64-ghcr
@@ -769,6 +769,9 @@ jobs:
         id: create_manifest_ghcr
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         run: |
+          # リポジトリ名を小文字に変換
+          REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          
           # Docker CLI にログイン（GitHub Packages）
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
@@ -776,25 +779,25 @@ jobs:
           export DOCKER_CLI_EXPERIMENTAL=enabled
           
           # 既存のマニフェストを削除（存在する場合）
-          docker manifest rm ghcr.io/${{ github.repository }}:${{ github.ref_name }} 2>/dev/null || true
+          docker manifest rm ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }} 2>/dev/null || true
           
           # マニフェストリストを作成
-          docker manifest create --amend ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64 \
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64
+          docker manifest create --amend ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }} \
+            ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}-amd64 \
+            ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}-arm64
           
           # アーキテクチャ情報を注釈
-          docker manifest annotate ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64 --arch arm64 --os linux --variant v8
-          docker manifest annotate ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64 --arch amd64 --os linux
+          docker manifest annotate ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }} \
+            ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}-arm64 --arch arm64 --os linux --variant v8
+          docker manifest annotate ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }} \
+            ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}-amd64 --arch amd64 --os linux
           
           # マニフェストリストを検査
-          docker manifest inspect ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          docker manifest inspect ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}
           
           # マニフェストリストをプッシュ（3回まで再試行）
           for i in {1..3}; do
-            if docker manifest push --purge ghcr.io/${{ github.repository }}:${{ github.ref_name }}; then
+            if docker manifest push --purge ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}; then
               echo "Successfully pushed manifest list to GitHub Packages (attempt $i)"
               break
             else
@@ -842,12 +845,15 @@ jobs:
             fi
           done
           
+          # リポジトリ名を小文字に変換
+          REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          
           # GitHub Packages のイメージを検証
-          echo "Verifying GitHub Packages image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+          echo "Verifying GitHub Packages image: ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}"
           
           # AMD64 イメージをプル
           echo "Pulling AMD64 image from GitHub Packages..."
-          if docker pull --platform=linux/amd64 ghcr.io/${{ github.repository }}:${{ github.ref_name }}; then
+          if docker pull --platform=linux/amd64 ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}; then
             echo "Successfully pulled AMD64 image from GitHub Packages"
             PULL_RESULTS+=("ghcr-amd64:success")
           else
@@ -857,7 +863,7 @@ jobs:
           
           # ARM64 イメージをプル
           echo "Pulling ARM64 image from GitHub Packages..."
-          if docker pull --platform=linux/arm64 ghcr.io/${{ github.repository }}:${{ github.ref_name }}; then
+          if docker pull --platform=linux/arm64 ghcr.io/${REPO_OWNER_LOWER}/shardx:${{ github.ref_name }}; then
             echo "Successfully pulled ARM64 image from GitHub Packages"
             PULL_RESULTS+=("ghcr-arm64:success")
           else
@@ -919,9 +925,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### GitHub Packages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ github.repository_owner | lower }}/shardx:${{ github.ref_name }}-arm64" >> $GITHUB_STEP_SUMMARY
           
           # 失敗した場合の再試行方法
           if [ "${{ steps.build_amd64.outcome }}" != "success" ] || [ "${{ steps.build_arm64.outcome }}" != "success" ] || [ "${{ steps.create_manifest.outcome }}" != "success" ] || [ "${{ steps.push_manifest.outcome }}" != "success" ]; then

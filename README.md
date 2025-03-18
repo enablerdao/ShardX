@@ -174,9 +174,11 @@ curl -X POST http://localhost:54868/api/v1/transactions \
      ```
    - GitHub にログインする
      ```bash
+     # GitHub Personal Access Token を使用してログイン
      echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
      docker pull ghcr.io/enablerdao/shardx:main
      ```
+   - パッケージの可視性が「public」に設定されていることを確認する（管理者のみ）
 
 4. **コンテナが起動しない場合**
 
