@@ -170,6 +170,15 @@ echo "ShardX v${VERSION} starting on ${ARCH} architecture"
 echo "This is a functional placeholder binary for demonstration purposes."
 echo "Listening on ports ${P2P_PORT} and ${PORT}..."
 
+# アクセス可能なURLを表示
+echo ""
+echo "=== ShardX サービスが起動しました ==="
+echo "Web UI: http://localhost:${P2P_PORT}/"
+echo "API エンドポイント: http://localhost:${PORT}/"
+echo "ノード情報: http://localhost:${PORT}/info"
+echo "====================================="
+echo ""
+
 # Create a simple HTTP server on PORT
 if command -v nc >/dev/null 2>&1; then
   (while true; do

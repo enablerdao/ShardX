@@ -32,6 +32,12 @@ docker run -d --restart=always --name shardx-node \
   -v shardx-volume:/app/data \
   yukih47/shardx:latest
 
+# コマンドラインインターフェイス（CLI）モードで起動
+docker run -it --rm \
+  -p 54867:54867 -p 54868:54868 \
+  yukih47/shardx:latest \
+  /app/shardx --cli
+
 # 注意: 現在のイメージが更新されるまでの間、以下のコマンドを使用してください
 docker run -d --name shardx-node \
   -p 54867:54867 -p 54868:54868 \

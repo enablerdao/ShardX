@@ -36,6 +36,12 @@ echo -e "${GREEN}P2Pポート: ${P2P_PORT}${NC}"
 echo -e "${GREEN}初期シャード数: ${INITIAL_SHARDS}${NC}"
 echo -e "${BLUE}-----------------------------------------------${NC}"
 
+# アクセス可能なURLを表示
+echo -e "\n${BLUE}=== ShardX サービスのアクセス情報 ===${NC}"
+echo -e "${GREEN}API エンドポイント: ${YELLOW}https://${REPL_SLUG}.${REPL_OWNER}.repl.co${NC}"
+echo -e "${GREEN}ノード情報: ${YELLOW}https://${REPL_SLUG}.${REPL_OWNER}.repl.co/info${NC}"
+echo -e "${BLUE}=====================================${NC}\n"
+
 # ビルドスクリプトを実行
 echo -e "${YELLOW}ShardXをビルドしています...${NC}"
 ./scripts/replit-build.sh || {

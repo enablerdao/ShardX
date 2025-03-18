@@ -1,6 +1,7 @@
 mod ai;
 mod api;
 mod api_handlers;
+mod cli;
 mod consensus;
 mod dex;
 mod node;
@@ -16,6 +17,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use api::ApiServer;
+use cli::CLI;
 use dex::DexManager;
 use log::{error, info};
 use node::{Node, NodeConfig};
@@ -38,6 +40,7 @@ async fn main() {
     let mut web_dir = "./web".to_string();
     let mut log_level = "info".to_string();
     let mut shard_count = 256;
+    let mut cli_mode = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -104,6 +107,10 @@ async fn main() {
                     i += 1;
                 }
             }
+            "--cli" => {
+                cli_mode = true;
+                i += 1;
+            }
             "--help" => {
                 println!("使用方法: shardx [オプション]");
                 println!("");
@@ -117,6 +124,7 @@ async fn main() {
                     "  --log-level LEVEL  ログレベル (debug, info, warn, error) (デフォルト: info)"
                 );
                 println!("  --shard-count N    シャード数 (デフォルト: 256)");
+                println!("  --cli              コマンドラインインターフェイスモードで起動");
                 println!("  --help             このヘルプメッセージを表示");
                 return;
             }
@@ -192,19 +200,35 @@ async fn main() {
     // ウェブサーバーを作成
     info!("Webサーバーを起動中 (ポート: {})...", web_port);
     let web_server = WebServer::new(web_dir, web_port);
+    
+    // アクセス可能なURLを表示
+    println!("\n=== ShardX サービスが起動しました ===");
+    println!("Web UI: http://localhost:{}/", web_port);
+    println!("API エンドポイント: http://localhost:{}/", api_port);
+    println!("ノード情報: http://localhost:{}/info", api_port);
+    println!("=====================================\n");
 
-    // 両方のサーバーを並行して起動
-    tokio::select! {
-        api_result = api_server.start() => {
-            match api_result {
-                Ok(_) => info!("APIサーバーが正常に終了しました"),
-                Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
+    // CLIモードの場合はCLIを起動
+    if cli_mode {
+        // CLIを作成
+        let cli = CLI::new(Arc::clone(&node), Arc::clone(&wallet_manager));
+        
+        // CLIを起動
+        cli.start().await;
+    } else {
+        // 両方のサーバーを並行して起動
+        tokio::select! {
+            api_result = api_server.start() => {
+                match api_result {
+                    Ok(_) => info!("APIサーバーが正常に終了しました"),
+                    Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
+                }
             }
-        }
-        web_result = web_server.start() => {
-            match web_result {
-                Ok(_) => info!("Webサーバーが正常に終了しました"),
-                Err(e) => error!("Webサーバーの起動に失敗しました: {}", e),
+            web_result = web_server.start() => {
+                match web_result {
+                    Ok(_) => info!("Webサーバーが正常に終了しました"),
+                    Err(e) => error!("Webサーバーの起動に失敗しました: {}", e),
+                }
             }
         }
     }

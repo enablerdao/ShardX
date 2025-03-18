@@ -29,6 +29,14 @@ echo "This is a functional placeholder for ShardX."
 echo "In production, this would be replaced with the actual ShardX binary."
 echo "-----------------------------------------------"
 
+# アクセス可能なURLを表示
+echo ""
+echo "=== ShardX サービスが起動しました ==="
+echo "API エンドポイント: http://localhost:${PORT}/"
+echo "P2P サービス: http://localhost:${P2P_PORT}/"
+echo "====================================="
+echo ""
+
 # シンプルなHTTPサーバーの実装
 http_server() {
   while true; do
