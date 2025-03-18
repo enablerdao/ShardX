@@ -423,6 +423,9 @@ jobs:
       build_arm64_result: ${{ steps.build_arm64.outcome }}
       manifest_result: ${{ steps.create_manifest.outcome }}
       push_result: ${{ steps.push_manifest.outcome }}
+      build_amd64_ghcr_result: ${{ steps.build_amd64_ghcr.outcome }}
+      build_arm64_ghcr_result: ${{ steps.build_arm64_ghcr.outcome }}
+      manifest_ghcr_result: ${{ steps.create_manifest_ghcr.outcome }}
     steps:
       - uses: actions/checkout@v4
       
@@ -526,7 +529,7 @@ jobs:
           # ビルドステップをスキップして、直接プッシュする
           echo "Skipping test step due to OCI format limitations"
       
-      # AMD64 向けのビルドとプッシュ
+      # AMD64 向けのビルドとプッシュ（DockerHub）
       - name: Build and push Docker image for amd64
         id: build_amd64
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
@@ -539,6 +542,24 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=amd64
           cache-to: type=gha,mode=max,scope=amd64
+          file: ./Dockerfile.simple
+          provenance: false
+          allow: security.insecure
+        continue-on-error: true
+        
+      # AMD64 向けのビルドとプッシュ（GitHub Packages）
+      - name: Build and push Docker image for amd64 to GitHub Packages
+        id: build_amd64_ghcr
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=amd64-ghcr
+          cache-to: type=gha,mode=max,scope=amd64-ghcr
           file: ./Dockerfile.simple
           provenance: false
           allow: security.insecure
@@ -569,7 +590,7 @@ jobs:
           allow: security.insecure
         continue-on-error: true
         
-      # ARM64 向けのビルドとプッシュ
+      # ARM64 向けのビルドとプッシュ（DockerHub）
       - name: Build and push Docker image for arm64
         id: build_arm64
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
@@ -582,6 +603,24 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=arm64
           cache-to: type=gha,mode=max,scope=arm64
+          file: ./Dockerfile.simple
+          provenance: false
+          allow: security.insecure
+        continue-on-error: true
+        
+      # ARM64 向けのビルドとプッシュ（GitHub Packages）
+      - name: Build and push Docker image for arm64 to GitHub Packages
+        id: build_arm64_ghcr
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=arm64-ghcr
+          cache-to: type=gha,mode=max,scope=arm64-ghcr
           file: ./Dockerfile.simple
           provenance: false
           allow: security.insecure
@@ -717,6 +756,51 @@ jobs:
           echo "push_results=${PUSH_RESULTS[*]}" >> $GITHUB_OUTPUT
         continue-on-error: true
       
+      # GitHub Packages用のマニフェストリストを作成
+      - name: Create and push manifest list for GitHub Packages
+        id: create_manifest_ghcr
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        run: |
+          # Docker CLI にログイン（GitHub Packages）
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # 実験的機能を有効化
+          export DOCKER_CLI_EXPERIMENTAL=enabled
+          
+          # 既存のマニフェストを削除（存在する場合）
+          docker manifest rm ghcr.io/${{ github.repository }}:${{ github.ref_name }} 2>/dev/null || true
+          
+          # マニフェストリストを作成
+          docker manifest create --amend ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64 \
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64
+          
+          # アーキテクチャ情報を注釈
+          docker manifest annotate ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64 --arch arm64 --os linux --variant v8
+          docker manifest annotate ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64 --arch amd64 --os linux
+          
+          # マニフェストリストを検査
+          docker manifest inspect ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          
+          # マニフェストリストをプッシュ（3回まで再試行）
+          for i in {1..3}; do
+            if docker manifest push --purge ghcr.io/${{ github.repository }}:${{ github.ref_name }}; then
+              echo "Successfully pushed manifest list to GitHub Packages (attempt $i)"
+              break
+            else
+              echo "Failed to push manifest list to GitHub Packages (attempt $i)"
+              if [ $i -eq 3 ]; then
+                echo "Failed to push manifest list to GitHub Packages after 3 attempts"
+              else
+                echo "Retrying in 5 seconds..."
+                sleep 5
+              fi
+            fi
+          done
+        continue-on-error: true
+      
       # マニフェストリストの検証（プル）
       - name: Verify manifest by pulling
         id: verify_pull
@@ -725,30 +809,53 @@ jobs:
           # 検証結果を保存する配列
           PULL_RESULTS=()
           
-          # 各イメージタグに対して検証
+          # DockerHub のイメージを検証
           for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
-            echo "Verifying $tag by pulling"
+            echo "Verifying DockerHub image: $tag"
             
             # AMD64 イメージをプル
-            echo "Pulling AMD64 image..."
+            echo "Pulling AMD64 image from DockerHub..."
             if docker pull --platform=linux/amd64 $tag; then
-              echo "Successfully pulled AMD64 image"
-              PULL_RESULTS+=("amd64:success")
+              echo "Successfully pulled AMD64 image from DockerHub"
+              PULL_RESULTS+=("dockerhub-amd64:success")
             else
-              echo "Failed to pull AMD64 image"
-              PULL_RESULTS+=("amd64:failure")
+              echo "Failed to pull AMD64 image from DockerHub"
+              PULL_RESULTS+=("dockerhub-amd64:failure")
             fi
             
             # ARM64 イメージをプル
-            echo "Pulling ARM64 image..."
+            echo "Pulling ARM64 image from DockerHub..."
             if docker pull --platform=linux/arm64 $tag; then
-              echo "Successfully pulled ARM64 image"
-              PULL_RESULTS+=("arm64:success")
+              echo "Successfully pulled ARM64 image from DockerHub"
+              PULL_RESULTS+=("dockerhub-arm64:success")
             else
-              echo "Failed to pull ARM64 image"
-              PULL_RESULTS+=("arm64:failure")
+              echo "Failed to pull ARM64 image from DockerHub"
+              PULL_RESULTS+=("dockerhub-arm64:failure")
             fi
           done
+          
+          # GitHub Packages のイメージを検証
+          echo "Verifying GitHub Packages image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+          
+          # AMD64 イメージをプル
+          echo "Pulling AMD64 image from GitHub Packages..."
+          if docker pull --platform=linux/amd64 ghcr.io/${{ github.repository }}:${{ github.ref_name }}; then
+            echo "Successfully pulled AMD64 image from GitHub Packages"
+            PULL_RESULTS+=("ghcr-amd64:success")
+          else
+            echo "Failed to pull AMD64 image from GitHub Packages"
+            PULL_RESULTS+=("ghcr-amd64:failure")
+          fi
+          
+          # ARM64 イメージをプル
+          echo "Pulling ARM64 image from GitHub Packages..."
+          if docker pull --platform=linux/arm64 ghcr.io/${{ github.repository }}:${{ github.ref_name }}; then
+            echo "Successfully pulled ARM64 image from GitHub Packages"
+            PULL_RESULTS+=("ghcr-arm64:success")
+          else
+            echo "Failed to pull ARM64 image from GitHub Packages"
+            PULL_RESULTS+=("ghcr-arm64:failure")
+          fi
           
           # 結果をステップ出力として保存
           echo "pull_results=${PULL_RESULTS[*]}" >> $GITHUB_OUTPUT
@@ -760,27 +867,53 @@ jobs:
         run: |
           echo "# Docker イメージビルド結果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## ビルド結果" >> $GITHUB_STEP_SUMMARY
+          echo "## DockerHub ビルド結果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| アーキテクチャ | 結果 |" >> $GITHUB_STEP_SUMMARY
           echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
           echo "| AMD64 | ${{ steps.build_amd64.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "| ARM64 | ${{ steps.build_arm64.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## マニフェスト結果" >> $GITHUB_STEP_SUMMARY
+          echo "## GitHub Packages ビルド結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| アーキテクチャ | 結果 |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| AMD64 | ${{ steps.build_amd64_ghcr.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ARM64 | ${{ steps.build_arm64_ghcr.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## DockerHub マニフェスト結果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| ステップ | 結果 |" >> $GITHUB_STEP_SUMMARY
           echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
           echo "| 作成 | ${{ steps.create_manifest.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 検証 | ${{ steps.verify_manifest.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "| プッシュ | ${{ steps.push_manifest.outcome }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| プル検証 | ${{ steps.verify_pull.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## GitHub Packages マニフェスト結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| ステップ | 結果 |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 作成とプッシュ | ${{ steps.create_manifest_ghcr.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## プル検証結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| リポジトリ | 結果 |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 全体 | ${{ steps.verify_pull.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## イメージタグ" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### DockerHub" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo "- ${{ steps.meta.outputs.tags }}-amd64" >> $GITHUB_STEP_SUMMARY
           echo "- ${{ steps.meta.outputs.tags }}-arm64" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ github.repository }}:${{ github.ref_name }}-amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64" >> $GITHUB_STEP_SUMMARY
           
           # 失敗した場合の再試行方法
           if [ "${{ steps.build_amd64.outcome }}" != "success" ] || [ "${{ steps.build_arm64.outcome }}" != "success" ] || [ "${{ steps.create_manifest.outcome }}" != "success" ] || [ "${{ steps.push_manifest.outcome }}" != "success" ]; then
@@ -803,10 +936,29 @@ jobs:
       - name: Check build status
         id: check_status
         run: |
+          # DockerHub のビルド結果を確認
           if [ "${{ needs.docker.outputs.build_amd64_result }}" != "success" ] || [ "${{ needs.docker.outputs.build_arm64_result }}" != "success" ] || [ "${{ needs.docker.outputs.manifest_result }}" != "success" ] || [ "${{ needs.docker.outputs.push_result }}" != "success" ]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
+            DOCKERHUB_STATUS="failure"
           else
+            DOCKERHUB_STATUS="success"
+          fi
+          
+          # GitHub Packages のビルド結果を確認
+          if [ "${{ needs.docker.outputs.build_amd64_ghcr_result }}" != "success" ] || [ "${{ needs.docker.outputs.build_arm64_ghcr_result }}" != "success" ]; then
+            GHCR_STATUS="failure"
+          else
+            GHCR_STATUS="success"
+          fi
+          
+          # 全体の結果を判定
+          if [ "$DOCKERHUB_STATUS" = "success" ] && [ "$GHCR_STATUS" = "success" ]; then
             echo "status=success" >> $GITHUB_OUTPUT
+            echo "dockerhub_status=$DOCKERHUB_STATUS" >> $GITHUB_OUTPUT
+            echo "ghcr_status=$GHCR_STATUS" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "dockerhub_status=$DOCKERHUB_STATUS" >> $GITHUB_OUTPUT
+            echo "ghcr_status=$GHCR_STATUS" >> $GITHUB_OUTPUT
           fi
       
       - name: Create status summary
@@ -814,11 +966,28 @@ jobs:
           echo "# Docker イメージビルドステータス" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
+          # DockerHub のステータス
+          if [ "${{ steps.check_status.outputs.dockerhub_status }}" = "success" ]; then
+            echo "## DockerHub: ✅ 成功" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## DockerHub: ❌ 失敗" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # GitHub Packages のステータス
+          if [ "${{ steps.check_status.outputs.ghcr_status }}" = "success" ]; then
+            echo "## GitHub Packages: ✅ 成功" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## GitHub Packages: ❌ 失敗" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
           if [ "${{ steps.check_status.outputs.status }}" = "success" ]; then
             echo "✅ すべてのビルドが成功しました！" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "以下のコマンドでイメージを使用できます：" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### DockerHub" >> $GITHUB_STEP_SUMMARY
             echo "```bash" >> $GITHUB_STEP_SUMMARY
             echo "# AMD64 (Intel/AMD) アーキテクチャ" >> $GITHUB_STEP_SUMMARY
             echo "docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest" >> $GITHUB_STEP_SUMMARY
@@ -826,8 +995,19 @@ jobs:
             echo "# ARM64 (Apple Silicon M1/M2) アーキテクチャ" >> $GITHUB_STEP_SUMMARY
             echo "docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64" >> $GITHUB_STEP_SUMMARY
             echo "```" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### GitHub Packages" >> $GITHUB_STEP_SUMMARY
+            echo "```bash" >> $GITHUB_STEP_SUMMARY
+            echo "# AMD64 (Intel/AMD) アーキテクチャ" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -p 54867:54867 -p 54868:54868 ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# ARM64 (Apple Silicon M1/M2) アーキテクチャ" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -p 54867:54867 -p 54868:54868 ghcr.io/${{ github.repository }}:${{ github.ref_name }}-arm64" >> $GITHUB_STEP_SUMMARY
+            echo "```" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ 一部のビルドが失敗しました。" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## DockerHub ビルド結果" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "| コンポーネント | ステータス |" >> $GITHUB_STEP_SUMMARY
             echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
@@ -835,6 +1015,13 @@ jobs:
             echo "| ARM64 ビルド | ${{ needs.docker.outputs.build_arm64_result }} |" >> $GITHUB_STEP_SUMMARY
             echo "| マニフェスト作成 | ${{ needs.docker.outputs.manifest_result }} |" >> $GITHUB_STEP_SUMMARY
             echo "| マニフェストプッシュ | ${{ needs.docker.outputs.push_result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## GitHub Packages ビルド結果" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| コンポーネント | ステータス |" >> $GITHUB_STEP_SUMMARY
+            echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+            echo "| AMD64 ビルド | ${{ needs.docker.outputs.build_amd64_ghcr_result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ARM64 ビルド | ${{ needs.docker.outputs.build_arm64_ghcr_result }} |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "手動でビルドするには、以下のコマンドを実行してください：" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY

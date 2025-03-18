@@ -15,6 +15,8 @@
 ```bash
 # 方法1: Dockerを使用（すべてのOS）- 最も簡単
 # AMD64(Intel/AMD)とARM64(Apple Silicon M1/M2)の両方に対応
+
+## DockerHub からイメージを取得
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
 
 # ARM64アーキテクチャ（Apple Silicon M1/M2など）で問題が発生した場合は、
@@ -24,6 +26,14 @@ docker run --platform=linux/arm64 -p 54867:54867 -p 54868:54868 yukih47/shardx:l
 # または、アーキテクチャ固有のタグを使用
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64  # ARM64用
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-amd64  # AMD64用
+
+## GitHub Packages からイメージを取得（代替方法）
+docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main
+
+# ARM64アーキテクチャ（Apple Silicon M1/M2など）で問題が発生した場合は、
+# アーキテクチャ固有のタグを使用
+docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main-arm64  # ARM64用
+docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main-amd64  # AMD64用
 
 # 方法2: Docker Composeを使用（複数ノード構成）
 git clone https://github.com/enablerdao/ShardX.git
@@ -112,11 +122,19 @@ curl -X POST http://localhost:54868/api/v1/transactions \
    **解決策**:
    - アーキテクチャ固有のタグを使用する（**最も確実な方法**）
      ```bash
+     # DockerHub から
      docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+     
+     # または GitHub Packages から
+     docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main-arm64
      ```
    - プラットフォームを明示的に指定する
      ```bash
+     # DockerHub から
      docker run --platform=linux/arm64 -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+     
+     # または GitHub Packages から
+     docker run --platform=linux/arm64 -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main-arm64
      ```
    - 手動でビルドする（上記の方法で解決しない場合）
      ```bash
@@ -143,12 +161,33 @@ curl -X POST http://localhost:54868/api/v1/transactions \
      docker pull yukih47/shardx:v1.0.0
      ```
 
-3. **コンテナが起動しない場合**
+3. **GitHub Packagesへのアクセスに失敗する場合**
+
+   ```
+   docker: Error response from daemon: failed to resolve reference "ghcr.io/enablerdao/shardx:main": failed to authorize: failed to fetch anonymous token: unexpected status from GET request to https://ghcr.io/token?scope=repository%3Aenablerdao%2Fshardx%3Apull&service=ghcr.io: 403 Forbidden.
+   ```
+
+   **解決策**:
+   - DockerHubのイメージを使用する（代替手段）
+     ```bash
+     docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
+     ```
+   - GitHub にログインする
+     ```bash
+     echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+     docker pull ghcr.io/enablerdao/shardx:main
+     ```
+
+4. **コンテナが起動しない場合**
 
    **解決策**:
    - デバッグモードで実行する
      ```bash
+     # DockerHub イメージ
      docker run -p 54867:54867 -p 54868:54868 --entrypoint /bin/sh -it yukih47/shardx:latest
+     
+     # GitHub Packages イメージ
+     docker run -p 54867:54867 -p 54868:54868 --entrypoint /bin/sh -it ghcr.io/enablerdao/shardx:main
      ```
    - ログを確認する
      ```bash
