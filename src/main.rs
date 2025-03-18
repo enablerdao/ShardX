@@ -202,13 +202,29 @@ async fn main() {
     info!("Webディレクトリパス: {}", web_dir);
     
     // Webディレクトリの存在を確認
-    if !Path::new(&web_dir).exists() {
+    let web_dir_path = Path::new(&web_dir);
+    if !web_dir_path.exists() {
         error!("Webディレクトリが存在しません: {}", web_dir);
         println!("エラー: Webディレクトリが存在しません: {}", web_dir);
         println!("現在の作業ディレクトリ: {}", std::env::current_dir().unwrap().display());
         return;
     }
     
+    if !web_dir_path.is_dir() {
+        error!("Webディレクトリがディレクトリではありません: {}", web_dir);
+        println!("エラー: Webディレクトリがディレクトリではありません: {}", web_dir);
+        return;
+    }
+    
+    // index.htmlの存在を確認
+    let index_path = web_dir_path.join("index.html");
+    if !index_path.exists() {
+        error!("index.htmlが存在しません: {}", index_path.display());
+        println!("エラー: index.htmlが存在しません: {}", index_path.display());
+        return;
+    }
+    
+    info!("Webディレクトリの検証が完了しました: {}", web_dir);
     let web_server = WebServer::new(web_dir.clone(), web_port);
     info!("Webサーバーが初期化されました");
     
@@ -230,25 +246,28 @@ async fn main() {
         // 両方のサーバーを並行して起動
         info!("APIサーバーとWebサーバーを並行して起動します");
         
-        // Webサーバーを別スレッドで起動
-        let web_handle = tokio::spawn(async move {
-            info!("Webサーバーの起動を試みます...");
-            match web_server.start().await {
-                Ok(_) => info!("Webサーバーが正常に終了しました"),
-                Err(e) => error!("Webサーバーの起動に失敗しました: {}", e),
+        // APIサーバーを別スレッドで起動
+        let api_handle = tokio::spawn(async move {
+            info!("APIサーバーの起動を試みます...");
+            match api_server.start().await {
+                Ok(_) => info!("APIサーバーが正常に終了しました"),
+                Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
             }
         });
         
-        // APIサーバーを起動
-        info!("APIサーバーの起動を試みます...");
-        match api_server.start().await {
-            Ok(_) => info!("APIサーバーが正常に終了しました"),
-            Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
+        // Webサーバーを起動（メインスレッド）
+        info!("Webサーバーの起動を試みます...");
+        match web_server.start().await {
+            Ok(_) => info!("Webサーバーが正常に終了しました"),
+            Err(e) => {
+                error!("Webサーバーの起動に失敗しました: {}", e);
+                println!("エラー: Webサーバーの起動に失敗しました: {}", e);
+            }
         }
         
-        // Webサーバーの終了を待機
-        if let Err(e) = web_handle.await {
-            error!("Webサーバータスクの実行中にエラーが発生しました: {}", e);
+        // APIサーバーの終了を待機
+        if let Err(e) = api_handle.await {
+            error!("APIサーバータスクの実行中にエラーが発生しました: {}", e);
         }
     }
 }
