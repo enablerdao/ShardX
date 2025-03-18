@@ -34,6 +34,21 @@ struct CreateTransactionRequest {
     signature: String,
 }
 
+/// ルートレスポンス
+#[derive(Debug, Serialize)]
+struct RootResponse {
+    /// アプリケーション名
+    name: String,
+    /// バージョン
+    version: String,
+    /// 説明
+    description: String,
+    /// ドキュメントURL
+    docs_url: String,
+    /// APIエンドポイント
+    endpoints: Vec<String>,
+}
+
 /// ノード情報レスポンス
 #[derive(Debug, Serialize)]
 struct NodeInfoResponse {
@@ -84,6 +99,12 @@ impl ApiServer {
         let dex_manager_clone = Arc::clone(&self.dex_manager);
 
         // ブロックチェーンAPI
+        // ルートエンドポイント
+        let root = warp::path::end()
+            .and(warp::get())
+            .and(with_node(Arc::clone(&node_clone)))
+            .and_then(handle_root);
+            
         // ノード情報を取得するエンドポイント
         let node_info = warp::path("info")
             .and(warp::get())
@@ -162,7 +183,8 @@ impl ApiServer {
             .allow_headers(vec!["Content-Type"]);
 
         // ルートを結合
-        let routes = node_info
+        let routes = root
+            .or(node_info)
             .or(create_tx)
             .or(create_account)
             .or(get_account)
@@ -201,6 +223,32 @@ fn with_dex_manager(
     dex_manager: Arc<DexManager>,
 ) -> impl Filter<Extract = (Arc<DexManager>,), Error = Infallible> + Clone {
     warp::any().map(move || Arc::clone(&dex_manager))
+}
+
+/// ルートエンドポイントのハンドラー
+async fn handle_root(node: Arc<Mutex<Node>>) -> Result<impl Reply, Rejection> {
+    let node = node.lock().await;
+    
+    let response = RootResponse {
+        name: "ShardX".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        description: "高性能ブロックチェーンプラットフォーム".to_string(),
+        docs_url: "https://docs.shardx.io".to_string(),
+        endpoints: vec![
+            "/info".to_string(),
+            "/transactions".to_string(),
+            "/accounts".to_string(),
+            "/accounts/{id}".to_string(),
+            "/transfer".to_string(),
+            "/trading-pairs".to_string(),
+            "/orders".to_string(),
+            "/orders/{id}".to_string(),
+            "/order-book".to_string(),
+            "/trade-history".to_string(),
+        ],
+    };
+    
+    Ok(warp::reply::json(&response))
 }
 
 /// ノード情報を取得するハンドラー

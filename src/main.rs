@@ -7,6 +7,7 @@ mod node;
 mod sharding;
 mod transaction;
 mod wallet;
+mod web_server;
 
 use std::env;
 use std::fs;
@@ -20,6 +21,7 @@ use log::{error, info};
 use node::{Node, NodeConfig};
 use tokio::sync::Mutex;
 use wallet::WalletManager;
+use web_server::WebServer;
 
 #[tokio::main]
 async fn main() {
@@ -30,8 +32,10 @@ async fn main() {
         "node_{}",
         uuid::Uuid::new_v4().to_string().split('-').next().unwrap()
     );
-    let mut port = 54868;
+    let mut api_port = 54868;
+    let mut web_port = 54867;
     let mut data_dir = "./data".to_string();
+    let mut web_dir = "./web".to_string();
     let mut log_level = "info".to_string();
     let mut shard_count = 256;
 
@@ -46,10 +50,20 @@ async fn main() {
                     i += 1;
                 }
             }
-            "--port" => {
+            "--api-port" | "--port" => {
                 if i + 1 < args.len() {
                     if let Ok(p) = args[i + 1].parse() {
-                        port = p;
+                        api_port = p;
+                    }
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            "--web-port" => {
+                if i + 1 < args.len() {
+                    if let Ok(p) = args[i + 1].parse() {
+                        web_port = p;
                     }
                     i += 2;
                 } else {
@@ -59,6 +73,14 @@ async fn main() {
             "--data-dir" => {
                 if i + 1 < args.len() {
                     data_dir = args[i + 1].clone();
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            "--web-dir" => {
+                if i + 1 < args.len() {
+                    web_dir = args[i + 1].clone();
                     i += 2;
                 } else {
                     i += 1;
@@ -87,8 +109,10 @@ async fn main() {
                 println!("");
                 println!("オプション:");
                 println!("  --node-id ID       ノードID (デフォルト: ランダム生成)");
-                println!("  --port PORT        APIポート (デフォルト: 54868)");
+                println!("  --api-port PORT    APIポート (デフォルト: 54868)");
+                println!("  --web-port PORT    Webポート (デフォルト: 54867)");
                 println!("  --data-dir DIR     データディレクトリ (デフォルト: ./data)");
+                println!("  --web-dir DIR      Webディレクトリ (デフォルト: ./web)");
                 println!(
                     "  --log-level LEVEL  ログレベル (debug, info, warn, error) (デフォルト: info)"
                 );
@@ -116,14 +140,16 @@ async fn main() {
 
     info!("ShardX ノードを起動中...");
     info!("ノードID: {}", node_id);
-    info!("ポート: {}", port);
+    info!("APIポート: {}", api_port);
+    info!("Webポート: {}", web_port);
     info!("データディレクトリ: {}", data_dir);
+    info!("Webディレクトリ: {}", web_dir);
     info!("ログレベル: {}", log_level);
 
     // ノード設定を作成
     let mut config = NodeConfig::default();
     config.node_id = node_id;
-    config.port = port;
+    config.port = api_port;
     config.data_dir = data_dir;
     config.shard_count = shard_count;
 
@@ -153,20 +179,34 @@ async fn main() {
     // 初期データを設定
     initialize_demo_data(&wallet_manager, &dex_manager).await;
 
-    info!("APIサーバーを起動中 (ポート: {})...", port);
+    info!("APIサーバーを起動中 (ポート: {})...", api_port);
 
     // APIサーバーを作成
     let api_server = ApiServer::new(
         Arc::clone(&node),
         Arc::clone(&wallet_manager),
         Arc::clone(&dex_manager),
-        port,
+        api_port,
     );
 
-    // APIサーバーを起動
-    match api_server.start().await {
-        Ok(_) => info!("APIサーバーが正常に終了しました"),
-        Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
+    // ウェブサーバーを作成
+    info!("Webサーバーを起動中 (ポート: {})...", web_port);
+    let web_server = WebServer::new(web_dir, web_port);
+
+    // 両方のサーバーを並行して起動
+    tokio::select! {
+        api_result = api_server.start() => {
+            match api_result {
+                Ok(_) => info!("APIサーバーが正常に終了しました"),
+                Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
+            }
+        }
+        web_result = web_server.start() => {
+            match web_result {
+                Ok(_) => info!("Webサーバーが正常に終了しました"),
+                Err(e) => error!("Webサーバーの起動に失敗しました: {}", e),
+            }
+        }
     }
 }
 
