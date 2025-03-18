@@ -17,8 +17,13 @@
 # AMD64(Intel/AMD)とARM64(Apple Silicon M1/M2)の両方に対応
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
 
-# DockerHubで問題が発生した場合は、GitHub Packagesからイメージを取得
-docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:latest
+# ARM64アーキテクチャ（Apple Silicon M1/M2など）で問題が発生した場合は、
+# アーキテクチャを明示的に指定してください
+docker run --platform=linux/arm64 -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+
+# または、アーキテクチャ固有のタグを使用
+docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64  # ARM64用
+docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-amd64  # AMD64用
 
 # 方法2: Docker Composeを使用（複数ノード構成）
 git clone https://github.com/enablerdao/ShardX.git
@@ -93,6 +98,54 @@ curl -X POST http://localhost:54868/api/v1/transactions \
 
 ### Webインターフェースにアクセス
 ブラウザで以下のURLを開きます：
+
+### トラブルシューティング
+
+#### Docker関連の問題
+
+1. **ARM64アーキテクチャ（Apple Silicon M1/M2など）でのエラー**
+
+   ```
+   docker: Error response from daemon: no matching manifest for linux/arm64/v8 in the manifest list entries.
+   ```
+
+   **解決策**:
+   - アーキテクチャ固有のタグを使用する
+     ```bash
+     docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+     ```
+   - プラットフォームを明示的に指定する
+     ```bash
+     docker run --platform=linux/arm64 -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+     ```
+
+2. **イメージのプルに失敗する場合**
+
+   ```
+   Unable to find image 'yukih47/shardx:latest' locally
+   ```
+
+   **解決策**:
+   - 手動でビルドスクリプトを実行する
+     ```bash
+     ./scripts/build-docker.sh
+     ```
+   - または、特定のバージョンを指定する
+     ```bash
+     docker pull yukih47/shardx:v1.0.0
+     ```
+
+3. **コンテナが起動しない場合**
+
+   **解決策**:
+   - デバッグモードで実行する
+     ```bash
+     docker run -p 54867:54867 -p 54868:54868 --entrypoint /bin/sh -it yukih47/shardx:latest
+     ```
+   - ログを確認する
+     ```bash
+     docker logs <container_id>
+     ```
 - http://localhost:54867
 
 
