@@ -510,7 +510,7 @@ jobs:
           # ビルドステップをスキップして、直接プッシュする
           echo "Skipping test step due to OCI format limitations"
       
-      # 各アーキテクチャ用に個別にビルドしてプッシュ
+      # AMD64 向けのビルドとプッシュ
       - name: Build and push Docker image for amd64
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         uses: docker/build-push-action@v5
@@ -518,14 +518,16 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}
+          tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}-amd64
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,mode=max,scope=amd64
           file: ./Dockerfile.simple
           provenance: false
           allow: security.insecure
         continue-on-error: true
         
+      # ARM64 向けのビルドとプッシュ
       - name: Build and push Docker image for arm64
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         uses: docker/build-push-action@v5
@@ -533,10 +535,36 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64
-          tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}
+          tags: ${{ env.MANUAL_TAG != '' && env.MANUAL_TAG || steps.meta.outputs.tags }}-arm64
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
           file: ./Dockerfile.simple
           provenance: false
           allow: security.insecure
+        continue-on-error: true
+        
+      # マニフェストリストの作成とプッシュ
+      - name: Create and push manifest list
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        run: |
+          # Docker CLI にログイン
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          
+          # 各イメージタグに対してマニフェストを作成
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
+            echo "Creating manifest for $tag"
+            
+            # マニフェストリストを作成
+            docker manifest create $tag \
+              $tag-amd64 \
+              $tag-arm64
+            
+            # アーキテクチャ情報を注釈
+            docker manifest annotate $tag $tag-arm64 --arch arm64 --os linux
+            docker manifest annotate $tag $tag-amd64 --arch amd64 --os linux
+            
+            # マニフェストリストをプッシュ
+            docker manifest push $tag
+          done
         continue-on-error: true

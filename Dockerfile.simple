@@ -4,9 +4,10 @@ FROM --platform=$TARGETPLATFORM debian:bookworm-slim
 # ARGを使用してターゲットプラットフォームを取得
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
+ARG TARGETARCH
 
 # デバッグ情報を表示
-RUN echo "Building for $TARGETPLATFORM on $BUILDPLATFORM"
+RUN echo "Building for $TARGETPLATFORM (arch: $TARGETARCH) on $BUILDPLATFORM"
 
 WORKDIR /app
 
@@ -28,22 +29,29 @@ COPY web /app/web/ || true
 
 # アーキテクチャに応じたバイナリを選択するスクリプト
 RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'set -e' >> /app/entrypoint.sh && \
     echo 'ARCH=$(uname -m)' >> /app/entrypoint.sh && \
+    echo 'echo "Running on architecture: $ARCH"' >> /app/entrypoint.sh && \
     echo 'if [ "$ARCH" = "x86_64" ]; then' >> /app/entrypoint.sh && \
     echo '  if [ -f "/app/shardx.x86_64" ]; then' >> /app/entrypoint.sh && \
+    echo '    echo "Using x86_64 binary"' >> /app/entrypoint.sh && \
     echo '    cp /app/shardx.x86_64 /app/shardx' >> /app/entrypoint.sh && \
     echo '  fi' >> /app/entrypoint.sh && \
     echo 'elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then' >> /app/entrypoint.sh && \
     echo '  if [ -f "/app/shardx.arm64" ]; then' >> /app/entrypoint.sh && \
+    echo '    echo "Using arm64 binary"' >> /app/entrypoint.sh && \
     echo '    cp /app/shardx.arm64 /app/shardx' >> /app/entrypoint.sh && \
     echo '  fi' >> /app/entrypoint.sh && \
     echo 'fi' >> /app/entrypoint.sh && \
     echo 'if [ ! -f "/app/shardx" ]; then' >> /app/entrypoint.sh && \
+    echo '  echo "WARNING: ShardX binary not available for architecture: $ARCH"' >> /app/entrypoint.sh && \
+    echo '  echo "Creating placeholder binary"' >> /app/entrypoint.sh && \
     echo '  echo "#!/bin/sh" > /app/shardx' >> /app/entrypoint.sh && \
     echo '  echo "echo \"ShardX binary not available for architecture: $ARCH\"" >> /app/shardx' >> /app/entrypoint.sh && \
     echo '  echo "echo \"Please check the build logs for more information.\"" >> /app/shardx' >> /app/entrypoint.sh && \
     echo 'fi' >> /app/entrypoint.sh && \
     echo 'chmod +x /app/shardx' >> /app/entrypoint.sh && \
+    echo 'echo "Starting ShardX..."' >> /app/entrypoint.sh && \
     echo 'exec /app/shardx "$@"' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 
