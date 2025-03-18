@@ -6,52 +6,92 @@
   <p>「トランザクションが川の流れのように速く、スムーズに動くブロックチェーン」</p>
 </div>
 
-## 🚀 30秒で始める！
+## 🚀 1分で始める！
 
 **ShardXの開発ポリシー**: まず動くものを作り、実際に動かして検証し、そこから改善していく。理論より実践を重視します。
 
 ### 最速インストール方法（すべてのOS対応）
 
 ```bash
-# 方法1: Dockerを使用（すべてのOS）- 最も簡単
-# AMD64(Intel/AMD)とARM64(Apple Silicon M1/M2)の両方に対応
-
-## DockerHub からイメージを取得
+# 基本的な使用方法（すべてのOS）- 最も簡単
 docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
 
-# ARM64アーキテクチャ（Apple Silicon M1/M2など）で問題が発生した場合は、
-# アーキテクチャを明示的に指定してください
-docker run --platform=linux/arm64 -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+# カスタムノード設定で起動
+docker run -p 54867:54867 -p 54868:54868 \
+  -e NODE_ID=tokyo-node-1 \
+  -e RUST_LOG=info \
+  yukih47/shardx:latest
 
-# または、アーキテクチャ固有のタグを使用
-docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64  # ARM64用
-docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-amd64  # AMD64用
+# データを永続化して実運用環境で使用
+docker run -p 54867:54867 -p 54868:54868 \
+  -e NODE_ID=prod-node-1 \
+  -v $(pwd)/shardx-data:/app/data \
+  yukih47/shardx:latest
 
-## GitHub Packages からイメージを取得（代替方法）
+# システムサービスとして起動（バックグラウンド実行）
+docker run -d --restart=always --name shardx-node \
+  -p 54867:54867 -p 54868:54868 \
+  -e NODE_ID=service-node-1 \
+  -v shardx-volume:/app/data \
+  yukih47/shardx:latest
+```
+
+### アーキテクチャ固有のイメージ（必要な場合）
+
+```bash
+# ARM64アーキテクチャ（Apple Silicon M1/M2など）
+docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+
+# AMD64アーキテクチャ（Intel/AMDプロセッサ）
+docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-amd64
+
+# GitHub Packages からイメージを取得（代替方法）
 docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main
 
-# ARM64アーキテクチャ（Apple Silicon M1/M2など）で問題が発生した場合は、
-# アーキテクチャ固有のタグを使用
-docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main-arm64  # ARM64用
-docker run -p 54867:54867 -p 54868:54868 ghcr.io/enablerdao/shardx:main-amd64  # AMD64用
-
-# 方法2: Docker Composeを使用（複数ノード構成）
-git clone https://github.com/enablerdao/ShardX.git
-cd ShardX
+# 複数ノード構成（開発・テスト環境向け）
 docker-compose up -d
 
-# 方法3: プリコンパイル済みバイナリを使用（すべてのOS）
-# 以下のプラットフォームに対応: Linux, Windows, macOS, FreeBSD (x86_64/ARM64)
-curl -fsSL https://github.com/enablerdao/ShardX/releases/latest/download/shardx-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz | tar xz
-./shardx
+# 本番環境向けクラスタ構成
+docker-compose -f docker-compose.prod.yml up -d
 
-# 方法4: 自動インストールスクリプト（Linux/macOS）
+```
+
+### 各OS向けインストール方法
+
+```bash
+# Linux (Ubuntu/Debian)
+sudo apt-get update && sudo apt-get install -y curl
 curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
 
-# 方法5: ソースからビルド（すべてのOS）
+# macOS
+brew install enablerdao/tap/shardx
+# または
+curl -fsSL https://raw.githubusercontent.com/enablerdao/ShardX/main/install.sh | bash
+
+# Windows
+winget install EnablerDAO.ShardX
+# または
+choco install shardx
+# または PowerShell
+iwr -useb https://raw.githubusercontent.com/enablerdao/ShardX/main/install.ps1 | iex
+
+# FreeBSD
+pkg install shardx
+```
+
+詳細なインストール手順は[インストールガイド](https://docs.shardx.io/installation)を参照してください。
+
+### ソースからビルド（開発者向け）
+
+```bash
+# リポジトリをクローン
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
+
+# 依存関係をインストール
 cargo build --release
+
+# 実行
 ./target/release/shardx
 ```
 
@@ -59,6 +99,17 @@ cargo build --release
 
 ```bash
 # Dockerイメージをビルド（マルチアーキテクチャ対応）
+docker buildx create --name multiarch --use
+docker buildx build --platform linux/amd64,linux/arm64 -t yourusername/shardx:latest -f Dockerfile.simple .
+
+# イメージをプッシュ
+docker buildx build --platform linux/amd64,linux/arm64 -t yourusername/shardx:latest -f Dockerfile.simple --push .
+```
+
+## 開発者向けガイド
+
+```bash
+# リポジトリをクローン
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
 
@@ -198,7 +249,32 @@ curl -X POST http://localhost:54868/api/v1/transactions \
 - http://localhost:54867
 
 
-### クラウドにワンクリックデプロイ
+### クラウドへのデプロイ
+
+#### 主要クラウドプラットフォームでの実行方法
+
+```bash
+# AWS ECS (Elastic Container Service)
+aws ecs create-service --cluster shardx-cluster --service-name shardx-service \
+  --task-definition shardx:1 --desired-count 1 \
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-12345],securityGroups=[sg-12345],assignPublicIp=ENABLED}"
+
+# Google Cloud Run
+gcloud run deploy shardx --image yukih47/shardx:latest \
+  --port 54868 --allow-unauthenticated \
+  --set-env-vars="NODE_ID=gcp-node-1,RUST_LOG=info"
+
+# Azure Container Instances
+az container create --resource-group myResourceGroup --name shardx \
+  --image yukih47/shardx:latest --dns-name-label shardx \
+  --ports 54867 54868 \
+  --environment-variables NODE_ID=azure-node-1 RUST_LOG=info
+
+# Digital Ocean App Platform
+doctl apps create --spec app.yaml
+```
+
+#### ワンクリックデプロイ
 
 <div align="center">
   <a href="https://render.com/deploy?repo=https://github.com/enablerdao/ShardX">
@@ -210,17 +286,8 @@ curl -X POST http://localhost:54868/api/v1/transactions \
   <a href="https://heroku.com/deploy?template=https://github.com/enablerdao/ShardX">
     <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
   </a>
-  <a href="https://vercel.com/new/clone?repository-url=https://github.com/enablerdao/ShardX">
-    <img src="https://vercel.com/button" alt="Deploy with Vercel" height="44px" />
-  </a>
-  <a href="https://app.netlify.com/start/deploy?repository=https://github.com/enablerdao/ShardX">
-    <img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" height="44px" />
-  </a>
   <a href="https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/enablerdao/ShardX">
     <img src="https://storage.googleapis.com/gweb-cloudblog-publish/images/run_on_google_cloud.max-300x300.png" alt="Run on Google Cloud" height="44px" />
-  </a>
-  <a href="https://replit.com/github/enablerdao/ShardX">
-    <img src="https://replit.com/badge/github/enablerdao/ShardX" alt="Run on Replit" height="44px" />
   </a>
 </div>
 
