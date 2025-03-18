@@ -30,11 +30,54 @@ env:
   LIBCLANG_PATH: /usr/lib/llvm-14/lib
   BINDGEN_EXTRA_CLANG_ARGS: -I/usr/lib/llvm-14/include
   CARGO_INCREMENTAL: 1
-  CARGO_BUILD_JOBS: 2
+  CARGO_BUILD_JOBS: 4
+  # ビルド高速化のための環境変数
+  CARGO_TERM_PROGRESS_WHEN: never
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+  RUSTFLAGS: "-C codegen-units=256 -C opt-level=1"
+  RUST_LOG: info
 
 jobs:
+  # ソースコードの変更を検出
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+      docs: ${{ steps.filter.outputs.docs }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      cargo: ${{ steps.filter.outputs.cargo }}
+      any_changed: ${{ steps.any-changed.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**/*.rs'
+              - 'tests/**/*.rs'
+            docs:
+              - '**/*.md'
+              - 'docs/**/*'
+            workflows:
+              - '.github/workflows/**/*'
+            cargo:
+              - '**/Cargo.toml'
+              - '**/Cargo.lock'
+              
+      - id: any-changed
+        run: |
+          if [[ "${{ steps.filter.outputs.src }}" == "true" || "${{ steps.filter.outputs.cargo }}" == "true" ]]; then
+            echo "any_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "any_changed=false" >> $GITHUB_OUTPUT
+          fi
+  
   # 基本チェック（フォーマット、Clippy、コンパイル）
   check:
+    needs: changes
+    if: needs.changes.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -60,15 +103,17 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}-${{ env.RUST_TOOLCHAIN }}
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}-${{ env.RUST_TOOLCHAIN }}
           shared-key: "rust-${{ env.RUST_TOOLCHAIN }}"
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          save-if: true
+          cache-on-failure: true
           cache-directories: |
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             target/debug/deps
             target/debug/build
+            target/debug/.fingerprint
       
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -85,7 +130,8 @@ jobs:
 
   # 並列テスト
   test:
-    needs: check
+    needs: [changes, check]
+    if: needs.changes.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -135,9 +181,10 @@ jobs:
               echo "Testing modules: $MODULES"
               
               # 高速化のための環境変数を設定
-              export RUSTFLAGS="-C codegen-units=256 -C opt-level=1"
-              export RUST_TEST_THREADS=2
+              export RUST_TEST_THREADS=4
               export RUST_MIN_STACK=8388608
+              export CARGO_INCREMENTAL=1
+              export CARGO_NET_RETRY=10
               
               # テストを実行
               cargo test --no-default-features --features=snow $MODULES -- --nocapture || true
@@ -150,7 +197,8 @@ jobs:
 
   # マルチプラットフォームビルド
   build:
-    needs: check
+    needs: [changes, check]
+    if: needs.changes.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -261,11 +309,19 @@ jobs:
       - name: Build with cross
         if: matrix.use-cross
         run: |
+          # ビルド高速化のためのオプション
+          RUSTFLAGS="-C codegen-units=256 -C opt-level=1" \
+          CARGO_INCREMENTAL=1 \
+          CARGO_NET_RETRY=10 \
           cross build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }} || true
       
       - name: Build native
         if: "!matrix.use-cross"
         run: |
+          # ビルド高速化のためのオプション
+          RUSTFLAGS="-C codegen-units=256 -C opt-level=1" \
+          CARGO_INCREMENTAL=1 \
+          CARGO_NET_RETRY=10 \
           cargo build --release --target ${{ matrix.target }} --no-default-features --features=${{ matrix.features }} || true
       
       - name: Check binary existence
@@ -300,8 +356,8 @@ jobs:
 
   # リリースアーティファクトの作成
   release:
-    needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs: [changes, build]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && needs.changes.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -421,8 +477,8 @@ jobs:
   
   # Dockerイメージビルド
   docker:
-    needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event.inputs.retry_failed == 'true'
+    needs: [changes, build]
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && (needs.changes.outputs.any_changed == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.docs == 'true')) || github.event.inputs.retry_failed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # ジョブの結果を保存
@@ -943,8 +999,8 @@ jobs:
           
   # 通知ジョブ
   notify:
-    needs: [docker]
-    if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs: [changes, docker]
+    if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && (needs.changes.outputs.any_changed == 'true' || needs.changes.outputs.workflows == 'true')
     runs-on: ubuntu-latest
     steps:
       - name: Check build status
