@@ -19,11 +19,13 @@ use std::time::Duration;
 use api::ApiServer;
 use cli::CLI;
 use dex::DexManager;
-use log::{error, info};
+use log::{error, info, warn};
 use node::{Node, NodeConfig};
 use tokio::sync::Mutex;
+use tokio::time::sleep;
 use wallet::WalletManager;
 use web_server::WebServer;
+use futures;
 
 #[tokio::main]
 async fn main() {
@@ -41,6 +43,9 @@ async fn main() {
     let mut log_level = "info".to_string();
     let mut shard_count = 256;
     let mut cli_mode = false;
+    let mut start_node = true;      // ノードを起動するかどうか
+    let mut start_api = true;       // APIサーバーを起動するかどうか
+    let mut start_web = true;       // Webサーバーを起動するかどうか
 
     let mut i = 1;
     while i < args.len() {
@@ -111,6 +116,27 @@ async fn main() {
                 cli_mode = true;
                 i += 1;
             }
+            "--node-only" => {
+                start_node = true;
+                start_api = true;
+                start_web = false;
+                i += 1;
+            }
+            "--web-only" => {
+                start_node = false;
+                start_api = false;
+                start_web = true;
+                i += 1;
+            }
+            "--no-web" => {
+                start_web = false;
+                i += 1;
+            }
+            "--no-node" => {
+                start_node = false;
+                start_api = false;
+                i += 1;
+            }
             "--help" => {
                 println!("使用方法: shardx [オプション]");
                 println!("");
@@ -125,6 +151,10 @@ async fn main() {
                 );
                 println!("  --shard-count N    シャード数 (デフォルト: 256)");
                 println!("  --cli              コマンドラインインターフェイスモードで起動");
+                println!("  --node-only        ノードとAPIサーバーのみを起動 (Webサーバーは起動しない)");
+                println!("  --web-only         Webサーバーのみを起動 (ノードとAPIサーバーは起動しない)");
+                println!("  --no-web           Webサーバーを起動しない");
+                println!("  --no-node          ノードとAPIサーバーを起動しない");
                 println!("  --help             このヘルプメッセージを表示");
                 return;
             }
@@ -154,82 +184,182 @@ async fn main() {
     info!("Webディレクトリ: {}", web_dir);
     info!("ログレベル: {}", log_level);
 
-    // ノード設定を作成
-    let mut config = NodeConfig::default();
-    config.node_id = node_id;
-    config.port = api_port;
-    config.data_dir = data_dir;
-    config.shard_count = shard_count;
+    // 起動するコンポーネントの情報を表示
+    info!("起動するコンポーネント:");
+    if start_node {
+        info!("- ノード (ブロックチェーンノード)");
+        info!("- APIサーバー (ポート: {})", api_port);
+    }
+    if start_web {
+        info!("- Webサーバー (ポート: {})", web_port);
+    }
 
-    info!("DAGを初期化中...");
+    // ノードとAPIサーバーの変数を初期化
+    let node;
+    let wallet_manager;
+    let dex_manager;
+    let api_server_opt;
 
-    // ノードを作成
-    let mut node = Node::new(config);
+    // ノードとAPIサーバーを起動する場合
+    if start_node {
+        // ノード設定を作成
+        let mut config = NodeConfig::default();
+        config.node_id = node_id.clone();
+        config.port = api_port;
+        config.data_dir = data_dir.clone();
+        config.shard_count = shard_count;
 
-    info!(
-        "シャーディングマネージャを初期化中 (シャード数: {})...",
-        shard_count
-    );
+        info!("DAGを初期化中...");
 
-    // ノードを起動
-    info!("コンセンサスエンジンを初期化中...");
-    node.start().await;
+        // ノードを作成
+        let mut node_instance = Node::new(config);
 
-    // ノードをArcでラップ
-    let node = Arc::new(Mutex::new(node));
+        info!(
+            "シャーディングマネージャを初期化中 (シャード数: {})...",
+            shard_count
+        );
 
-    // ウォレットマネージャーを作成
-    let wallet_manager = Arc::new(WalletManager::new());
+        // ノードを起動
+        info!("コンセンサスエンジンを初期化中...");
+        node_instance.start().await;
 
-    // DEXマネージャーを作成
-    let dex_manager = Arc::new(DexManager::new(Arc::clone(&wallet_manager)));
+        // ノードをArcでラップ
+        node = Arc::new(Mutex::new(node_instance));
 
-    // 初期データを設定
-    initialize_demo_data(&wallet_manager, &dex_manager).await;
+        // ウォレットマネージャーを作成
+        wallet_manager = Arc::new(WalletManager::new());
 
-    info!("APIサーバーを起動中 (ポート: {})...", api_port);
+        // DEXマネージャーを作成
+        dex_manager = Arc::new(DexManager::new(Arc::clone(&wallet_manager)));
 
-    // APIサーバーを作成
-    let api_server = ApiServer::new(
-        Arc::clone(&node),
-        Arc::clone(&wallet_manager),
-        Arc::clone(&dex_manager),
-        api_port,
-    );
+        // 初期データを設定
+        initialize_demo_data(&wallet_manager, &dex_manager).await;
 
-    // ウェブサーバーを作成
-    info!("Webサーバーを起動中 (ポート: {})...", web_port);
-    let web_server = WebServer::new(web_dir, web_port);
+        info!("APIサーバーを初期化中 (ポート: {})...", api_port);
+
+        // APIサーバーを作成
+        api_server_opt = Some(ApiServer::new(
+            Arc::clone(&node),
+            Arc::clone(&wallet_manager),
+            Arc::clone(&dex_manager),
+            api_port,
+        ));
+    } else {
+        // ノードとAPIサーバーを起動しない場合はダミーの値を設定
+        node = Arc::new(Mutex::new(Node::new(NodeConfig::default())));
+        wallet_manager = Arc::new(WalletManager::new());
+        dex_manager = Arc::new(DexManager::new(Arc::clone(&wallet_manager)));
+        api_server_opt = None;
+    }
+
+    // Webサーバーの変数を初期化
+    let web_server_opt;
+
+    // Webサーバーを起動する場合
+    if start_web {
+        info!("Webサーバーを初期化中 (ポート: {})...", web_port);
+        info!("Webディレクトリパス: {}", web_dir);
+        
+        // Webディレクトリの存在を確認
+        let web_dir_path = Path::new(&web_dir);
+        if !web_dir_path.exists() {
+            error!("Webディレクトリが存在しません: {}", web_dir);
+            println!("エラー: Webディレクトリが存在しません: {}", web_dir);
+            println!("現在の作業ディレクトリ: {}", std::env::current_dir().unwrap().display());
+            return;
+        }
+        
+        if !web_dir_path.is_dir() {
+            error!("Webディレクトリがディレクトリではありません: {}", web_dir);
+            println!("エラー: Webディレクトリがディレクトリではありません: {}", web_dir);
+            return;
+        }
+        
+        // index.htmlの存在を確認
+        let index_path = web_dir_path.join("index.html");
+        if !index_path.exists() {
+            error!("index.htmlが存在しません: {}", index_path.display());
+            println!("エラー: index.htmlが存在しません: {}", index_path.display());
+            return;
+        }
+        
+        info!("Webディレクトリの検証が完了しました: {}", web_dir);
+        web_server_opt = Some(WebServer::new(web_dir.clone(), web_port));
+        info!("Webサーバーが初期化されました");
+    } else {
+        web_server_opt = None;
+    }
     
     // アクセス可能なURLを表示
     println!("\n=== ShardX サービスが起動しました ===");
-    println!("Web UI: http://localhost:{}/", web_port);
-    println!("API エンドポイント: http://localhost:{}/", api_port);
-    println!("ノード情報: http://localhost:{}/info", api_port);
+    if start_web {
+        println!("Web UI: http://localhost:{}/", web_port);
+    }
+    if start_node {
+        println!("API エンドポイント: http://localhost:{}/", api_port);
+        println!("ノード情報: http://localhost:{}/info", api_port);
+    }
     println!("=====================================\n");
 
     // CLIモードの場合はCLIを起動
-    if cli_mode {
+    if cli_mode && start_node {
         // CLIを作成
         let cli = CLI::new(Arc::clone(&node), Arc::clone(&wallet_manager));
         
         // CLIを起動
         cli.start().await;
     } else {
-        // 両方のサーバーを並行して起動
-        tokio::select! {
-            api_result = api_server.start() => {
-                match api_result {
+        // サーバーを並行して起動
+        let mut handles = Vec::new();
+        
+        // APIサーバーを起動
+        if let Some(api_server) = api_server_opt {
+            info!("APIサーバーを起動します");
+            let api_handle = tokio::spawn(async move {
+                info!("APIサーバーの起動を試みます...");
+                match api_server.start().await {
                     Ok(_) => info!("APIサーバーが正常に終了しました"),
                     Err(e) => error!("APIサーバーの起動に失敗しました: {}", e),
                 }
-            }
-            web_result = web_server.start() => {
-                match web_result {
+            });
+            handles.push(api_handle);
+        }
+        
+        // Webサーバーを起動
+        if let Some(web_server) = web_server_opt {
+            info!("Webサーバーを起動します");
+            let web_handle = tokio::spawn(async move {
+                info!("Webサーバーの起動を試みます...");
+                match web_server.start().await {
                     Ok(_) => info!("Webサーバーが正常に終了しました"),
-                    Err(e) => error!("Webサーバーの起動に失敗しました: {}", e),
+                    Err(e) => {
+                        error!("Webサーバーの起動に失敗しました: {}", e);
+                        println!("エラー: Webサーバーの起動に失敗しました: {}", e);
+                    }
+                }
+            });
+            handles.push(web_handle);
+        }
+        
+        // 少なくとも1つのサーバーが起動している場合
+        if !handles.is_empty() {
+            // メインスレッドを維持するためのダミータスク
+            let dummy_handle = tokio::spawn(async {
+                loop {
+                    tokio::time::sleep(Duration::from_secs(3600)).await;
+                }
+            });
+            handles.push(dummy_handle);
+            
+            // 最初のタスクが完了するまで待機
+            if let Some(handle) = futures::future::select_all(handles).await.0 {
+                if let Err(e) = handle {
+                    error!("サーバータスクの実行中にエラーが発生しました: {}", e);
                 }
             }
+        } else {
+            error!("起動するサーバーがありません。--node-only、--web-only、または両方を指定してください。");
+            println!("エラー: 起動するサーバーがありません。--node-only、--web-only、または両方を指定してください。");
         }
     }
 }
