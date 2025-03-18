@@ -75,12 +75,41 @@ if [ "$PUSH" = true ]; then
   echo -e "${BLUE}DockerHubにログイン...${NC}"
   docker login
   
-  echo -e "${BLUE}イメージをビルドしてプッシュ中...${NC}"
+  # 各アーキテクチャ向けにビルドしてプッシュ
+  echo -e "${BLUE}AMD64向けイメージをビルドしてプッシュ中...${NC}"
   docker buildx build \
-    --platform ${PLATFORMS} \
-    -t ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} \
+    --platform linux/amd64 \
+    -t ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-amd64 \
     --push \
     -f Dockerfile.simple .
+  
+  echo -e "${BLUE}ARM64向けイメージをビルドしてプッシュ中...${NC}"
+  docker buildx build \
+    --platform linux/arm64 \
+    -t ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-arm64 \
+    --push \
+    -f Dockerfile.simple .
+  
+  # Docker CLI の実験的機能を有効化
+  echo -e "${BLUE}マニフェストリストを作成してプッシュ中...${NC}"
+  export DOCKER_CLI_EXPERIMENTAL=enabled
+  
+  # マニフェストリストを作成
+  docker manifest create --amend ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} \
+    ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-amd64 \
+    ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-arm64
+  
+  # アーキテクチャ情報を注釈
+  docker manifest annotate ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} \
+    ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-arm64 --arch arm64 --os linux --variant v8
+  docker manifest annotate ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} \
+    ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-amd64 --arch amd64 --os linux
+  
+  # マニフェストリストを検査
+  docker manifest inspect ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}
+  
+  # マニフェストリストをプッシュ
+  docker manifest push --purge ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}
 else
   echo -e "${BLUE}イメージをビルド中（プッシュなし）...${NC}"
   docker buildx build \
