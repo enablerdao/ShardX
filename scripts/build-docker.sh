@@ -90,9 +90,14 @@ if [ "$PUSH" = true ]; then
     --push \
     -f Dockerfile.simple .
   
-  # Docker CLI の実験的機能を有効化
-  echo -e "${BLUE}マニフェストリストを作成してプッシュ中...${NC}"
+  # マニフェストリストを作成（改善版）
+  echo -e "${BLUE}マニフェストリストを作成中...${NC}"
+  
+  # 実験的機能を有効化
   export DOCKER_CLI_EXPERIMENTAL=enabled
+  
+  # 既存のマニフェストを削除（存在する場合）
+  docker manifest rm ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} 2>/dev/null || true
   
   # マニフェストリストを作成
   docker manifest create --amend ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} \
@@ -100,16 +105,37 @@ if [ "$PUSH" = true ]; then
     ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-arm64
   
   # アーキテクチャ情報を注釈
+  echo -e "${BLUE}アーキテクチャ情報を注釈中...${NC}"
   docker manifest annotate ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} \
     ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-arm64 --arch arm64 --os linux --variant v8
   docker manifest annotate ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} \
     ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}-amd64 --arch amd64 --os linux
   
   # マニフェストリストを検査
+  echo -e "${BLUE}マニフェストリストを検査中...${NC}"
   docker manifest inspect ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}
   
-  # マニフェストリストをプッシュ
-  docker manifest push --purge ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}
+  # マニフェストリストをプッシュ（3回まで再試行）
+  echo -e "${BLUE}マニフェストリストをプッシュ中...${NC}"
+  for i in {1..3}; do
+    if docker manifest push --purge ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}; then
+      echo -e "${GREEN}マニフェストリストのプッシュに成功しました（試行 $i）${NC}"
+      break
+    else
+      echo -e "${RED}マニフェストリストのプッシュに失敗しました（試行 $i）${NC}"
+      if [ $i -eq 3 ]; then
+        echo -e "${RED}マニフェストリストのプッシュに3回失敗しました。${NC}"
+      else
+        echo -e "${YELLOW}5秒後に再試行します...${NC}"
+        sleep 5
+      fi
+    fi
+  done
+  
+  # 検証のためにイメージをプル
+  echo -e "${BLUE}検証のためにイメージをプル中...${NC}"
+  docker pull --platform=linux/amd64 ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} || echo -e "${YELLOW}AMD64イメージのプルに失敗しました${NC}"
+  docker pull --platform=linux/arm64 ${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG} || echo -e "${YELLOW}ARM64イメージのプルに失敗しました${NC}"
 else
   echo -e "${BLUE}イメージをビルド中（プッシュなし）...${NC}"
   docker buildx build \

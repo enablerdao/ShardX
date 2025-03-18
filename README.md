@@ -110,13 +110,21 @@ curl -X POST http://localhost:54868/api/v1/transactions \
    ```
 
    **解決策**:
-   - アーキテクチャ固有のタグを使用する
+   - アーキテクチャ固有のタグを使用する（**最も確実な方法**）
      ```bash
      docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
      ```
    - プラットフォームを明示的に指定する
      ```bash
      docker run --platform=linux/arm64 -p 54867:54867 -p 54868:54868 yukih47/shardx:latest-arm64
+     ```
+   - 手動でビルドする（上記の方法で解決しない場合）
+     ```bash
+     git clone https://github.com/enablerdao/ShardX.git
+     cd ShardX
+     chmod +x scripts/build-docker.sh
+     ./scripts/build-docker.sh
+     docker run -p 54867:54867 -p 54868:54868 yukih47/shardx:latest
      ```
 
 2. **イメージのプルに失敗する場合**
