@@ -47,19 +47,36 @@ cargo build --release
 git clone https://github.com/enablerdao/ShardX.git
 cd ShardX
 
+# 方法1: ビルドスクリプトを使用（推奨）
+# 実行権限を付与
+chmod +x scripts/build-docker.sh
+
+# ビルドのみ
+./scripts/build-docker.sh
+
+# ビルドしてプッシュ
+./scripts/build-docker.sh --push
+
+# カスタムタグでビルド
+./scripts/build-docker.sh --tag v1.0.0
+
+# カスタムユーザー名でビルド
+./scripts/build-docker.sh --username yourname
+
+# 方法2: 手動コマンド
 # BuildKitを有効化
 export DOCKER_BUILDKIT=1
 
 # マルチアーキテクチャビルド（AMD64とARM64）
 docker buildx create --name multiarch --use
-docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:latest .
+docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:latest -f Dockerfile.simple .
 
 # バージョンタグを指定してビルド
-docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:v1.0.0 .
+docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:v1.0.0 -f Dockerfile.simple .
 
 # ビルド後にDockerHubにプッシュ（ログインが必要）
 docker login
-docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:latest --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t yukih47/shardx:latest --push -f Dockerfile.simple .
 ```
 
 ### 動作確認（インストール後）
