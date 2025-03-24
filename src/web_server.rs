@@ -1,8 +1,8 @@
 use log::{error, info, warn};
 use std::path::Path;
-use warp::Filter;
 use std::time::Duration;
 use tokio::time::sleep;
+use warp::Filter;
 
 /// ウェブサーバー
 pub struct WebServer {
@@ -29,21 +29,30 @@ impl WebServer {
             error!("Webディレクトリが存在しません: {}", self.web_dir);
             return Err(format!("Webディレクトリが存在しません: {}", self.web_dir));
         }
-        
+
         if !web_dir_path.is_dir() {
-            error!("Webディレクトリがディレクトリではありません: {}", self.web_dir);
-            return Err(format!("Webディレクトリがディレクトリではありません: {}", self.web_dir));
+            error!(
+                "Webディレクトリがディレクトリではありません: {}",
+                self.web_dir
+            );
+            return Err(format!(
+                "Webディレクトリがディレクトリではありません: {}",
+                self.web_dir
+            ));
         }
-        
+
         info!("Webディレクトリの検証が完了しました");
-        
+
         // index.htmlが存在するか確認
         let index_path = web_dir_path.join("index.html");
         if !index_path.exists() {
             error!("index.htmlが存在しません: {}", index_path.display());
-            return Err(format!("index.htmlが存在しません: {}", index_path.display()));
+            return Err(format!(
+                "index.htmlが存在しません: {}",
+                index_path.display()
+            ));
         }
-        
+
         info!("index.htmlの検証が完了しました: {}", index_path.display());
 
         // 静的ファイルを提供するルート
@@ -68,7 +77,7 @@ impl WebServer {
 
         // サーバーを起動
         info!("Webサーバーを起動します: http://0.0.0.0:{}", self.port);
-        
+
         // 最大3回まで再試行
         for attempt in 1..=3 {
             match self.start_server(routes.clone()).await {
@@ -78,7 +87,10 @@ impl WebServer {
                 }
                 Err(e) => {
                     if attempt < 3 {
-                        warn!("Webサーバーの起動に失敗しました (試行 {}/3): {}", attempt, e);
+                        warn!(
+                            "Webサーバーの起動に失敗しました (試行 {}/3): {}",
+                            attempt, e
+                        );
                         sleep(Duration::from_secs(1)).await;
                     } else {
                         error!("Webサーバーの起動に失敗しました (最終試行): {}", e);
@@ -87,10 +99,10 @@ impl WebServer {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// サーバーを実際に起動する内部メソッド
     async fn start_server<F>(&self, routes: F) -> Result<(), String>
     where
@@ -98,15 +110,19 @@ impl WebServer {
         F::Extract: warp::Reply,
     {
         info!("Webサーバーを起動しています: http://0.0.0.0:{}", self.port);
-        
+
         // エラーハンドリングを追加
         let result = tokio::task::spawn(async move {
             warp::serve(routes).run(([0, 0, 0, 0], self.port)).await;
-        }).await;
-        
+        })
+        .await;
+
         match result {
             Ok(_) => Ok(()),
-            Err(e) => Err(format!("Webサーバータスクの実行中にエラーが発生しました: {}", e)),
+            Err(e) => Err(format!(
+                "Webサーバータスクの実行中にエラーが発生しました: {}",
+                e
+            )),
         }
     }
 }

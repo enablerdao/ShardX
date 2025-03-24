@@ -104,7 +104,7 @@ impl ApiServer {
             .and(warp::get())
             .and(with_node(Arc::clone(&node_clone)))
             .and_then(handle_root);
-            
+
         // ノード情報を取得するエンドポイント
         let node_info = warp::path("info")
             .and(warp::get())
@@ -228,7 +228,7 @@ fn with_dex_manager(
 /// ルートエンドポイントのハンドラー
 async fn handle_root(node: Arc<Mutex<Node>>) -> Result<impl Reply, Rejection> {
     let node = node.lock().await;
-    
+
     let response = RootResponse {
         name: "ShardX".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -247,7 +247,7 @@ async fn handle_root(node: Arc<Mutex<Node>>) -> Result<impl Reply, Rejection> {
             "/trade-history".to_string(),
         ],
     };
-    
+
     Ok(warp::reply::json(&response))
 }
 

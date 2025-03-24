@@ -19,13 +19,13 @@ use std::time::Duration;
 use api::ApiServer;
 use cli::CLI;
 use dex::DexManager;
+use futures;
 use log::{error, info, warn};
 use node::{Node, NodeConfig};
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use wallet::WalletManager;
 use web_server::WebServer;
-use futures;
 
 #[tokio::main]
 async fn main() {
@@ -43,9 +43,9 @@ async fn main() {
     let mut log_level = "info".to_string();
     let mut shard_count = 256;
     let mut cli_mode = false;
-    let mut start_node = true;      // ノードを起動するかどうか
-    let mut start_api = true;       // APIサーバーを起動するかどうか
-    let mut start_web = true;       // Webサーバーを起動するかどうか
+    let mut start_node = true; // ノードを起動するかどうか
+    let mut start_api = true; // APIサーバーを起動するかどうか
+    let mut start_web = true; // Webサーバーを起動するかどうか
 
     let mut i = 1;
     while i < args.len() {
@@ -151,8 +151,12 @@ async fn main() {
                 );
                 println!("  --shard-count N    シャード数 (デフォルト: 256)");
                 println!("  --cli              コマンドラインインターフェイスモードで起動");
-                println!("  --node-only        ノードとAPIサーバーのみを起動 (Webサーバーは起動しない)");
-                println!("  --web-only         Webサーバーのみを起動 (ノードとAPIサーバーは起動しない)");
+                println!(
+                    "  --node-only        ノードとAPIサーバーのみを起動 (Webサーバーは起動しない)"
+                );
+                println!(
+                    "  --web-only         Webサーバーのみを起動 (ノードとAPIサーバーは起動しない)"
+                );
                 println!("  --no-web           Webサーバーを起動しない");
                 println!("  --no-node          ノードとAPIサーバーを起動しない");
                 println!("  --help             このヘルプメッセージを表示");
@@ -259,22 +263,28 @@ async fn main() {
     if start_web {
         info!("Webサーバーを初期化中 (ポート: {})...", web_port);
         info!("Webディレクトリパス: {}", web_dir);
-        
+
         // Webディレクトリの存在を確認
         let web_dir_path = Path::new(&web_dir);
         if !web_dir_path.exists() {
             error!("Webディレクトリが存在しません: {}", web_dir);
             println!("エラー: Webディレクトリが存在しません: {}", web_dir);
-            println!("現在の作業ディレクトリ: {}", std::env::current_dir().unwrap().display());
+            println!(
+                "現在の作業ディレクトリ: {}",
+                std::env::current_dir().unwrap().display()
+            );
             return;
         }
-        
+
         if !web_dir_path.is_dir() {
             error!("Webディレクトリがディレクトリではありません: {}", web_dir);
-            println!("エラー: Webディレクトリがディレクトリではありません: {}", web_dir);
+            println!(
+                "エラー: Webディレクトリがディレクトリではありません: {}",
+                web_dir
+            );
             return;
         }
-        
+
         // index.htmlの存在を確認
         let index_path = web_dir_path.join("index.html");
         if !index_path.exists() {
@@ -282,14 +292,14 @@ async fn main() {
             println!("エラー: index.htmlが存在しません: {}", index_path.display());
             return;
         }
-        
+
         info!("Webディレクトリの検証が完了しました: {}", web_dir);
         web_server_opt = Some(WebServer::new(web_dir.clone(), web_port));
         info!("Webサーバーが初期化されました");
     } else {
         web_server_opt = None;
     }
-    
+
     // アクセス可能なURLを表示
     println!("\n=== ShardX サービスが起動しました ===");
     if start_web {
@@ -305,13 +315,13 @@ async fn main() {
     if cli_mode && start_node {
         // CLIを作成
         let cli = CLI::new(Arc::clone(&node), Arc::clone(&wallet_manager));
-        
+
         // CLIを起動
         cli.start().await;
     } else {
         // サーバーを並行して起動
         let mut handles = Vec::new();
-        
+
         // APIサーバーを起動
         if let Some(api_server) = api_server_opt {
             info!("APIサーバーを起動します");
@@ -324,7 +334,7 @@ async fn main() {
             });
             handles.push(api_handle);
         }
-        
+
         // Webサーバーを起動
         if let Some(web_server) = web_server_opt {
             info!("Webサーバーを起動します");
@@ -340,7 +350,7 @@ async fn main() {
             });
             handles.push(web_handle);
         }
-        
+
         // 少なくとも1つのサーバーが起動している場合
         if !handles.is_empty() {
             // メインスレッドを維持するためのダミータスク
@@ -350,7 +360,7 @@ async fn main() {
                 }
             });
             handles.push(dummy_handle);
-            
+
             // 最初のタスクが完了するまで待機
             if let Some(handle) = futures::future::select_all(handles).await.0 {
                 if let Err(e) = handle {

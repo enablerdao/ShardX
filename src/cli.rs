@@ -50,16 +50,16 @@ impl CLI {
             print!("shardx> ");
             stdout.flush().unwrap();
             buffer.clear();
-            
+
             if handle.read_line(&mut buffer).unwrap() == 0 {
                 break;
             }
-            
+
             let command = buffer.trim();
             if command.is_empty() {
                 continue;
             }
-            
+
             match command {
                 "exit" | "quit" => {
                     println!("ShardX CLIを終了します");
@@ -144,7 +144,10 @@ impl CLI {
         println!("\nノードステータス:");
         println!("  ステータス: {:?}", node.get_status());
         println!("  実行中のシャード: {}", node.get_active_shards());
-        println!("  メモリ使用量: {} MB", node.get_memory_usage() / (1024 * 1024));
+        println!(
+            "  メモリ使用量: {} MB",
+            node.get_memory_usage() / (1024 * 1024)
+        );
         println!("  起動時間: {} 秒", node.get_uptime().as_secs());
         println!("");
     }
@@ -222,7 +225,10 @@ impl CLI {
         };
 
         if from_account.balance < amount {
-            println!("\nエラー: 残高不足です (残高: {}, 送金額: {})", from_account.balance, amount);
+            println!(
+                "\nエラー: 残高不足です (残高: {}, 送金額: {})",
+                from_account.balance, amount
+            );
             println!("");
             return;
         }
@@ -234,7 +240,8 @@ impl CLI {
 
         // 実際の送金処理はここに実装
         // この例では単純に残高を更新するだけ
-        self.wallet_manager.update_balance(&from_account.id, -amount);
+        self.wallet_manager
+            .update_balance(&from_account.id, -amount);
         self.wallet_manager.update_balance(&to_account.id, amount);
 
         println!("送金が完了しました");
